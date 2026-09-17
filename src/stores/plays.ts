@@ -1,24 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { bundledPlay } from '../data/bundledPlay'
+import { bundledPlays, mergeBundledPlay } from '../data/bundledPlays'
 import { deletePlay, listPlays, savePlay } from '../services/storage'
 import type { Play } from '../types'
 import { validatePlay } from '../utils/play'
-
-function mergeBundledPlay(existing?: Play): Play {
-  if (!existing) return bundledPlay
-  const colors = new Map(existing.characters.map((character) => [character.id, character.color]))
-  return {
-    ...bundledPlay,
-    characters: bundledPlay.characters.map((character) => {
-      const legacyId = character.id === 'woman' ? 'wife' : character.id
-      return {
-        ...character,
-        color: colors.get(character.id) ?? colors.get(legacyId) ?? character.color
-      }
-    })
-  }
-}
 
 export const usePlaysStore = defineStore('plays', () => {
   const plays = ref<Play[]>([])
@@ -29,10 +14,10 @@ export const usePlaysStore = defineStore('plays', () => {
   async function initialize(): Promise<void> {
     if (loaded.value) return
     const stored = await listPlays()
-    const existingBundled = stored.find((play) => play.id === bundledPlay.id)
-    const currentBundled = mergeBundledPlay(existingBundled)
-    await savePlay(currentBundled)
-    plays.value = [currentBundled, ...stored.filter((play) => play.id !== bundledPlay.id)]
+    const bundledIds = new Set(bundledPlays.map((play) => play.id))
+    const currentBundled = bundledPlays.map((play) => mergeBundledPlay(play, stored.find((item) => item.id === play.id)))
+    for (const play of currentBundled) await savePlay(play)
+    plays.value = [...currentBundled, ...stored.filter((play) => !bundledIds.has(play.id))]
     loaded.value = true
   }
 
