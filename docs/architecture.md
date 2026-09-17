@@ -33,7 +33,7 @@ The reader never needs to parse parentheses in normal operation. This avoids the
 
 ## Trust boundary
 
-Imported JSON is untrusted input. `validatePlay()` checks the nested structure, duplicate block/character identifiers, referenced characters, known block types, and typed dialogue parts before persistence. Vue interpolation renders user content as text. Application code must not introduce raw `innerHTML` for play content.
+Imported JSON is untrusted input. `validatePlay()` checks the nested structure, duplicate character/act/scene/block identifiers, referenced characters, known block types, and typed dialogue parts before persistence. Vue interpolation renders user content as text. Application code must not introduce raw `innerHTML` for play content.
 
 ## Persistence
 

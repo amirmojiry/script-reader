@@ -94,17 +94,23 @@ export function validatePlay(value: unknown): PlayValidationResult {
     characterIds.add(candidate.id)
   })
 
+  const actIds = new Set<string>()
+  const sceneIds = new Set<string>()
   const blockIds = new Set<string>()
   ;(value.acts as unknown[]).forEach((actCandidate, actIndex) => {
-    if (!isRecord(actCandidate) || !nonEmptyString(actCandidate.id) || !Array.isArray(actCandidate.scenes)) {
-      errors.push(`پرده/بخش شمارهٔ ${actIndex + 1} ساختار معتبر ندارد.`)
+    if (!isRecord(actCandidate) || !nonEmptyString(actCandidate.id) || !nonEmptyString(actCandidate.title) || !Array.isArray(actCandidate.scenes)) {
+      errors.push(`پرده/بخش شمارهٔ ${actIndex + 1} باید id، title و scenes معتبر داشته باشد.`)
       return
     }
+    if (actIds.has(actCandidate.id)) errors.push(`شناسهٔ پرده/بخش تکراری است: ${actCandidate.id}`)
+    actIds.add(actCandidate.id)
     actCandidate.scenes.forEach((sceneCandidate, sceneIndex) => {
-      if (!isRecord(sceneCandidate) || !nonEmptyString(sceneCandidate.id) || !Array.isArray(sceneCandidate.blocks)) {
-        errors.push(`صحنهٔ ${sceneIndex + 1} در بخش ${actIndex + 1} ساختار معتبر ندارد.`)
+      if (!isRecord(sceneCandidate) || !nonEmptyString(sceneCandidate.id) || !nonEmptyString(sceneCandidate.title) || !Array.isArray(sceneCandidate.blocks)) {
+        errors.push(`صحنهٔ ${sceneIndex + 1} در بخش ${actIndex + 1} باید id، title و blocks معتبر داشته باشد.`)
         return
       }
+      if (sceneIds.has(sceneCandidate.id)) errors.push(`شناسهٔ صحنه تکراری است: ${sceneCandidate.id}`)
+      sceneIds.add(sceneCandidate.id)
       sceneCandidate.blocks.forEach((blockCandidate, blockIndex) => {
         if (!isRecord(blockCandidate) || !nonEmptyString(blockCandidate.id) || !nonEmptyString(blockCandidate.type)) {
           errors.push(`بلوک ${blockIndex + 1} در صحنهٔ ${sceneIndex + 1} معتبر نیست.`)

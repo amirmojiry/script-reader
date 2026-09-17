@@ -46,7 +46,8 @@ Minimal example:
 ## Required invariants
 
 - `Play.id`, character ids, scene ids, act ids, and block ids should be stable identifiers.
-- Character ids must be unique.
+- Character, act, and scene ids must be unique in their respective play structure.
+- Act and scene titles are required.
 - Block ids must be unique across the whole play.
 - Every `dialogue.characterId` must reference a declared character.
 - Dialogue parts are only `speech` or `direction` and contain non-empty text.

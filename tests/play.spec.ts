@@ -31,6 +31,24 @@ describe('play utilities', () => {
     expect(validatePlay({ title: 'x' }).valid).toBe(false)
   })
 
+  it('rejects duplicate act/scene ids and missing titles', () => {
+    const malformed = structuredClone(demoPlay)
+    const firstAct = malformed.acts[0]
+    const firstScene = firstAct.scenes[0]
+
+    firstAct.scenes.push(structuredClone(firstScene))
+    firstAct.scenes.push({ id: 'untitled-scene', title: '', blocks: [] })
+    malformed.acts.push(structuredClone(firstAct))
+    malformed.acts.push({ id: 'untitled-act', title: '', scenes: [] })
+
+    const result = validatePlay(malformed)
+    expect(result.valid).toBe(false)
+    expect(result.errors.join(' ')).toContain('id، title و scenes')
+    expect(result.errors.join(' ')).toContain('id، title و blocks')
+    expect(result.errors.join(' ')).toContain('شناسهٔ پرده/بخش تکراری')
+    expect(result.errors.join(' ')).toContain('شناسهٔ صحنه تکراری')
+  })
+
   it('rejects duplicate block ids and unknown characters', () => {
     const malformed = structuredClone(demoPlay)
     const firstScene = malformed.acts[0].scenes[0]
