@@ -2,10 +2,13 @@
 import type { ReaderSettings } from '../types'
 import { READER_FONT_OPTIONS } from '../utils/settings'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   settings: ReaderSettings
   wakeLockAvailable: boolean
-}>()
+  showClose?: boolean
+}>(), {
+  showClose: true
+})
 
 const emit = defineEmits<{
   updateSettings: [settings: ReaderSettings]
@@ -25,7 +28,7 @@ function patch(value: Partial<ReaderSettings>): void {
         <h2>ظاهر متن و رفتار صفحه</h2>
         <p class="muted">تغییرات به‌صورت خودکار در همین مرورگر ذخیره می‌شوند.</p>
       </div>
-      <button class="icon-button" type="button" aria-label="بستن تنظیمات" @click="emit('close')">×</button>
+      <button v-if="showClose" class="icon-button" type="button" aria-label="بستن تنظیمات" @click="emit('close')">×</button>
     </div>
 
     <div class="settings-grid">

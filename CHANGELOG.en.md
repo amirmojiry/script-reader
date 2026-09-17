@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-17
+
+### Added
+- Dedicated persistent settings page outside individual play readers.
+- Library range filters for character count and estimated play duration.
+
+### Changed
+- Collapsing the roles panel now removes its layout column so the remaining reader content expands to the full available width.
+
 ## [1.2.0] - 2026-09-17
 
 ### Added
@@ -37,7 +46,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/amirmojiry/script-reader/releases/tag/v1.0.0
