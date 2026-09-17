@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-17
+
+### Added
+- Complete user-supplied «مهمان ناخوانده» play as a bundled library entry with regression coverage for source fidelity and canonical conversion.
+
+### Changed
+- Library play cards now present the three metrics and «باز کردن» action as equal-sized controls.
+- Removed the «فرمت ورود» informational box from the library page.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added
@@ -46,7 +55,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...v1.1.0
