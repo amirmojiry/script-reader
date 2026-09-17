@@ -5,6 +5,7 @@ import App from './App.vue'
 import { router } from './router'
 import './styles.css'
 import './styles-v11.css'
+import './styles-v13.css'
 
 registerSW({ immediate: true })
 
