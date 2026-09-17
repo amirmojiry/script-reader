@@ -1,0 +1,407 @@
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import CharacterPanel from '../components/CharacterPanel.vue'
+import DialogueBlockView from '../components/DialogueBlock.vue'
+import ReaderToolbar from '../components/ReaderToolbar.vue'
+import {
+  deleteNote,
+  getReadingState,
+  getSettings,
+  listBookmarks,
+  listNotes,
+  saveNote,
+  saveReadingState,
+  saveSettings,
+  toggleBookmark
+} from '../services/storage'
+import { canSpeak, speak, stopSpeaking } from '../services/speech'
+import { releaseWakeLock, requestWakeLock, wakeLockSupported } from '../services/wakeLock'
+import { usePlaysStore } from '../stores/plays'
+import type { DialogueBlock, NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
+import { analyzePlay, blockText, dialogueText, flattenBlocks } from '../utils/play'
+
+const defaultSettings: ReaderSettings = {
+  fontSize: 17,
+  lineHeight: 1.9,
+  font: 'system',
+  theme: 'light',
+  hideStageDirections: false,
+  keepAwake: false,
+  rehearsalRevealMode: 'hidden',
+  rehearsalCueOnly: false
+}
+
+const route = useRoute()
+const router = useRouter()
+const store = usePlaysStore()
+const selected = ref<string[]>([])
+const myCharacterId = ref<string>()
+const mode = ref<ReaderMode>('read')
+const currentIndex = ref(0)
+const sidebarOpen = ref(true)
+const settings = ref<ReaderSettings>({ ...defaultSettings })
+const searchQuery = ref('')
+const notes = ref<NoteRecord[]>([])
+const noteText = ref('')
+const bookmarkIds = ref<Set<string>>(new Set())
+const statusMessage = ref('')
+
+const play = computed(() => store.byId(String(route.params.id)))
+const blocks = computed(() => play.value ? flattenBlocks(play.value) : [])
+const stats = computed(() => play.value ? analyzePlay(play.value) : {})
+const characterMap = computed(() => new Map(play.value?.characters.map((character) => [character.id, character]) ?? []))
+const currentBlock = computed(() => blocks.value[currentIndex.value])
+const currentBookmarked = computed(() => Boolean(currentBlock.value && bookmarkIds.value.has(currentBlock.value.id)))
+const fontFamily = computed(() => {
+  if (settings.value.font === 'serif') return 'Georgia, "Times New Roman", serif'
+  if (settings.value.font === 'sans') return 'Arial, Tahoma, sans-serif'
+  return 'Tahoma, Arial, sans-serif'
+})
+const searchIndexes = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase('fa')
+  if (!query) return []
+  return blocks.value
+    .map((block, index) => ({ block, index }))
+    .filter(({ block }) => blockText(block).toLocaleLowerCase('fa').includes(query))
+    .map(({ index }) => index)
+})
+const readerEntries = computed(() => {
+  const all = blocks.value.map((block, index) => ({ block, index }))
+  if (mode.value !== 'rehearsal' || !settings.value.rehearsalCueOnly || !myCharacterId.value) return all
+
+  const ownIndexes = all
+    .filter(({ block }) => block.type === 'dialogue' && block.characterId === myCharacterId.value)
+    .map(({ index }) => index)
+  if (ownIndexes.length === 0) return all
+
+  const ownIndex = ownIndexes.includes(currentIndex.value)
+    ? currentIndex.value
+    : ownIndexes.find((index) => index >= currentIndex.value) ?? ownIndexes[0]
+  const previousDialogue = [...all]
+    .reverse()
+    .find(({ block, index }) => index < ownIndex && block.type === 'dialogue')
+  const indexes = new Set([ownIndex])
+  if (previousDialogue) indexes.add(previousDialogue.index)
+  return all.filter(({ index }) => indexes.has(index))
+})
+
+onMounted(async () => {
+  await store.initialize()
+  if (!play.value) {
+    await router.replace('/')
+    return
+  }
+
+  const storedSettings = await getSettings()
+  if (storedSettings) settings.value = { ...defaultSettings, ...storedSettings }
+
+  const state = await getReadingState(play.value.id)
+  if (state) {
+    selected.value = state.selectedCharacterIds
+    myCharacterId.value = state.myCharacterId
+    mode.value = state.mode
+    const index = state.currentBlockId ? blocks.value.findIndex((block) => block.id === state.currentBlockId) : 0
+    currentIndex.value = Math.max(0, index)
+  }
+
+  notes.value = await listNotes(play.value.id)
+  bookmarkIds.value = new Set(await listBookmarks(play.value.id))
+  syncNoteText()
+  if (settings.value.keepAwake) await requestWakeLock()
+})
+
+onBeforeUnmount(() => {
+  stopSpeaking()
+  void releaseWakeLock()
+})
+
+watch([selected, myCharacterId, mode, currentIndex], async () => {
+  if (!play.value) return
+  await saveReadingState({
+    playId: play.value.id,
+    currentBlockId: currentBlock.value?.id,
+    selectedCharacterIds: selected.value,
+    myCharacterId: myCharacterId.value,
+    mode: mode.value
+  })
+}, { deep: true })
+
+watch(() => currentBlock.value?.id, () => syncNoteText())
+
+function syncNoteText(): void {
+  const blockId = currentBlock.value?.id
+  noteText.value = blockId ? notes.value.find((note) => note.blockId === blockId)?.text ?? '' : ''
+}
+
+async function updateSettings(next: ReaderSettings) {
+  const previousKeepAwake = settings.value.keepAwake
+  settings.value = next
+  await saveSettings(next)
+  if (next.keepAwake && !previousKeepAwake) await requestWakeLock()
+  if (!next.keepAwake && previousKeepAwake) await releaseWakeLock()
+}
+
+function setMode(next: ReaderMode): void {
+  mode.value = next
+  if (next === 'rehearsal' && myCharacterId.value) jumpToNearestOwnDialogue()
+}
+
+function toggleCharacter(id: string) {
+  selected.value = selected.value.includes(id) ? selected.value.filter((item) => item !== id) : [...selected.value, id]
+}
+
+function chooseMine(id: string) {
+  myCharacterId.value = myCharacterId.value === id ? undefined : id
+  if (myCharacterId.value && mode.value === 'rehearsal') jumpToNearestOwnDialogue()
+}
+
+async function changeCharacterColor(characterId: string, color: string): Promise<void> {
+  if (!play.value) return
+  await store.updateCharacterColor(play.value.id, characterId, color)
+}
+
+async function jump(index: number) {
+  if (blocks.value.length === 0 || index < 0) return
+  currentIndex.value = Math.max(0, Math.min(index, blocks.value.length - 1))
+  await nextTick()
+  document.getElementById(`block-${blocks.value[currentIndex.value]?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function ownDialogueIndexes(): number[] {
+  if (!myCharacterId.value) return []
+  return blocks.value
+    .map((block, index) => ({ block, index }))
+    .filter(({ block }) => block.type === 'dialogue' && block.characterId === myCharacterId.value)
+    .map(({ index }) => index)
+}
+
+function jumpToNearestOwnDialogue(): void {
+  const indexes = ownDialogueIndexes()
+  const target = indexes.find((index) => index >= currentIndex.value) ?? indexes[0]
+  if (target !== undefined) void jump(target)
+}
+
+function moveOwnDialogue(direction: -1 | 1) {
+  const indexes = ownDialogueIndexes()
+  const target = direction > 0
+    ? indexes.find((index) => index > currentIndex.value)
+    : [...indexes].reverse().find((index) => index < currentIndex.value)
+  if (target !== undefined) void jump(target)
+}
+
+async function speakOtherRoles() {
+  if (!myCharacterId.value || !canSpeak()) return
+  stopSpeaking()
+  let start = currentIndex.value
+  const first = blocks.value[start]
+  if (first?.type === 'dialogue' && first.characterId === myCharacterId.value) start += 1
+
+  for (let i = start; i < blocks.value.length; i += 1) {
+    const block = blocks.value[i]
+    if (block.type !== 'dialogue') continue
+    currentIndex.value = i
+    if (block.characterId === myCharacterId.value) break
+    await speak(dialogueText(block))
+  }
+}
+
+function exportPlay() {
+  if (!play.value) return
+  const blob = new Blob([JSON.stringify(play.value, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${play.value.id}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+async function toggleCurrentBookmark() {
+  if (!play.value || !currentBlock.value) return
+  const next = !currentBookmarked.value
+  await toggleBookmark(play.value.id, currentBlock.value.id, next)
+  const updated = new Set(bookmarkIds.value)
+  if (next) updated.add(currentBlock.value.id)
+  else updated.delete(currentBlock.value.id)
+  bookmarkIds.value = updated
+  statusMessage.value = next ? 'نشانک ذخیره شد.' : 'نشانک حذف شد.'
+}
+
+async function saveCurrentNote() {
+  if (!play.value || !currentBlock.value) return
+  const id = `${play.value.id}:${currentBlock.value.id}`
+  const existing = notes.value.find((note) => note.id === id)
+  const text = noteText.value.trim()
+
+  if (!text) {
+    if (existing) {
+      await deleteNote(id)
+      notes.value = notes.value.filter((note) => note.id !== id)
+      statusMessage.value = 'یادداشت حذف شد.'
+    }
+    return
+  }
+
+  const now = new Date().toISOString()
+  const note: NoteRecord = {
+    id,
+    playId: play.value.id,
+    blockId: currentBlock.value.id,
+    text,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now
+  }
+  await saveNote(note)
+  const index = notes.value.findIndex((item) => item.id === id)
+  if (index >= 0) notes.value[index] = note
+  else notes.value.push(note)
+  statusMessage.value = 'یادداشت ذخیره شد.'
+}
+
+function moveSearch(direction: -1 | 1): void {
+  const indexes = searchIndexes.value
+  if (indexes.length === 0) return
+  const target = direction > 0
+    ? indexes.find((index) => index > currentIndex.value) ?? indexes[0]
+    : [...indexes].reverse().find((index) => index < currentIndex.value) ?? indexes[indexes.length - 1]
+  void jump(target)
+}
+
+function visible(block: PlayBlock): boolean {
+  return !(settings.value.hideStageDirections && block.type === 'stage-direction')
+}
+
+function isCurrent(index: number) {
+  return index === currentIndex.value
+}
+
+function selectCurrent(index: number) {
+  currentIndex.value = index
+}
+</script>
+
+<template>
+  <main
+    v-if="play"
+    class="reader-layout"
+    :class="{ 'sidebar-closed': !sidebarOpen, 'dark-theme': settings.theme === 'dark' }"
+    :style="{ '--reader-font-size': `${settings.fontSize}px`, '--reader-line-height': settings.lineHeight, '--reader-font-family': fontFamily }"
+  >
+    <button class="sidebar-toggle" @click="sidebarOpen = !sidebarOpen">{{ sidebarOpen ? 'بستن نقش‌ها' : 'نقش‌ها' }}</button>
+    <CharacterPanel
+      v-if="sidebarOpen"
+      :characters="play.characters"
+      :stats="stats"
+      :selected="selected"
+      :my-character-id="myCharacterId"
+      @toggle="toggleCharacter"
+      @choose-mine="chooseMine"
+      @change-color="changeCharacterColor"
+      @jump="jump"
+    />
+
+    <section class="reader-main">
+      <header class="reader-header card">
+        <button class="text-button" @click="router.push('/')">← کتابخانه</button>
+        <div>
+          <h1>{{ play.title }}</h1>
+          <p class="muted">{{ play.author }}<template v-if="play.translator"> · مترجم: {{ play.translator }}</template></p>
+        </div>
+        <div class="header-actions">
+          <button class="secondary-button" @click="toggleCurrentBookmark">{{ currentBookmarked ? 'حذف نشانک' : 'نشانک' }}</button>
+          <button class="secondary-button" @click="exportPlay">خروجی JSON</button>
+        </div>
+      </header>
+
+      <ReaderToolbar
+        :mode="mode"
+        :settings="settings"
+        :wake-lock-available="wakeLockSupported()"
+        :speech-available="canSpeak()"
+        :search-query="searchQuery"
+        :search-count="searchIndexes.length"
+        @set-mode="setMode"
+        @update-settings="updateSettings"
+        @speak-others="speakOtherRoles"
+        @update-search="searchQuery = $event"
+        @search-next="moveSearch(1)"
+        @search-previous="moveSearch(-1)"
+      />
+
+      <div v-if="mode === 'rehearsal'" class="rehearsal-controls card">
+        <button class="secondary-button" :disabled="!myCharacterId" @click="moveOwnDialogue(-1)">دیالوگ قبلی نقش من</button>
+        <span>{{ myCharacterId ? `تمرین نقش ${characterMap.get(myCharacterId)?.name ?? ''}` : 'ابتدا «نقش من» را انتخاب کنید' }}</span>
+        <button class="primary-button" :disabled="!myCharacterId" @click="moveOwnDialogue(1)">دیالوگ بعدی نقش من</button>
+      </div>
+
+      <nav class="scene-nav card" aria-label="صحنه‌ها">
+        <template v-for="act in play.acts" :key="act.id">
+          <strong>{{ act.title }}</strong>
+          <button v-for="scene in act.scenes" :key="scene.id" class="text-button" @click="jump(blocks.findIndex(block => block.id === scene.blocks[0]?.id))">{{ scene.title }}</button>
+        </template>
+      </nav>
+
+      <section class="line-tools card" aria-label="ابزار سطر جاری">
+        <div>
+          <strong>سطر جاری: {{ currentIndex + 1 }} / {{ blocks.length }}</strong>
+          <span v-if="statusMessage" class="status-message">{{ statusMessage }}</span>
+        </div>
+        <textarea v-model="noteText" rows="2" placeholder="یادداشت این سطر؛ مثلاً مکث، تأکید یا حرکت صحنه" />
+        <button class="secondary-button" @click="saveCurrentNote">ذخیره یادداشت</button>
+        <details v-if="bookmarkIds.size > 0">
+          <summary>{{ bookmarkIds.size }} نشانک</summary>
+          <div class="bookmark-list">
+            <button
+              v-for="blockId in bookmarkIds"
+              :key="blockId"
+              class="text-button"
+              @click="jump(blocks.findIndex(block => block.id === blockId))"
+            >
+              سطر {{ blocks.findIndex(block => block.id === blockId) + 1 }}
+            </button>
+          </div>
+        </details>
+      </section>
+
+      <section v-if="mode === 'table-read'" class="table-read card">
+        <button class="nav-arrow" :disabled="currentIndex <= 0" @click="jump(currentIndex - 1)">→</button>
+        <div v-if="currentBlock?.type === 'dialogue'">
+          <p class="eyebrow">{{ characterMap.get(currentBlock.characterId)?.name }}</p>
+          <p class="table-copy">{{ dialogueText(currentBlock as DialogueBlock) }}</p>
+        </div>
+        <div v-else-if="currentBlock?.type === 'stage-direction'" class="stage-direction">{{ currentBlock.text }}</div>
+        <div v-else-if="currentBlock?.type === 'section'">
+          <p class="table-copy">{{ currentBlock.title }}</p>
+        </div>
+        <button class="nav-arrow" :disabled="currentIndex >= blocks.length - 1" @click="jump(currentIndex + 1)">←</button>
+      </section>
+
+      <section v-else class="reader-document">
+        <template v-for="entry in readerEntries" :key="entry.block.id">
+          <DialogueBlockView
+            v-if="entry.block.type === 'dialogue' && visible(entry.block)"
+            :block="entry.block"
+            :character="characterMap.get(entry.block.characterId)"
+            :mode="mode"
+            :is-mine="entry.block.characterId === myCharacterId"
+            :highlighted="selected.includes(entry.block.characterId)"
+            :current="isCurrent(entry.index)"
+            :reveal-mode="settings.rehearsalRevealMode"
+            @click="selectCurrent(entry.index)"
+          />
+          <div
+            v-else-if="entry.block.type === 'stage-direction' && visible(entry.block)"
+            :id="`block-${entry.block.id}`"
+            class="stage-direction"
+            :class="{ current: isCurrent(entry.index) }"
+            @click="selectCurrent(entry.index)"
+          >
+            {{ entry.block.text }}
+          </div>
+          <h2 v-else-if="entry.block.type === 'section'" :id="`block-${entry.block.id}`">{{ entry.block.title }}</h2>
+        </template>
+      </section>
+    </section>
+  </main>
+</template>
