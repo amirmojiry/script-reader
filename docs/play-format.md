@@ -53,11 +53,16 @@ Minimal example:
 - Dialogue parts are only `speech` or `direction` and contain non-empty text.
 - Standalone directions use `type: "stage-direction"`.
 - Display-only headings use `type: "section"` and a `title`.
+- Character colors, when present, are literal six-digit hexadecimal colors.
 
 ## Import trust boundary
 
 JSON imports are user-controlled data. Imported strings remain text and are not inserted as raw HTML. Future HTML, DOCX, TXT, or PDF importers must convert into this structure and provide a review/validation step before saving inferred roles or directions.
 
+## Bundled source migration
+
+The version 1.1 bundled play is generated from user-supplied structured source containing ordered `dialogue` and `scene_direction` records. The migration creates stable block identifiers and canonical character references while preserving every supplied record in sequence. Parenthetical content inside a supplied dialogue remains part of that supplied dialogue rather than being guessed into a direction at runtime.
+
 ## Legacy migration note
 
-The original prototype stored both dialogue and directions in one text string and sometimes used malformed `type` values or duplicate object keys. The canonical format intentionally does not preserve those ambiguities. A future migration helper will report and repair them explicitly rather than silently guessing at runtime.
+The original prototype stored both dialogue and directions in one text string and sometimes used malformed `type` values or duplicate object keys. The canonical format intentionally does not preserve those structural ambiguities. Migration helpers must report or deterministically repair legacy structure rather than silently guessing during rendering.

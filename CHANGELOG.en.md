@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-17
+
+### Added
+- Persian-first typography choices with Vazirmatn as the default plus Noto Sans Arabic, Noto Naskh Arabic, Amiri, Lalezar, Katibeh, and Parastoo.
+- Dedicated persistent reader settings for font, text size, line spacing, and light/dark theme.
+- Complete bundled user-supplied «Horses at the Window» play data in the canonical app format.
+
+### Changed
+- Refined reader/library visual hierarchy and spacing for a more polished RTL interface.
+- Character dialogue timelines now progress from the right in RTL.
+
 ## [1.0.0] - 2026-09-17
 
 ### Added
@@ -17,5 +28,6 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/amirmojiry/script-reader/releases/tag/v1.0.0

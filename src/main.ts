@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register'
 import App from './App.vue'
 import { router } from './router'
 import './styles.css'
+import './styles-v11.css'
 
 registerSW({ immediate: true })
 

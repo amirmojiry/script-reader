@@ -1,9 +1,11 @@
 import { openDB } from 'idb'
 import type { NoteRecord, Play, ReaderSettings, ReadingState } from '../types'
+import { normalizeReaderSettings } from '../utils/settings'
 import { makePairKey, parsePairKey } from '../utils/storageKey'
 
 const DB_NAME = 'script-reader'
 const DB_VERSION = 1
+const BUNDLED_PLAY_ID = 'horses-behind-the-window'
 
 const dbPromise = openDB(DB_NAME, DB_VERSION, {
   upgrade(db) {
@@ -37,17 +39,25 @@ export async function saveReadingState(state: ReadingState): Promise<void> {
 
 export async function getReadingState(playId: string): Promise<ReadingState | undefined> {
   const db = await dbPromise
-  return db.get('readingStates', playId)
+  const state = await db.get('readingStates', playId) as ReadingState | undefined
+  if (!state || playId !== BUNDLED_PLAY_ID) return state
+
+  const migrateCharacterId = (id: string): string => id === 'wife' ? 'woman' : id
+  return {
+    ...state,
+    selectedCharacterIds: state.selectedCharacterIds.map(migrateCharacterId),
+    myCharacterId: state.myCharacterId ? migrateCharacterId(state.myCharacterId) : undefined
+  }
 }
 
 export async function saveSettings(settings: ReaderSettings): Promise<void> {
   const db = await dbPromise
-  await db.put('settings', settings, 'reader')
+  await db.put('settings', normalizeReaderSettings(settings), 'reader')
 }
 
-export async function getSettings(): Promise<ReaderSettings | undefined> {
+export async function getSettings(): Promise<ReaderSettings> {
   const db = await dbPromise
-  return db.get('settings', 'reader')
+  return normalizeReaderSettings(await db.get('settings', 'reader'))
 }
 
 export async function saveNote(note: NoteRecord): Promise<void> {
