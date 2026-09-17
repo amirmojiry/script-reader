@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 import type { ReaderMode, ReaderSettings } from '../types'
 import { fontFamilyFor, normalizeReaderSettings } from '../utils/settings'
-import ReaderSettingsPanel from './ReaderSettingsPanel.vue'
 
 const props = defineProps<{
   mode: ReaderMode
@@ -21,8 +20,6 @@ const emit = defineEmits<{
   searchNext: []
   searchPrevious: []
 }>()
-
-const settingsOpen = ref(false)
 
 function patch(value: Partial<ReaderSettings>): void {
   emit('updateSettings', normalizeReaderSettings({ ...props.settings, ...value }))
@@ -48,9 +45,7 @@ watch(
           <button :class="{ active: mode === 'rehearsal' }" @click="emit('setMode', 'rehearsal')">تمرین</button>
           <button :class="{ active: mode === 'table-read' }" @click="emit('setMode', 'table-read')">نمایشنامه‌خوانی</button>
         </div>
-        <button class="secondary-button settings-button" type="button" @click="settingsOpen = !settingsOpen">
-          {{ settingsOpen ? 'بستن تنظیمات' : 'تنظیمات' }}
-        </button>
+        <RouterLink class="secondary-button settings-button" to="/settings">تنظیمات</RouterLink>
         <button v-if="speechAvailable" class="secondary-button" type="button" @click="emit('speakOthers')">خواندن نقش‌های دیگر</button>
       </div>
 
@@ -88,13 +83,5 @@ watch(
         </label>
       </div>
     </div>
-
-    <ReaderSettingsPanel
-      v-if="settingsOpen"
-      :settings="settings"
-      :wake-lock-available="wakeLockAvailable"
-      @update-settings="emit('updateSettings', $event)"
-      @close="settingsOpen = false"
-    />
   </div>
 </template>
