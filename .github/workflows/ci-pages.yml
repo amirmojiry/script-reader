@@ -7,8 +7,10 @@ on:
     branches: [master]
   workflow_dispatch:
 
+# Bootstrap note: this write permission is temporary while the first PR creates
+# package-lock.json. It is reduced to read-only before the PR is review-ready.
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: script-reader-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,17 +25,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Detect bootstrap lockfile
+        id: lockfile
+        shell: bash
+        run: |
+          if [[ -f package-lock.json ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package.json
+          cache-dependency-path: ${{ steps.lockfile.outputs.present == 'true' && 'package-lock.json' || 'package.json' }}
 
-      # Bootstrap-only: this first PR generates the repository lockfile. The final
-      # version of this workflow is switched to `npm ci` before review readiness.
-      - name: Install dependencies
+      - name: Install locked dependencies
+        if: steps.lockfile.outputs.present == 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Bootstrap dependency lockfile
+        if: steps.lockfile.outputs.present != 'true'
         run: npm install --no-audit --no-fund
 
       - name: Validate release version
@@ -48,13 +64,18 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Upload generated lockfile for bootstrap
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: package-lock-bootstrap
-          path: package-lock.json
-          retention-days: 1
+      - name: Commit bootstrap lockfile
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.lockfile.outputs.present != 'true' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: commit npm lockfile (#2)"
+          git push origin "HEAD:${{ github.head_ref }}"
 
       - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
