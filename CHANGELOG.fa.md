@@ -4,6 +4,15 @@
 
 ## [منتشرنشده]
 
+## [1.3.0] - 2026-09-17
+
+### افزوده‌شده
+- صفحهٔ مستقل و پایدار تنظیمات خارج از صفحهٔ هر نمایشنامه.
+- فیلترهای بازه‌ای کتابخانه برای تعداد شخصیت‌ها و مدت تقریبی نمایش.
+
+### تغییرکرده
+- بستن پنل نقش‌ها اکنون ستون آن را از چیدمان حذف می‌کند تا محتوای باقی‌ماندهٔ خوانش تمام عرض در دسترس را بگیرد.
+
 ## [1.2.0] - 2026-09-17
 
 ### افزوده‌شده
@@ -37,7 +46,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/amirmojiry/script-reader/releases/tag/v1.0.0
