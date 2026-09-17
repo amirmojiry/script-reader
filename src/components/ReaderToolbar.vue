@@ -30,7 +30,6 @@ watch(
   (font) => {
     const normalized = normalizeReaderSettings({ ...props.settings, font })
     document.documentElement.style.setProperty('--app-reader-font-family', fontFamilyFor(normalized.font))
-    if (normalized.font !== font) emit('updateSettings', normalized)
   },
   { immediate: true }
 )
