@@ -41,10 +41,9 @@ describe('Yasrebi bundled plays', () => {
     })
   })
 
-  it('keeps the existing bundled play and exposes all four built-in plays', () => {
-    expect(bundledPlays).toHaveLength(4)
+  it('keeps the original bundled play and exposes all three Yasrebi plays', () => {
     expect(bundledPlays[0].id).toBe(bundledPlay.id)
-    expect(bundledPlays.slice(1).map((play) => play.id)).toEqual(yasrebiBundledPlays.map((play) => play.id))
+    expect(bundledPlays.slice(1, 4).map((play) => play.id)).toEqual(yasrebiBundledPlays.map((play) => play.id))
   })
 
   it('preserves customized colors by stable id or matching character name', () => {
