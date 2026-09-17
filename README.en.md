@@ -2,14 +2,16 @@
 
 Script Reader is a static, offline-first Vue 3 web application for reading plays, rehearsing roles, and running table reads. It is designed for GitHub Pages and requires no backend, account, or server database.
 
-## Version 1.1 features
+## Version 1.3 features
 
 - Local play library backed by IndexedDB.
 - Structured acts, scenes, dialogue, spoken text, inline directions, and stage directions.
-- The complete user-supplied text of “Horses at the Window” bundled with the application.
+- Four bundled user-supplied plays: “Horses at the Window” plus «بانو و مرد مرده», «جنایت و مکافات», and «عکس دسته جمعی با خانم بزرگ» by Chista Yasrebi.
+- Library range filters for character count and estimated spoken duration; duration uses approximately 130 spoken words per minute.
 - Character highlighting with configurable colors, dialogue count, spoken-word share, estimated speaking time, and clickable RTL role timelines.
 - Vazirmatn as the default font plus Noto Sans Arabic, Noto Naskh Arabic, Amiri, Lalezar, Katibeh, and Parastoo choices.
-- A dedicated settings panel for font size, line height, font family, light/dark theme, stage-direction visibility, and Wake Lock; preferences are automatically restored from browser storage.
+- A dedicated settings page outside individual play readers for font size, line height, font family, light/dark theme, stage-direction visibility, and Wake Lock. Preferences are stored in IndexedDB and restored after navigation, refresh, and reopening the app.
+- A fully collapsible roles panel: closing roles removes the reserved panel width and lets the reader use the full available content width.
 - Full-text search with previous/next result navigation.
 - Rehearsal mode with **My role**, next/previous own line, optional cue-only context, and three reveal strategies: hidden, first words, and progressive chunks.
 - Table-read mode with one current block at a time.
@@ -33,7 +35,7 @@ The production base path is `/script-reader/`, matching `https://amirmojiry.gith
 
 ## Data format
 
-The canonical model is defined in `src/types.ts` and documented in `docs/play-format.md`. Future importers should explicitly convert stage directions into the structured model rather than guessing parenthetical semantics at render time. The 1.1 bundled play is generated from structured source data supplied by the user for this project.
+The canonical model is defined in `src/types.ts` and documented in `docs/play-format.md`. Future importers should explicitly convert stage directions into the structured model rather than guessing parenthetical semantics at render time. Bundled play source data supplied for this project is converted deterministically to the same canonical model.
 
 ## Release process
 
