@@ -52,7 +52,17 @@ export interface Play {
 
 export type ReaderMode = 'read' | 'rehearsal' | 'table-read'
 export type RehearsalRevealMode = 'hidden' | 'first-words' | 'progressive'
-export type ReaderFont = 'system' | 'sans' | 'serif'
+export type ReaderFont =
+  | 'system'
+  | 'sans'
+  | 'serif'
+  | 'vazirmatn'
+  | 'noto-sans-arabic'
+  | 'noto-naskh-arabic'
+  | 'amiri'
+  | 'lalezar'
+  | 'katibeh'
+  | 'parastoo'
 
 export interface ReaderSettings {
   fontSize: number
