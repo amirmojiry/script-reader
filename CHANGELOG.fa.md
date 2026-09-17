@@ -4,6 +4,15 @@
 
 ## [منتشرنشده]
 
+## [1.4.0] - 2026-09-17
+
+### افزوده‌شده
+- نمایشنامهٔ کامل تأمین‌شده توسط کاربر «مهمان ناخوانده» به کتابخانهٔ همراه برنامه اضافه شد و برای وفاداری دادهٔ منبع و تبدیل به مدل استاندارد تست رگرسیون افزوده شد.
+
+### تغییرکرده
+- سه شاخص کارت هر نمایشنامه و دکمهٔ «باز کردن» اکنون به‌صورت کنترل‌های هم‌اندازه نمایش داده می‌شوند.
+- باکس اطلاعاتی «فرمت ورود» از صفحهٔ کتابخانه حذف شد.
+
 ## [1.3.0] - 2026-09-17
 
 ### افزوده‌شده
@@ -46,7 +55,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...v1.1.0
