@@ -74,6 +74,10 @@ function nonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
+function safeCharacterColor(value: unknown): value is string {
+  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)
+}
+
 export function validatePlay(value: unknown): PlayValidationResult {
   const errors: string[] = []
   if (!isRecord(value)) return { valid: false, errors: ['ریشهٔ فایل باید یک شیء JSON باشد.'] }
@@ -91,6 +95,9 @@ export function validatePlay(value: unknown): PlayValidationResult {
       return
     }
     if (characterIds.has(candidate.id)) errors.push(`شناسهٔ شخصیت تکراری است: ${candidate.id}`)
+    if (candidate.color !== undefined && !safeCharacterColor(candidate.color)) {
+      errors.push(`رنگ شخصیت ${candidate.id} باید در قالب #RRGGBB باشد.`)
+    }
     characterIds.add(candidate.id)
   })
 

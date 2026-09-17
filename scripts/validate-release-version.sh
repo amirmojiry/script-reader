@@ -30,7 +30,7 @@ read_version_from_ref() {
 }
 
 base_version="0.0.0"
-if [[ "${GITHUB_EVENT_NAME:-}" == "push" && "${GITHUB_REF:-}" == "refs/heads/master" ]]; then
+if [[ "${GITHUB_REF:-}" == "refs/heads/master" ]] && [[ "${GITHUB_EVENT_NAME:-}" == "push" || "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]]; then
   if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
     base_version="$(read_version_from_ref HEAD^)"
   fi

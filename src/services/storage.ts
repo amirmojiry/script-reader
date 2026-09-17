@@ -1,5 +1,6 @@
 import { openDB } from 'idb'
 import type { NoteRecord, Play, ReaderSettings, ReadingState } from '../types'
+import { makePairKey, parsePairKey } from '../utils/storageKey'
 
 const DB_NAME = 'script-reader'
 const DB_VERSION = 1
@@ -67,21 +68,22 @@ export async function listNotes(playId: string): Promise<NoteRecord[]> {
 
 export async function toggleBookmark(playId: string, blockId: string, active: boolean): Promise<void> {
   const db = await dbPromise
-  const key = `${playId}:${blockId}`
+  const key = makePairKey(playId, blockId)
   if (active) await db.put('bookmarks', true, key)
   else await db.delete('bookmarks', key)
 }
 
 export async function isBookmarked(playId: string, blockId: string): Promise<boolean> {
   const db = await dbPromise
-  return Boolean(await db.get('bookmarks', `${playId}:${blockId}`))
+  return Boolean(await db.get('bookmarks', makePairKey(playId, blockId)))
 }
 
 export async function listBookmarks(playId: string): Promise<string[]> {
   const db = await dbPromise
-  const prefix = `${playId}:`
   const keys = await db.getAllKeys('bookmarks')
-  return keys
-    .filter((key): key is string => typeof key === 'string' && key.startsWith(prefix))
-    .map((key) => key.slice(prefix.length))
+  return keys.flatMap((key) => {
+    if (typeof key !== 'string') return []
+    const pair = parsePairKey(key)
+    return pair?.[0] === playId ? [pair[1]] : []
+  })
 }

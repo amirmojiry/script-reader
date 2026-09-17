@@ -31,6 +31,15 @@ describe('play utilities', () => {
     expect(validatePlay({ title: 'x' }).valid).toBe(false)
   })
 
+  it('rejects imported character colors that are not literal hex colors', () => {
+    const malformed = structuredClone(demoPlay)
+    malformed.characters[0].color = 'url(https://attacker.example/pixel)'
+
+    const result = validatePlay(malformed)
+    expect(result.valid).toBe(false)
+    expect(result.errors.join(' ')).toContain('#RRGGBB')
+  })
+
   it('rejects duplicate act/scene ids and missing titles', () => {
     const malformed = structuredClone(demoPlay)
     const firstAct = malformed.acts[0]

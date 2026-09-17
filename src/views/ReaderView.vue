@@ -19,7 +19,9 @@ import { canSpeak, speak, stopSpeaking } from '../services/speech'
 import { releaseWakeLock, requestWakeLock, wakeLockSupported } from '../services/wakeLock'
 import { usePlaysStore } from '../stores/plays'
 import type { DialogueBlock, NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
-import { analyzePlay, blockText, dialogueText, flattenBlocks } from '../utils/play'
+import { analyzePlay, dialogueText, flattenBlocks } from '../utils/play'
+import { isBlockVisible, rehearsalCueIndexes, searchBlockIndexes, visibleBlockIndexes } from '../utils/reader'
+import { makePairKey } from '../utils/storageKey'
 
 const defaultSettings: ReaderSettings = {
   fontSize: 17,
@@ -58,33 +60,15 @@ const fontFamily = computed(() => {
   if (settings.value.font === 'sans') return 'Arial, Tahoma, sans-serif'
   return 'Tahoma, Arial, sans-serif'
 })
-const searchIndexes = computed(() => {
-  const query = searchQuery.value.trim().toLocaleLowerCase('fa')
-  if (!query) return []
-  return blocks.value
-    .map((block, index) => ({ block, index }))
-    .filter(({ block }) => blockText(block).toLocaleLowerCase('fa').includes(query))
-    .map(({ index }) => index)
-})
+const searchIndexes = computed(() => searchBlockIndexes(blocks.value, searchQuery.value, settings.value.hideStageDirections))
 const readerEntries = computed(() => {
   const all = blocks.value.map((block, index) => ({ block, index }))
   if (mode.value !== 'rehearsal' || !settings.value.rehearsalCueOnly || !myCharacterId.value) return all
-
-  const ownIndexes = all
-    .filter(({ block }) => block.type === 'dialogue' && block.characterId === myCharacterId.value)
-    .map(({ index }) => index)
-  if (ownIndexes.length === 0) return all
-
-  const ownIndex = ownIndexes.includes(currentIndex.value)
-    ? currentIndex.value
-    : ownIndexes.find((index) => index >= currentIndex.value) ?? ownIndexes[0]
-  const previousDialogue = [...all]
-    .reverse()
-    .find(({ block, index }) => index < ownIndex && block.type === 'dialogue')
-  const indexes = new Set([ownIndex])
-  if (previousDialogue) indexes.add(previousDialogue.index)
+  const indexes = new Set(rehearsalCueIndexes(blocks.value, myCharacterId.value, currentIndex.value, searchIndexes.value))
   return all.filter(({ index }) => indexes.has(index))
 })
+const tableReadIndexes = computed(() => visibleBlockIndexes(blocks.value, settings.value.hideStageDirections))
+const tableReadPosition = computed(() => tableReadIndexes.value.indexOf(currentIndex.value))
 
 onMounted(async () => {
   await store.initialize()
@@ -108,6 +92,7 @@ onMounted(async () => {
   notes.value = await listNotes(play.value.id)
   bookmarkIds.value = new Set(await listBookmarks(play.value.id))
   syncNoteText()
+  if (mode.value === 'table-read') ensureCurrentTableReadVisible()
   if (settings.value.keepAwake) await requestWakeLock()
 })
 
@@ -138,6 +123,7 @@ async function updateSettings(next: ReaderSettings) {
   const previousKeepAwake = settings.value.keepAwake
   settings.value = next
   await saveSettings(next)
+  if (mode.value === 'table-read') ensureCurrentTableReadVisible()
   if (next.keepAwake && !previousKeepAwake) await requestWakeLock()
   if (!next.keepAwake && previousKeepAwake) await releaseWakeLock()
 }
@@ -145,6 +131,7 @@ async function updateSettings(next: ReaderSettings) {
 function setMode(next: ReaderMode): void {
   mode.value = next
   if (next === 'rehearsal' && myCharacterId.value) jumpToNearestOwnDialogue()
+  if (next === 'table-read') ensureCurrentTableReadVisible()
 }
 
 function toggleCharacter(id: string) {
@@ -230,18 +217,20 @@ async function toggleCurrentBookmark() {
 
 async function saveCurrentNote() {
   if (!play.value || !currentBlock.value) return
-  const id = `${play.value.id}:${currentBlock.value.id}`
-  const existing = notes.value.find((note) => note.id === id)
+  const id = makePairKey(play.value.id, currentBlock.value.id)
+  const existing = notes.value.find((note) => note.playId === play.value?.id && note.blockId === currentBlock.value?.id)
   const text = noteText.value.trim()
 
   if (!text) {
     if (existing) {
-      await deleteNote(id)
-      notes.value = notes.value.filter((note) => note.id !== id)
+      await deleteNote(existing.id)
+      notes.value = notes.value.filter((note) => note.id !== existing.id)
       statusMessage.value = 'یادداشت حذف شد.'
     }
     return
   }
+
+  if (existing && existing.id !== id) await deleteNote(existing.id)
 
   const now = new Date().toISOString()
   const note: NoteRecord = {
@@ -253,7 +242,7 @@ async function saveCurrentNote() {
     updatedAt: now
   }
   await saveNote(note)
-  const index = notes.value.findIndex((item) => item.id === id)
+  const index = notes.value.findIndex((item) => item.playId === play.value?.id && item.blockId === currentBlock.value?.id)
   if (index >= 0) notes.value[index] = note
   else notes.value.push(note)
   statusMessage.value = 'یادداشت ذخیره شد.'
@@ -268,8 +257,27 @@ function moveSearch(direction: -1 | 1): void {
   void jump(target)
 }
 
+function ensureCurrentTableReadVisible(): void {
+  const indexes = tableReadIndexes.value
+  if (indexes.length === 0 || indexes.includes(currentIndex.value)) return
+  const target = indexes.find((index) => index > currentIndex.value) ?? indexes[indexes.length - 1]
+  if (target !== undefined) currentIndex.value = target
+}
+
+function moveTableRead(direction: -1 | 1): void {
+  const indexes = tableReadIndexes.value
+  if (indexes.length === 0) return
+  const position = indexes.indexOf(currentIndex.value)
+  if (position < 0) {
+    ensureCurrentTableReadVisible()
+    return
+  }
+  const target = indexes[position + direction]
+  if (target !== undefined) void jump(target)
+}
+
 function visible(block: PlayBlock): boolean {
-  return !(settings.value.hideStageDirections && block.type === 'stage-direction')
+  return isBlockVisible(block, settings.value.hideStageDirections)
 }
 
 function isCurrent(index: number) {
@@ -365,16 +373,16 @@ function selectCurrent(index: number) {
       </section>
 
       <section v-if="mode === 'table-read'" class="table-read card">
-        <button class="nav-arrow" :disabled="currentIndex <= 0" @click="jump(currentIndex - 1)">→</button>
+        <button class="nav-arrow" :disabled="tableReadPosition <= 0" @click="moveTableRead(-1)">→</button>
         <div v-if="currentBlock?.type === 'dialogue'">
           <p class="eyebrow">{{ characterMap.get(currentBlock.characterId)?.name }}</p>
           <p class="table-copy">{{ dialogueText(currentBlock as DialogueBlock) }}</p>
         </div>
-        <div v-else-if="currentBlock?.type === 'stage-direction'" class="stage-direction">{{ currentBlock.text }}</div>
+        <div v-else-if="currentBlock?.type === 'stage-direction' && visible(currentBlock)" class="stage-direction">{{ currentBlock.text }}</div>
         <div v-else-if="currentBlock?.type === 'section'">
           <p class="table-copy">{{ currentBlock.title }}</p>
         </div>
-        <button class="nav-arrow" :disabled="currentIndex >= blocks.length - 1" @click="jump(currentIndex + 1)">←</button>
+        <button class="nav-arrow" :disabled="tableReadPosition < 0 || tableReadPosition >= tableReadIndexes.length - 1" @click="moveTableRead(1)">←</button>
       </section>
 
       <section v-else class="reader-document">
