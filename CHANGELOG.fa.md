@@ -4,6 +4,17 @@
 
 ## [منتشرنشده]
 
+## [1.1.0] - 2026-09-17
+
+### افزوده‌شده
+- مجموعه فونت‌های فارسی/عربی با Vazirmatn به‌عنوان پیش‌فرض و Noto Sans Arabic، Noto Naskh Arabic، Amiri، Lalezar، Katibeh و Parastoo.
+- بخش تنظیمات پایدار برای فونت، اندازه متن، فاصله خطوط و تم روشن/تیره.
+- نسخه کامل متن کاربر از «اسب‌های پشت پنجره» در قالب استاندارد دادهٔ برنامه.
+
+### تغییرکرده
+- بهبود سلسله‌مراتب بصری، فاصله‌گذاری و ظاهر کتابخانه/خوانش برای رابط RTL تمیزتر.
+- timeline پراکندگی دیالوگ شخصیت‌ها از سمت راست پیش می‌رود.
+
 ## [1.0.0] - 2026-09-17
 
 ### افزوده‌شده
@@ -17,5 +28,6 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/amirmojiry/script-reader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/amirmojiry/script-reader/releases/tag/v1.0.0
