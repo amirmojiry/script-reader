@@ -1,8 +1,9 @@
 import type { Play } from '../types'
 import { bundledPlay } from './bundledPlay'
+import { unexpectedGuestPlay } from './unexpectedGuest'
 import { yasrebiBundledPlays } from './yasrebi'
 
-export const bundledPlays: Play[] = [bundledPlay, ...yasrebiBundledPlays]
+export const bundledPlays: Play[] = [bundledPlay, ...yasrebiBundledPlays, unexpectedGuestPlay]
 
 export function mergeBundledPlay(bundled: Play, existing?: Play): Play {
   if (!existing) return bundled
