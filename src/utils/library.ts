@@ -13,6 +13,13 @@ export interface NumericBounds {
   max: number
 }
 
+export interface LibraryMetricRanges {
+  characterMin: number
+  characterMax: number
+  durationMin: number
+  durationMax: number
+}
+
 export function playLibraryMetrics(play: Play): PlayLibraryMetrics {
   const stats = Object.values(analyzePlay(play))
   const spokenWordCount = stats.reduce((sum, entry) => sum + entry.wordCount, 0)
@@ -31,4 +38,9 @@ export function numericBounds(values: number[]): NumericBounds {
 
 export function isWithinRange(value: number, min: number, max: number): boolean {
   return value >= min && value <= max
+}
+
+export function matchesLibraryRanges(metrics: PlayLibraryMetrics, ranges: LibraryMetricRanges): boolean {
+  return isWithinRange(metrics.characterCount, ranges.characterMin, ranges.characterMax)
+    && isWithinRange(metrics.estimatedMinutes, ranges.durationMin, ranges.durationMax)
 }
