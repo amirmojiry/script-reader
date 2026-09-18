@@ -85,7 +85,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(stageTexts).not.toContain('خانه‌ی پسر خانم رزا را تفتیش کردند')
     expect(dialogueTexts + stageTexts).not.toContain('کِصِ77 ۱۸۵۱')
     expect(dialogueTexts + stageTexts).not.toContain('۲ لمع 1')
-    expect(dialogueTexts + stageTexts).not.toContain('ساب پرداخت نمی‌شه')
+    expect(dialogueTexts + stageTexts).not.toMatch(/(^|\n)ساب پرداخت نمی‌شه($|\n)/)
     expect(dialogueTexts + stageTexts).not.toContain('۹ص مع «ا')
     expect(dialogueTexts + stageTexts).not.toContain('کفت‌وکو')
     expect(dialogueTexts + stageTexts).not.toContain('ایسن')
@@ -93,6 +93,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toContain('دار یو فو')
     expect(dialogueTexts + stageTexts).not.toContain('داربو فو')
     expect(dialogueTexts + stageTexts).not.toContain('سیصٍث')
+    expect(dialogueTexts + stageTexts).not.toContain('|')
   })
 
   it('is exposed with reserved id and complete discovery metadata', () => {
