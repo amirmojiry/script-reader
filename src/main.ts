@@ -7,6 +7,7 @@ import './styles.css'
 import './styles-v11.css'
 import './styles-v13.css'
 import './styles-v14.css'
+import './styles-v15.css'
 
 registerSW({ immediate: true })
 

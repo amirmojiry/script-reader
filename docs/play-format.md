@@ -8,8 +8,16 @@ Minimal example:
 {
   "id": "my-play",
   "title": "My Play",
+  "author": "نام نویسنده",
+  "translator": "نام مترجم",
+  "genres": ["درام", "کمدی"],
   "characters": [
-    { "id": "a", "name": "شخصیت الف", "color": "#b5ead7" }
+    {
+      "id": "a",
+      "name": "شخصیت الف",
+      "color": "#b5ead7",
+      "gender": "female"
+    }
   ],
   "acts": [
     {
@@ -25,7 +33,7 @@ Minimal example:
               "type": "dialogue",
               "characterId": "a",
               "parts": [
-                { "type": "speech", "text": "سلام." },
+                { "type": "speech", "text": "(با تعجب) سلام." },
                 { "type": "direction", "text": "مکث" },
                 { "type": "speech", "text": "کسی اینجاست؟" }
               ]
@@ -55,6 +63,38 @@ Minimal example:
 - Standalone directions use `type: "stage-direction"`.
 - Display-only headings use `type: "section"` and a `title`.
 - Character colors, when present, are literal six-digit hexadecimal colors.
+- Character `gender`, when present, is one of `male`, `female`, or `unknown`.
+- `genres`, when present, is a non-empty array of non-empty genre names.
+
+## Gender metadata
+
+Every newly curated/bundled play should explicitly classify every character as:
+
+- `male`
+- `female`
+- `unknown`
+
+If a source does not establish a character's gender, use `unknown`; do not guess solely from an ambiguous role title or name. Older/imported JSON without `gender` remains valid and is treated as `unknown` at runtime.
+
+Gender metadata is casting/discovery metadata. It does not change the dialogue or the identity of the actor who may ultimately perform a role.
+
+## Genre metadata
+
+Every newly curated/bundled play should have at least one useful `genres` value. Add genre metadata during ingestion when the supplied source omits it. Prefer concise Persian discovery labels such as `درام`, `کمدی`, `فلسفی`, `روان‌شناختی`, `خانوادگی`, `ابزورد`, or `ضدجنگ`.
+
+Older/imported JSON without `genres` remains valid for backward compatibility. It simply has no genre filter tags until metadata is added.
+
+## Narrator semantics
+
+Narrator is a virtual reader role and is not stored as a character in `Play.characters`. The narrator reads:
+
+1. every standalone `stage-direction` block;
+2. every explicit dialogue `direction` part;
+3. every balanced parenthetical segment inside a dialogue `speech` string, for example `(شگفت‌زده بیدار می‌شود)`.
+
+Parenthetical source text remains unchanged in the canonical dialogue. The reader splits it only for presentation, highlighting, narrator statistics, and rehearsal navigation. Unbalanced parentheses are left as ordinary character speech rather than guessed into narration.
+
+Because narrator is virtual, it is not included in the library's character-count/casting totals and may be doubled by one of the actors in a real production.
 
 ## Import trust boundary
 
@@ -64,8 +104,10 @@ If a legacy local import already uses an id that collides with a bundled play, i
 
 ## Bundled source migration
 
-Bundled plays generated from user-supplied structured source use ordered `dialogue` and `scene_direction` records. Migration creates stable block identifiers and canonical character references while preserving every supplied record in sequence. Parenthetical content inside a supplied dialogue remains part of that supplied dialogue rather than being guessed into a direction at runtime.
+Bundled plays generated from user-supplied structured source use ordered `dialogue` and `scene_direction` records. Migration creates stable block identifiers and canonical character references while preserving every supplied record in sequence. Source dialogue text is not rewritten when narrator segments are detected.
+
+During ingestion of a new bundled play, also add explicit character gender metadata and one or more useful genres. Unknown gender is preferred over unsupported inference.
 
 ## Legacy migration note
 
-The original prototype stored both dialogue and directions in one text string and sometimes used malformed `type` values or duplicate object keys. The canonical format intentionally does not preserve those structural ambiguities. Migration helpers must report or deterministically repair legacy structure rather than silently guessing during rendering.
+The original prototype stored both dialogue and directions in one text string and sometimes used malformed `type` values or duplicate object keys. The canonical format intentionally does not preserve those structural ambiguities. Migration helpers must report or deterministically repair legacy structure rather than silently guessing structural ownership.

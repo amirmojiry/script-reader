@@ -24,7 +24,10 @@ function mountOwn(revealMode: 'hidden' | 'first-words' | 'progressive') {
       isMine: true,
       highlighted: false,
       current: false,
-      revealMode
+      revealMode,
+      narratorHighlighted: false,
+      narratorIsMine: false,
+      narratorColor: '#ddd6fe'
     }
   })
 }
@@ -52,5 +55,89 @@ describe('DialogueBlock rehearsal', () => {
     expect(wrapper.text()).not.toContain('(آرام)')
     await wrapper.get('.rehearsal-hint button').trigger('click')
     expect(wrapper.text().length).toBeGreaterThan(20)
+  })
+
+  it('shows narrator content during hidden actor rehearsal only when narrator is active', () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'rehearsal',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: true,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe'
+      }
+    })
+
+    expect(wrapper.text()).toContain('(آرام)')
+    expect(wrapper.text()).not.toContain('صبر کن')
+  })
+
+  it('hides narrator-owned inline text during narrator rehearsal until revealed', async () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'rehearsal',
+        isMine: false,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: true,
+        narratorIsMine: true,
+        narratorColor: '#ddd6fe'
+      }
+    })
+
+    expect(wrapper.text()).toContain('صبر کن')
+    expect(wrapper.text()).not.toContain('(آرام)')
+    await wrapper.get('.narrator-reveal-button').trigger('click')
+    expect(wrapper.text()).toContain('(آرام)')
+  })
+
+  it('keeps readable separators between adjacent speech and narrator segments', () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: false,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe'
+      }
+    })
+
+    expect(wrapper.text()).toContain('بمان. (آرام) بعد برگرد.')
+  })
+
+  it('highlights narrator-owned inline direction content independently from the character block', () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: false,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: true,
+        narratorIsMine: true,
+        narratorColor: '#ddd6fe'
+      }
+    })
+
+    const narrator = wrapper.get('.narrator-segment')
+    expect(narrator.text()).toBe('(آرام)')
+    expect(narrator.classes()).toContain('narrator-highlighted')
+    expect(narrator.classes()).toContain('narrator-mine')
+    expect(wrapper.text()).toContain('راوی من')
   })
 })

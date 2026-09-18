@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import RehearsalRevealText from './RehearsalRevealText.vue'
 import type { Character, DialogueBlock, ReaderMode, RehearsalRevealMode } from '../types'
-import { dialogueText } from '../utils/play'
+import { characterDialogueText, dialogueRenderSegments } from '../utils/play'
 
 const props = defineProps<{
   block: DialogueBlock
@@ -11,6 +12,9 @@ const props = defineProps<{
   highlighted: boolean
   current: boolean
   revealMode: RehearsalRevealMode
+  narratorHighlighted: boolean
+  narratorIsMine: boolean
+  narratorColor: string
 }>()
 
 const revealAll = ref(false)
@@ -21,7 +25,11 @@ watch(() => props.block.id, () => {
   progressiveWordCount.value = 5
 })
 
-const spokenText = computed(() => dialogueText(props.block))
+const spokenText = computed(() => characterDialogueText(props.block))
+const renderSegments = computed(() => dialogueRenderSegments(props.block))
+const narratorSegments = computed(() => renderSegments.value.filter((segment) => segment.type === 'narration'))
+const hasNarration = computed(() => narratorSegments.value.length > 0)
+const narratorOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.narratorIsMine)
 const firstWords = computed(() => spokenText.value.split(/\s+/u).slice(0, 3).join(' '))
 const progressiveText = computed(() => spokenText.value.split(/\s+/u).slice(0, progressiveWordCount.value).join(' '))
 const isOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.isMine && !revealAll.value)
@@ -40,16 +48,26 @@ function revealNext(): void {
   <article
     :id="`block-${block.id}`"
     class="dialogue-block"
-    :class="{ highlighted, current, mine: isMine }"
+    :class="{ highlighted, current, mine: isMine, 'has-narration': hasNarration }"
     :style="highlighted ? { '--highlight': character?.color || '#e0e7ff' } : undefined"
     tabindex="0"
   >
     <header>
       <strong>{{ character?.name || block.characterId }}</strong>
       <span v-if="isMine" class="mine-badge">نقش من</span>
+      <span v-if="narratorIsMine && hasNarration" class="narrator-badge">راوی من</span>
     </header>
 
     <template v-if="isOwnRehearsal">
+      <p v-if="hasNarration && (narratorHighlighted || narratorIsMine)" class="rehearsal-narration">
+        <em
+          v-for="(segment, index) in narratorSegments"
+          :key="index"
+          class="inline-direction narrator-segment"
+          :class="{ 'narrator-highlighted': narratorHighlighted, 'narrator-mine': narratorIsMine }"
+          :style="narratorHighlighted || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
+        >{{ segment.text }}</em>
+      </p>
       <button v-if="revealMode === 'hidden'" class="hidden-line" @click.stop="revealAll = true">نمایش دیالوگ</button>
       <div v-else class="rehearsal-hint">
         <p v-if="revealMode === 'first-words'">{{ firstWords }}…</p>
@@ -61,9 +79,17 @@ function revealNext(): void {
     </template>
 
     <p v-else class="dialogue-copy">
-      <template v-for="(part, index) in block.parts" :key="index">
-        <span v-if="part.type === 'speech'">{{ part.text }} </span>
-        <em v-else class="inline-direction">({{ part.text }})</em>
+      <template v-for="(segment, index) in renderSegments" :key="index">
+        <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
+        <RehearsalRevealText
+          v-else
+          :text="segment.text"
+          :active="narratorOwnRehearsal"
+          :reveal-mode="revealMode"
+          class="inline-direction narrator-segment"
+          :class="{ 'narrator-highlighted': narratorHighlighted, 'narrator-mine': narratorIsMine }"
+          :style="narratorHighlighted || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
+        />
       </template>
     </p>
   </article>

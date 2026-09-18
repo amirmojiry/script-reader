@@ -24,7 +24,8 @@ vi.mock('../src/stores/plays', () => ({
     byId: (id: string) => id === 'test-play' ? {
       id: 'test-play',
       title: 'نمایش تست',
-      characters: [{ id: 'role-1', name: 'نقش یک' }],
+      genres: ['درام'],
+      characters: [{ id: 'role-1', name: 'نقش یک', gender: 'unknown' }],
       acts: [{ id: 'act-1', title: 'پرده', scenes: [{
         id: 'scene-1',
         title: 'صحنه',
@@ -67,18 +68,60 @@ vi.mock('../src/services/wakeLock', () => ({
   wakeLockSupported: () => false
 }))
 
-describe('collapsed reader layout', () => {
-  it('activates the collapsed layout state and removes the roles panel', async () => {
+function mockCompactViewport(matches: boolean): void {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: vi.fn().mockImplementation(() => ({
+      matches,
+      media: '(max-width: 980px)',
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn()
+    }))
+  })
+}
+
+describe('reader roles layout', () => {
+  it('keeps roles open by default on desktop and expands fully when closed', async () => {
+    mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)
     await flushPromises()
 
     const main = wrapper.get('main.reader-layout')
     expect(main.classes()).not.toContain('sidebar-closed')
-    expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(true)
+    const panel = wrapper.findComponent({ name: 'CharacterPanel' })
+    expect(panel.exists()).toBe(true)
 
-    await wrapper.get('.sidebar-toggle').trigger('click')
+    panel.vm.$emit('chooseNarratorMine')
+    await flushPromises()
+    expect(mocks.saveReadingState).toHaveBeenLastCalledWith(expect.objectContaining({
+      narratorIsMine: true,
+      narratorSelected: true,
+      myCharacterId: undefined
+    }))
+
+    panel.vm.$emit('close')
+    await wrapper.vm.$nextTick()
 
     expect(main.classes()).toContain('sidebar-closed')
     expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(false)
+    expect(wrapper.get('.roles-open-button').text()).toBe('نقش‌ها')
+  })
+
+  it('starts with the roles panel collapsed on compact/mobile viewports', async () => {
+    mockCompactViewport(true)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    expect(wrapper.get('main.reader-layout').classes()).toContain('sidebar-closed')
+    expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(false)
+    expect(wrapper.find('.roles-open-button').exists()).toBe(true)
+
+    await wrapper.get('.roles-open-button').trigger('click')
+    expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(true)
   })
 })

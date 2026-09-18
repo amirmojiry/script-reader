@@ -1,4 +1,4 @@
-import type { Play, PlayBlock } from '../../types'
+import type { CharacterGender, Play, PlayBlock } from '../../types'
 import { records01 } from './records01'
 import { records02 } from './records02'
 import { records03 } from './records03'
@@ -12,7 +12,9 @@ interface UnexpectedGuestSource {
   title: string
   author: string
   translator: string
+  genres: string[]
   characters: string[]
+  characterGenders: Partial<Record<string, CharacterGender>>
   records: UnexpectedGuestRecord[]
 }
 
@@ -25,7 +27,14 @@ export const unexpectedGuestSource: UnexpectedGuestSource = {
   title: 'مهمان ناخوانده',
   author: 'اریک امانوئل اشمیت',
   translator: 'تینوش نظم‌جو',
+  genres: ['درام', 'فلسفی'],
   characters: ['فروید', 'آنا', 'مأمور نازی', 'ناشناس'],
+  characterGenders: {
+    'فروید': 'male',
+    'آنا': 'female',
+    'مأمور نازی': 'male',
+    'ناشناس': 'unknown'
+  },
   records: [...records01, ...records02, ...records03, ...records04, ...records05, ...records06]
 }
 
@@ -34,7 +43,8 @@ export function buildUnexpectedGuestPlay(source: UnexpectedGuestSource = unexpec
   const characters = source.characters.map((name, index) => ({
     id: characterIds.get(name) as string,
     name,
-    color: palette[index % palette.length]
+    color: palette[index % palette.length],
+    gender: source.characterGenders[name] ?? 'unknown'
   }))
 
   const blocks: PlayBlock[] = source.records.map((record, index) => {
@@ -51,6 +61,7 @@ export function buildUnexpectedGuestPlay(source: UnexpectedGuestSource = unexpec
     title: source.title,
     author: source.author,
     translator: source.translator,
+    genres: source.genres,
     characters,
     acts: [{
       id: 'act-1',

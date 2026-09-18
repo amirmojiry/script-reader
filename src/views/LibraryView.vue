@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import PlayFinderWizard from '../components/PlayFinderWizard.vue'
 import { usePlaysStore } from '../stores/plays'
-import { isWithinRange, numericBounds, playLibraryMetrics } from '../utils/library'
+import {
+  isWithinRange,
+  matchesWizardCriteria,
+  numericBounds,
+  playGenres,
+  playLibraryMetrics,
+  sortPlayCards,
+  type LibrarySortMode,
+  type PlayWizardCriteria
+} from '../utils/library'
 
 const store = usePlaysStore()
 const router = useRouter()
@@ -12,6 +22,14 @@ const characterMin = ref<number | null>(null)
 const characterMax = ref<number | null>(null)
 const durationMin = ref<number | null>(null)
 const durationMax = ref<number | null>(null)
+const authorFilter = ref('')
+const translatorFilter = ref('')
+const genreFilter = ref('')
+const sortMode = ref<LibrarySortMode>('title-asc')
+const wizardOpen = ref(false)
+const wizardCriteria = ref<PlayWizardCriteria | null>(null)
+const wizardCharacterMaxOverride = ref<number | null>(null)
+const wizardDurationMaxOverride = ref<number | null>(null)
 
 const playCards = computed(() => store.plays.map((play) => ({ play, metrics: playLibraryMetrics(play) })))
 const characterBounds = computed(() => numericBounds(playCards.value.map((item) => item.metrics.characterCount)))
@@ -20,10 +38,44 @@ const effectiveCharacterMin = computed(() => characterMin.value ?? characterBoun
 const effectiveCharacterMax = computed(() => characterMax.value ?? characterBounds.value.max)
 const effectiveDurationMin = computed(() => durationMin.value ?? durationBounds.value.min)
 const effectiveDurationMax = computed(() => durationMax.value ?? durationBounds.value.max)
-const filtersActive = computed(() => characterMin.value !== null || characterMax.value !== null || durationMin.value !== null || durationMax.value !== null)
-const filteredCards = computed(() => playCards.value.filter(({ metrics }) =>
-  isWithinRange(metrics.characterCount, effectiveCharacterMin.value, effectiveCharacterMax.value)
-  && isWithinRange(metrics.estimatedMinutes, effectiveDurationMin.value, effectiveDurationMax.value)
+const authors = computed(() => [...new Set(
+  store.plays
+    .map((play) => play.author)
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+)].sort((a, b) => a.localeCompare(b, 'fa')))
+const translators = computed(() => [...new Set(
+  store.plays
+    .map((play) => play.translator)
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+)].sort((a, b) => a.localeCompare(b, 'fa')))
+const genres = computed(() => [...new Set(store.plays.flatMap(playGenres))].sort((a, b) => a.localeCompare(b, 'fa')))
+const filtersActive = computed(() =>
+  characterMin.value !== null
+  || characterMax.value !== null
+  || durationMin.value !== null
+  || durationMax.value !== null
+  || Boolean(authorFilter.value)
+  || Boolean(translatorFilter.value)
+  || Boolean(genreFilter.value)
+  || Boolean(wizardCriteria.value)
+)
+const filteredCards = computed(() => sortPlayCards(
+  playCards.value.filter(({ play, metrics }) => {
+    if (!isWithinRange(metrics.characterCount, effectiveCharacterMin.value, effectiveCharacterMax.value)) return false
+    if (!isWithinRange(metrics.estimatedMinutes, effectiveDurationMin.value, effectiveDurationMax.value)) return false
+    if (authorFilter.value && play.author !== authorFilter.value) return false
+    if (translatorFilter.value === '__none__' && play.translator) return false
+    if (translatorFilter.value && translatorFilter.value !== '__none__' && play.translator !== translatorFilter.value) return false
+    if (genreFilter.value && !playGenres(play).includes(genreFilter.value)) return false
+    if (wizardCriteria.value && !matchesWizardCriteria(play, metrics, {
+      ...wizardCriteria.value,
+      totalPeople: wizardCharacterMaxOverride.value ?? wizardCriteria.value.totalPeople,
+      maxMinutes: wizardDurationMaxOverride.value ?? wizardCriteria.value.maxMinutes,
+      genre: genreFilter.value || undefined
+    })) return false
+    return true
+  }),
+  sortMode.value
 ))
 
 onMounted(() => store.initialize())
@@ -33,7 +85,9 @@ function setCharacterMin(value: number): void {
 }
 
 function setCharacterMax(value: number): void {
-  characterMax.value = Math.max(value, effectiveCharacterMin.value)
+  const next = Math.max(value, effectiveCharacterMin.value)
+  characterMax.value = next
+  if (wizardCriteria.value) wizardCharacterMaxOverride.value = next
 }
 
 function setDurationMin(value: number): void {
@@ -41,7 +95,9 @@ function setDurationMin(value: number): void {
 }
 
 function setDurationMax(value: number): void {
-  durationMax.value = Math.max(value, effectiveDurationMin.value)
+  const next = Math.max(value, effectiveDurationMin.value)
+  durationMax.value = next
+  if (wizardCriteria.value) wizardDurationMaxOverride.value = next
 }
 
 function resetFilters(): void {
@@ -49,6 +105,32 @@ function resetFilters(): void {
   characterMax.value = null
   durationMin.value = null
   durationMax.value = null
+  authorFilter.value = ''
+  translatorFilter.value = ''
+  genreFilter.value = ''
+  sortMode.value = 'title-asc'
+  wizardCriteria.value = null
+  wizardCharacterMaxOverride.value = null
+  wizardDurationMaxOverride.value = null
+}
+
+function applyWizard(criteria: PlayWizardCriteria): void {
+  wizardCriteria.value = criteria
+  wizardCharacterMaxOverride.value = null
+  wizardDurationMaxOverride.value = null
+  characterMin.value = null
+  characterMax.value = criteria.totalPeople >= characterBounds.value.min
+    ? Math.min(criteria.totalPeople, characterBounds.value.max)
+    : null
+  durationMin.value = null
+  durationMax.value = criteria.maxMinutes >= durationBounds.value.min
+    ? Math.min(criteria.maxMinutes, durationBounds.value.max)
+    : null
+  genreFilter.value = criteria.genre ?? ''
+  authorFilter.value = ''
+  translatorFilter.value = ''
+  sortMode.value = 'duration-asc'
+  wizardOpen.value = false
 }
 
 async function importFile(event: Event) {
@@ -75,6 +157,7 @@ async function importFile(event: Event) {
         <p>مطالعه، تمرین نقش و نمایشنامه‌خوانی؛ آفلاین و بدون حساب کاربری.</p>
       </div>
       <div class="hero-actions">
+        <button class="secondary-button" type="button" :disabled="!playCards.length" @click="wizardOpen = true">ویزارد انتخاب نمایش</button>
         <RouterLink class="secondary-button action-link" to="/settings">تنظیمات</RouterLink>
         <label class="primary-button file-button">
           افزودن JSON
@@ -88,9 +171,10 @@ async function importFile(event: Event) {
     <section v-if="playCards.length" class="library-filters card" aria-label="فیلتر نمایشنامه‌ها">
       <div class="filter-heading">
         <div>
-          <p class="eyebrow">فیلتر</p>
+          <p class="eyebrow">فیلتر و مرتب‌سازی</p>
           <h2>پیدا کردن نمایش مناسب</h2>
-          <p class="muted">مدت تقریبی بر اساس حدود ۱۳۰ کلمهٔ گفتاری در دقیقه محاسبه می‌شود.</p>
+          <p class="muted">مدت تقریبی شامل گفتار شخصیت‌ها و بخش‌های راوی است و بر اساس حدود ۱۳۰ کلمه در دقیقه محاسبه می‌شود.</p>
+          <span v-if="wizardCriteria" class="wizard-active-badge">پیشنهاد ویزارد فعال است</span>
         </div>
         <div class="filter-result">
           <strong>{{ filteredCards.length }}</strong>
@@ -154,6 +238,41 @@ async function importFile(event: Event) {
           </label>
         </fieldset>
       </div>
+
+      <div class="metadata-filter-grid">
+        <label>
+          <span>نویسنده</span>
+          <select v-model="authorFilter">
+            <option value="">همهٔ نویسندگان</option>
+            <option v-for="author in authors" :key="author" :value="author">{{ author }}</option>
+          </select>
+        </label>
+        <label>
+          <span>مترجم</span>
+          <select v-model="translatorFilter">
+            <option value="">همهٔ مترجمان</option>
+            <option v-for="translator in translators" :key="translator" :value="translator">{{ translator }}</option>
+            <option value="__none__">بدون مترجم</option>
+          </select>
+        </label>
+        <label>
+          <span>ژانر</span>
+          <select v-model="genreFilter">
+            <option value="">همهٔ ژانرها</option>
+            <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
+          </select>
+        </label>
+        <label>
+          <span>مرتب‌سازی</span>
+          <select v-model="sortMode">
+            <option value="title-asc">الفبایی</option>
+            <option value="duration-asc">مدت: کوتاه به بلند</option>
+            <option value="duration-desc">مدت: بلند به کوتاه</option>
+            <option value="roles-asc">نقش: کم به زیاد</option>
+            <option value="roles-desc">نقش: زیاد به کم</option>
+          </select>
+        </label>
+      </div>
     </section>
 
     <section class="play-grid" aria-label="نمایشنامه‌های من">
@@ -162,6 +281,13 @@ async function importFile(event: Event) {
           <p class="eyebrow">{{ item.play.author || 'نویسنده نامشخص' }}</p>
           <h2>{{ item.play.title }}</h2>
           <p v-if="item.play.translator" class="muted">مترجم: {{ item.play.translator }}</p>
+          <div class="play-card-tags">
+            <span v-for="genre in playGenres(item.play)" :key="genre" class="genre-chip">{{ genre }}</span>
+          </div>
+          <p class="cast-summary">
+            {{ item.metrics.maleCount }} مرد · {{ item.metrics.femaleCount }} زن
+            <template v-if="item.metrics.unknownCount"> · {{ item.metrics.unknownCount }} نامشخص</template>
+          </p>
         </div>
         <div class="play-card-control-grid" aria-label="مشخصات نمایشنامه و باز کردن">
           <span class="play-card-control play-card-metric">{{ item.metrics.characterCount }} نقش</span>
@@ -178,9 +304,11 @@ async function importFile(event: Event) {
     </section>
 
     <section v-if="playCards.length && filteredCards.length === 0" class="card empty-filter-state">
-      <h2>نمایشی در این بازه پیدا نشد</h2>
-      <p class="muted">بازهٔ تعداد شخصیت یا مدت زمان را بازتر کنید.</p>
+      <h2>نمایشی با این شرایط پیدا نشد</h2>
+      <p class="muted">محدودیت تعداد شخصیت، زمان، ترکیب گروه یا ژانر را بازتر کنید.</p>
       <button class="secondary-button" type="button" @click="resetFilters">نمایش همه</button>
     </section>
+
+    <PlayFinderWizard v-if="wizardOpen" :plays="store.plays" @close="wizardOpen = false" @apply="applyWizard" />
   </main>
 </template>

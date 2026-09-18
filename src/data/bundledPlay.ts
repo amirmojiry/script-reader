@@ -11,46 +11,19 @@ import { blocks09 } from './horses/blocks09'
 
 export const bundledPlay: Play = {
   id: 'horses-behind-the-window',
-  title: "اسب های پشت پنجره",
-  author: "ماتئی ویسنی یک",
-  translator: "تینوش نظم جو",
+  title: 'اسب های پشت پنجره',
+  author: 'ماتئی ویسنی یک',
+  translator: 'تینوش نظم جو',
+  genres: ['درام', 'ابزورد', 'ضدجنگ'],
   characters: [
-  {
-    "id": "messenger",
-    "name": "پیک",
-    "color": "#ef9a9a"
-  },
-  {
-    "id": "mother",
-    "name": "مادر",
-    "color": "#a5d6a7"
-  },
-  {
-    "id": "son",
-    "name": "پسر",
-    "color": "#90caf9"
-  },
-  {
-    "id": "daughter",
-    "name": "دختر",
-    "color": "#ce93d8"
-  },
-  {
-    "id": "father",
-    "name": "پدر",
-    "color": "#ffcc80"
-  },
-  {
-    "id": "woman",
-    "name": "زن",
-    "color": "#80cbc4"
-  },
-  {
-    "id": "husband",
-    "name": "شوهر",
-    "color": "#fff59d"
-  }
-],
+    { id: 'messenger', name: 'پیک', color: '#ef9a9a', gender: 'unknown' },
+    { id: 'mother', name: 'مادر', color: '#a5d6a7', gender: 'female' },
+    { id: 'son', name: 'پسر', color: '#90caf9', gender: 'male' },
+    { id: 'daughter', name: 'دختر', color: '#ce93d8', gender: 'female' },
+    { id: 'father', name: 'پدر', color: '#ffcc80', gender: 'male' },
+    { id: 'woman', name: 'زن', color: '#80cbc4', gender: 'female' },
+    { id: 'husband', name: 'شوهر', color: '#fff59d', gender: 'male' }
+  ],
   acts: [{
     id: 'act-1',
     title: 'نمایشنامه',
