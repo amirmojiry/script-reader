@@ -66,6 +66,8 @@ const narratorColor = ref(DEFAULT_NARRATOR_COLOR)
 const mode = ref<ReaderMode>('read')
 const currentIndex = ref(0)
 const sidebarOpen = ref(defaultSidebarOpen())
+const readerRootRef = ref<HTMLElement | null>(null)
+const rolesOpenButtonRef = ref<HTMLButtonElement | null>(null)
 const settings = ref<ReaderSettings>({ ...defaultSettings })
 const searchQuery = ref('')
 const notes = ref<NoteRecord[]>([])
@@ -213,6 +215,18 @@ function chooseMine(id: string) {
   myCharacterId.value = next
   if (next) narratorIsMine.value = false
   if (next && mode.value === 'rehearsal') jumpToNearestOwnRolePart()
+}
+
+async function openRolesPanel(): Promise<void> {
+  sidebarOpen.value = true
+  await nextTick()
+  readerRootRef.value?.querySelector<HTMLButtonElement>('.panel-close-button')?.focus()
+}
+
+async function closeRolesPanel(): Promise<void> {
+  sidebarOpen.value = false
+  await nextTick()
+  rolesOpenButtonRef.value?.focus()
 }
 
 function toggleNarrator(): void {
@@ -381,16 +395,18 @@ function selectCurrent(index: number) {
 <template>
   <main
     v-if="play"
+    ref="readerRootRef"
     class="reader-layout"
     :class="{ 'sidebar-closed': !sidebarOpen, 'dark-theme': settings.theme === 'dark' }"
     :style="{ '--reader-font-size': `${settings.fontSize}px`, '--reader-line-height': settings.lineHeight, '--reader-font-family': fontFamily }"
   >
     <button
       v-if="!sidebarOpen"
+      ref="rolesOpenButtonRef"
       class="roles-open-button"
       type="button"
       aria-label="باز کردن نقش‌ها"
-      @click="sidebarOpen = true"
+      @click="openRolesPanel"
     >
       نقش‌ها
     </button>
@@ -406,7 +422,7 @@ function selectCurrent(index: number) {
       :narrator-selected="narratorSelected"
       :narrator-is-mine="narratorIsMine"
       :narrator-color="narratorColor"
-      @close="sidebarOpen = false"
+      @close="closeRolesPanel"
       @toggle="toggleCharacter"
       @choose-mine="chooseMine"
       @toggle-narrator="toggleNarrator"
