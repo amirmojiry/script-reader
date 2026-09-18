@@ -4,6 +4,14 @@
 
 ## [منتشرنشده]
 
+## [1.4.1] - 2026-09-18
+
+### تغییرکرده
+- GitHub Actions بهینه شد تا PRهای Draft هیچ runner اعتبارسنجی نگیرند، releaseهای صرفاً مستندی از کار فرانت‌اند عبور کنند و تغییرات اپلیکیشن فقط هنگام Ready for review یک بار مجموعهٔ کامل بررسی را اجرا کنند.
+- بررسی PR آمادهٔ review روی merge ref آینده‌نگر GitHub (ترکیب head با base فعلی) انجام می‌شود، نه فقط head خام؛ روی `master` نیز typecheck و testهای پاس‌شده تکرار نمی‌شوند و releaseهای مؤثر بر اپ فقط یک build تولیدی Vite پیش از استقرار Pages انجام می‌دهند.
+- CI به‌جای دریافت کل تاریخچهٔ Git از checkout کم‌عمق همراه با base ref صریح برای اعتبارسنجی release استفاده می‌کند.
+- قواعد batch کردن تغییرات و استفاده از Draft هنگام توسعه/رفع review مستند شد تا برای هر فایل یا commit میانی یک CI جدا اجرا نشود.
+
 ## [1.4.0] - 2026-09-17
 
 ### افزوده‌شده
@@ -55,7 +63,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...v1.2.0

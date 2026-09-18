@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-09-18
+
+### Changed
+- Optimized GitHub Actions so draft PRs allocate no validation runner, documentation-only releases skip frontend work, and review-ready application changes run the full frontend suite only once.
+- Review-ready PR checks validate GitHub's prospective merge tree rather than only the raw PR head, while master releases no longer repeat those typechecks/tests; application-affecting releases perform one production Vite build before Pages deployment.
+- CI now uses shallow history plus an explicit release base reference instead of fetching the complete repository history.
+- Documented batching and draft-review practices to avoid one CI run per intermediate file/commit.
+
 ## [1.4.0] - 2026-09-17
 
 ### Added
@@ -55,7 +63,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amirmojiry/script-reader/compare/v1.1.0...v1.2.0

@@ -30,7 +30,15 @@ read_version_from_ref() {
 }
 
 base_version="0.0.0"
-if [[ "${GITHUB_REF:-}" == "refs/heads/master" ]] && [[ "${GITHUB_EVENT_NAME:-}" == "push" || "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]]; then
+if [[ -n "${RELEASE_BASE_REF:-}" ]]; then
+  if [[ "$RELEASE_BASE_REF" != "0.0.0" ]]; then
+    if ! git rev-parse --verify "$RELEASE_BASE_REF^{commit}" >/dev/null 2>&1; then
+      echo "RELEASE_BASE_REF is not available in the checkout: $RELEASE_BASE_REF" >&2
+      exit 1
+    fi
+    base_version="$(read_version_from_ref "$RELEASE_BASE_REF")"
+  fi
+elif [[ "${GITHUB_REF:-}" == "refs/heads/master" ]] && [[ "${GITHUB_EVENT_NAME:-}" == "push" || "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]]; then
   if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
     base_version="$(read_version_from_ref HEAD^)"
   fi
