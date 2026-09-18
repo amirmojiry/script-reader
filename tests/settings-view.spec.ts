@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_READER_SETTINGS } from '../src/utils/settings'

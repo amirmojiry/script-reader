@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import ReaderView from '../src/views/ReaderView.vue'
