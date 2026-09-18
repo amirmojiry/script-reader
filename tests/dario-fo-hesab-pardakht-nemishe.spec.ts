@@ -12,11 +12,11 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
   it('preserves the supplied two-act source in canonical order', () => {
     const blocks = flattenBlocks(hesabPardakhtNemishePlay)
 
-    expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([475, 518])
+    expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([466, 517])
     expect(hesabPardakhtNemishePlay.acts).toHaveLength(2)
-    expect(blocks).toHaveLength(993)
-    expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(949)
-    expect(blocks.filter((block) => block.type === 'stage-direction')).toHaveLength(44)
+    expect(blocks).toHaveLength(983)
+    expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(956)
+    expect(blocks.filter((block) => block.type === 'stage-direction')).toHaveLength(27)
     expect(hesabPardakhtNemishePlay.characters.map((character) => character.name)).toEqual([
       'آنتونیا',
       'جووانی',
@@ -54,13 +54,34 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
       })
     })
 
-    expect(blocks[474]?.id).toBe('a1-b0475')
-    expect(blocks[475]?.id).toBe('a2-b0001')
+    expect(blocks[465]?.id).toBe('a1-b0466')
+    expect(blocks[466]?.id).toBe('a2-b0001')
     expect(blocks.at(-1)).toEqual({
-      id: 'a2-b0518',
+      id: 'a2-b0517',
       type: 'stage-direction',
       text: '(با بیان آخرین جمله صحنه کم‌کم تاریک می‌شود.)'
     })
+  })
+
+  it('keeps page-break speech with its speaker and excludes scan artifacts', () => {
+    const blocks = flattenBlocks(hesabPardakhtNemishePlay)
+    const dialogueTexts = blocks
+      .filter((block): block is DialogueBlock => block.type === 'dialogue')
+      .map((block) => dialogueText(block))
+      .join('\n')
+    const stageTexts = blocks
+      .filter((block) => block.type === 'stage-direction')
+      .map((block) => block.text)
+      .join('\n')
+
+    expect(dialogueTexts).toContain('خانه‌ی پسر خانم رزا را تفتیش کردند')
+    expect(dialogueTexts).toContain('اطلاعات بیش‌تری در مورد این دو راننده کامیون ندارید؟')
+    expect(dialogueTexts).toContain('همیشه مرده‌ها را توی کمد جای می‌دهند')
+    expect(stageTexts).not.toContain('خانه‌ی پسر خانم رزا را تفتیش کردند')
+    expect(dialogueTexts + stageTexts).not.toContain('کِصِ77 ۱۸۵۱')
+    expect(dialogueTexts + stageTexts).not.toContain('۲ لمع 1')
+    expect(dialogueTexts + stageTexts).not.toContain('ساب پرداخت نمی‌شه')
+    expect(dialogueTexts + stageTexts).not.toContain('۹ص مع «ا')
   })
 
   it('is exposed with reserved id and complete discovery metadata', () => {
