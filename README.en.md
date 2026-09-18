@@ -2,11 +2,11 @@
 
 Script Reader is a static, offline-first Vue 3 web application for reading plays, rehearsing roles, and running table reads. It is designed for GitHub Pages and requires no backend, account, or server database.
 
-## Version 1.5 features
+## Version 1.6 features
 
 - Local play library backed by IndexedDB.
 - Structured acts, scenes, dialogue, spoken text, inline directions, and stage directions.
-- Five bundled user-supplied plays: “Horses at the Window”, «مهمان ناخوانده» by اریک امانوئل اشمیت translated by تینوش نظم‌جو, plus «بانو و مرد مرده», «جنایت و مکافات», and «عکس دسته جمعی با خانم بزرگ» by Chista Yasrebi.
+- Six bundled user-supplied plays: “Horses at the Window”, «مهمان ناخوانده» by اریک امانوئل اشمیت translated by تینوش نظم‌جو, «حساب پرداخت نمی‌شه!» by داریو فو translated by حامد جهانشاهی, plus «بانو و مرد مرده», «جنایت و مکافات», and «عکس دسته جمعی با خانم بزرگ» by Chista Yasrebi.
 - Library filters for character count, estimated duration, author, translator, and genre, plus sorting by title, duration, and role count.
 - A guided play-selection wizard recommends plays from available cast size, male/female availability, available time, and preferred genre.
 - Each library card presents its three metrics and the open action in an equal-sized control grid.

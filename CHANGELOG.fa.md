@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.6.0] - 2026-09-18
+
+### افزوده‌شده
+- متن کامل فارسی تأمین‌شده توسط کاربر از «حساب پرداخت نمی‌شه!» اثر داریو فو با ترجمهٔ حامد جهانشاهی، به‌صورت نمایش دوپرده‌ای همراه برنامه با فرادادهٔ انتخاب نقش و پوشش رگرسیون اضافه شد.
+
 ## [1.5.0] - 2026-09-18
 
 ### افزوده‌شده
@@ -76,7 +81,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...v1.4.0
