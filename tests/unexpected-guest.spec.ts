@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { bundledPlays } from '../src/data/bundledPlays'
-import { unexpectedGuestPlay, unexpectedGuestSource } from '../src/data/unexpectedGuest'
+import {
+  UNEXPECTED_GUEST_BUNDLED_ID,
+  unexpectedGuestPlay,
+  unexpectedGuestSource
+} from '../src/data/unexpectedGuest'
 import type { DialogueBlock } from '../src/types'
 import { dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
@@ -10,7 +14,7 @@ describe('Unexpected Guest bundled play', () => {
 
     expect(unexpectedGuestSource.records).toHaveLength(149)
     expect(unexpectedGuestPlay).toMatchObject({
-      id: 'unexpected-guest',
+      id: UNEXPECTED_GUEST_BUNDLED_ID,
       title: 'مهمان ناخوانده',
       author: 'اریک امانوئل اشمیت',
       translator: 'تینوش نظم‌جو'
@@ -41,8 +45,9 @@ describe('Unexpected Guest bundled play', () => {
     })
   })
 
-  it('is exposed as a bundled play with a unique id', () => {
+  it('is exposed as a bundled play with a reserved unique id', () => {
     expect(bundledPlays).toHaveLength(5)
+    expect(unexpectedGuestPlay.id).toBe('builtin:schmitt:unexpected-guest')
     expect(bundledPlays.at(-1)?.id).toBe(unexpectedGuestPlay.id)
     expect(new Set(bundledPlays.map((play) => play.id)).size).toBe(bundledPlays.length)
   })
