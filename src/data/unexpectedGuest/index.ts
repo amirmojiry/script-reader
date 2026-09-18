@@ -18,6 +18,8 @@ interface UnexpectedGuestSource {
 
 const palette = ['#ef9a9a', '#a5d6a7', '#90caf9', '#ce93d8']
 
+export const UNEXPECTED_GUEST_BUNDLED_ID = 'builtin:schmitt:unexpected-guest'
+
 export const unexpectedGuestSource: UnexpectedGuestSource = {
   id: 'unexpected-guest',
   title: 'مهمان ناخوانده',
@@ -45,7 +47,7 @@ export function buildUnexpectedGuestPlay(source: UnexpectedGuestSource = unexpec
   })
 
   return {
-    id: source.id,
+    id: UNEXPECTED_GUEST_BUNDLED_ID,
     title: source.title,
     author: source.author,
     translator: source.translator,
