@@ -12,10 +12,10 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
   it('preserves the supplied two-act source in canonical order', () => {
     const blocks = flattenBlocks(hesabPardakhtNemishePlay)
 
-    expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([466, 517])
+    expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([470, 519])
     expect(hesabPardakhtNemishePlay.acts).toHaveLength(2)
-    expect(blocks).toHaveLength(983)
-    expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(956)
+    expect(blocks).toHaveLength(989)
+    expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(962)
     expect(blocks.filter((block) => block.type === 'stage-direction')).toHaveLength(27)
     expect(hesabPardakhtNemishePlay.characters.map((character) => character.name)).toEqual([
       'آنتونیا',
@@ -54,10 +54,10 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
       })
     })
 
-    expect(blocks[465]?.id).toBe('a1-b0466')
-    expect(blocks[466]?.id).toBe('a2-b0001')
+    expect(blocks[469]?.id).toBe('a1-b0470')
+    expect(blocks[470]?.id).toBe('a2-b0001')
     expect(blocks.at(-1)).toEqual({
-      id: 'a2-b0517',
+      id: 'a2-b0519',
       type: 'stage-direction',
       text: '(با بیان آخرین جمله صحنه کم‌کم تاریک می‌شود.)'
     })
@@ -77,11 +77,16 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts).toContain('خانه‌ی پسر خانم رزا را تفتیش کردند')
     expect(dialogueTexts).toContain('اطلاعات بیش‌تری در مورد این دو راننده کامیون ندارید؟')
     expect(dialogueTexts).toContain('همیشه مرده‌ها را توی کمد جای می‌دهند')
+    expect(dialogueTexts).toContain('همبستگی چه می‌شد؟')
+    expect(dialogueTexts).toContain('خواب دیدی! قبول کن!')
     expect(stageTexts).not.toContain('خانه‌ی پسر خانم رزا را تفتیش کردند')
     expect(dialogueTexts + stageTexts).not.toContain('کِصِ77 ۱۸۵۱')
     expect(dialogueTexts + stageTexts).not.toContain('۲ لمع 1')
     expect(dialogueTexts + stageTexts).not.toContain('ساب پرداخت نمی‌شه')
     expect(dialogueTexts + stageTexts).not.toContain('۹ص مع «ا')
+    expect(dialogueTexts + stageTexts).not.toContain('دار یو فو')
+    expect(dialogueTexts + stageTexts).not.toContain('داربو فو')
+    expect(dialogueTexts + stageTexts).not.toContain('سیصٍث')
   })
 
   it('is exposed with reserved id and complete discovery metadata', () => {
