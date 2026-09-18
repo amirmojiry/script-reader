@@ -1,5 +1,5 @@
 import type { PlayBlock } from '../types'
-import { blockText } from './play'
+import { blockText, characterDialogueText } from './play'
 
 export function isBlockVisible(block: PlayBlock, hideStageDirections: boolean): boolean {
   return !(hideStageDirections && block.type === 'stage-direction')
@@ -15,16 +15,13 @@ export function searchBlockIndexes(blocks: PlayBlock[], query: string, hideStage
     .map(({ index }) => index)
 }
 
-export function rehearsalCueIndexes(
+export function rehearsalCueIndexesForOwnIndexes(
   blocks: PlayBlock[],
-  characterId: string,
+  ownIndexes: number[],
   currentIndex: number,
   activeSearchIndexes: number[] = []
 ): number[] {
   const all = blocks.map((block, index) => ({ block, index }))
-  const ownIndexes = all
-    .filter(({ block }) => block.type === 'dialogue' && block.characterId === characterId)
-    .map(({ index }) => index)
   if (ownIndexes.length === 0) return all.map(({ index }) => index)
 
   const ownIndex = ownIndexes.includes(currentIndex)
@@ -39,6 +36,38 @@ export function rehearsalCueIndexes(
   if (activeSearchIndexes.includes(currentIndex)) indexes.add(currentIndex)
 
   return all.filter(({ index }) => indexes.has(index)).map(({ index }) => index)
+}
+
+export function isCharacterSpeechBlock(block: PlayBlock, characterId: string | undefined): boolean {
+  return Boolean(characterId)
+    && block.type === 'dialogue'
+    && block.characterId === characterId
+    && Boolean(characterDialogueText(block))
+}
+
+export function rehearsalCueIndexes(
+  blocks: PlayBlock[],
+  characterId: string,
+  currentIndex: number,
+  activeSearchIndexes: number[] = []
+): number[] {
+  const ownIndexes = blocks
+    .map((block, index) => ({ block, index }))
+    .filter(({ block }) => isCharacterSpeechBlock(block, characterId))
+    .map(({ index }) => index)
+
+  return rehearsalCueIndexesForOwnIndexes(blocks, ownIndexes, currentIndex, activeSearchIndexes)
+}
+
+export function visibleOwnedIndexes(
+  blocks: PlayBlock[],
+  indexes: number[],
+  hideStageDirections: boolean
+): number[] {
+  return indexes.filter((index) => {
+    const block = blocks[index]
+    return Boolean(block && isBlockVisible(block, hideStageDirections))
+  })
 }
 
 export function visibleBlockIndexes(blocks: PlayBlock[], hideStageDirections: boolean): number[] {

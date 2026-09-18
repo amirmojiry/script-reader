@@ -1,16 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import type { Play } from '../src/types'
-import { matchesLibraryRanges, numericBounds, playLibraryMetrics } from '../src/utils/library'
+import type { CharacterGender, Play } from '../src/types'
+import { characterGender } from '../src/utils/play'
+import {
+  matchesLibraryRanges,
+  matchesWizardCriteria,
+  numericBounds,
+  playGenres,
+  playLibraryMetrics,
+  sortPlayCards
+} from '../src/utils/library'
 
-function makePlay(characterCount: number, spokenWords: number): Play {
+function makePlay(
+  characterCount: number,
+  spokenWords: number,
+  genders: CharacterGender[] = [],
+  title = 'تست',
+  genres: string[] = ['درام']
+): Play {
   const characters = Array.from({ length: characterCount }, (_, index) => ({
     id: `c-${index + 1}`,
-    name: `شخصیت ${index + 1}`
+    name: `شخصیت ${index + 1}`,
+    gender: genders[index]
   }))
   const text = Array.from({ length: spokenWords }, () => 'واژه').join(' ')
   return {
-    id: `play-${characterCount}-${spokenWords}`,
-    title: 'تست',
+    id: `play-${characterCount}-${spokenWords}-${title}`,
+    title,
+    genres,
     characters,
     acts: [{
       id: 'act-1',
@@ -40,5 +56,67 @@ describe('library filters', () => {
     expect(matchesLibraryRanges(metrics, { characterMin: 4, characterMax: 6, durationMin: 1, durationMax: 3 })).toBe(true)
     expect(matchesLibraryRanges(metrics, { characterMin: 6, characterMax: 8, durationMin: 1, durationMax: 3 })).toBe(false)
     expect(matchesLibraryRanges(metrics, { characterMin: 4, characterMax: 6, durationMin: 3, durationMax: 5 })).toBe(false)
+  })
+
+  it('normalizes malformed legacy discovery metadata safely', () => {
+    const arrayGenres = makePlay(1, 10) as unknown as { genres: unknown }
+    arrayGenres.genres = ['درام', 123, '  کمدی  ']
+    expect(playGenres(arrayGenres as unknown as Play)).toEqual(['درام', 'کمدی'])
+
+    const scalarGenres = makePlay(1, 10) as unknown as { genres: unknown }
+    scalarGenres.genres = 'درام'
+    expect(playGenres(scalarGenres as unknown as Play)).toEqual([])
+
+    expect(characterGender('other')).toBe('unknown')
+    expect(characterGender(undefined)).toBe('unknown')
+  })
+
+  it('counts explicit genders and treats missing metadata as unknown', () => {
+    const play = makePlay(4, 100, ['male', 'female', 'unknown'])
+    expect(playLibraryMetrics(play)).toMatchObject({
+      maleCount: 1,
+      femaleCount: 1,
+      unknownCount: 2
+    })
+  })
+
+  it('matches wizard availability, time, and genre constraints', () => {
+    const play = makePlay(4, 130, ['male', 'male', 'female', 'unknown'], 'نمایش', ['درام'])
+    const metrics = playLibraryMetrics(play)
+
+    expect(matchesWizardCriteria(play, metrics, {
+      totalPeople: 4,
+      malePeople: 2,
+      femalePeople: 1,
+      maxMinutes: 5,
+      genre: 'درام'
+    })).toBe(true)
+
+    expect(matchesWizardCriteria(play, metrics, {
+      totalPeople: 4,
+      malePeople: 1,
+      femalePeople: 2,
+      maxMinutes: 5,
+      genre: 'درام'
+    })).toBe(false)
+
+    expect(matchesWizardCriteria(play, metrics, {
+      totalPeople: 4,
+      malePeople: 2,
+      femalePeople: 1,
+      maxMinutes: 5,
+      genre: 'کمدی'
+    })).toBe(false)
+  })
+
+  it('sorts by title, duration, and role count', () => {
+    const cards = [
+      { play: makePlay(5, 260, [], 'ب'), metrics: playLibraryMetrics(makePlay(5, 260, [], 'ب')) },
+      { play: makePlay(2, 130, [], 'آ'), metrics: playLibraryMetrics(makePlay(2, 130, [], 'آ')) }
+    ]
+
+    expect(sortPlayCards(cards, 'title-asc')[0].play.title).toBe('آ')
+    expect(sortPlayCards(cards, 'duration-asc')[0].metrics.estimatedMinutes).toBe(1)
+    expect(sortPlayCards(cards, 'roles-desc')[0].metrics.characterCount).toBe(5)
   })
 })

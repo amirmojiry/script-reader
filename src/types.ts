@@ -1,7 +1,10 @@
+export type CharacterGender = 'male' | 'female' | 'unknown'
+
 export interface Character {
   id: string
   name: string
   color?: string
+  gender?: CharacterGender
 }
 
 export type DialoguePart =
@@ -46,6 +49,7 @@ export interface Play {
   title: string
   author?: string
   translator?: string
+  genres?: string[]
   characters: Character[]
   acts: Act[]
 }
@@ -80,6 +84,9 @@ export interface ReadingState {
   currentBlockId?: string
   selectedCharacterIds: string[]
   myCharacterId?: string
+  narratorSelected?: boolean
+  narratorIsMine?: boolean
+  narratorColor?: string
   mode: ReaderMode
 }
 

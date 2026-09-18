@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { demoPlay } from '../src/data/demo'
 import { flattenBlocks } from '../src/utils/play'
-import { rehearsalCueIndexes, searchBlockIndexes, visibleBlockIndexes } from '../src/utils/reader'
+import { isCharacterSpeechBlock, rehearsalCueIndexes, rehearsalCueIndexesForOwnIndexes, searchBlockIndexes, visibleBlockIndexes, visibleOwnedIndexes } from '../src/utils/reader'
 
 describe('reader filtering utilities', () => {
   const blocks = flattenBlocks(demoPlay)
@@ -23,6 +23,39 @@ describe('reader filtering utilities', () => {
     const stageIndex = blocks.indexOf(stage)
     expect(visibleResults).toContain(stageIndex)
     expect(hiddenResults).not.toContain(stageIndex)
+  })
+
+  it('excludes narrator-only dialogue from actor cue and speech ownership', () => {
+    const narratorOnly = { id: 'narrator-only', type: 'dialogue' as const, characterId: 'mother', parts: [{ type: 'speech' as const, text: '(مکث)' }] }
+    const actual = { id: 'actual', type: 'dialogue' as const, characterId: 'mother', parts: [{ type: 'speech' as const, text: 'حالا برو.' }] }
+    const customBlocks = [narratorOnly, actual]
+
+    expect(isCharacterSpeechBlock(narratorOnly, 'mother')).toBe(false)
+    expect(isCharacterSpeechBlock(actual, 'mother')).toBe(true)
+    expect(isCharacterSpeechBlock(actual, undefined)).toBe(false)
+
+    const cueIndexes = rehearsalCueIndexes(customBlocks, 'mother', 0)
+    expect(cueIndexes).toContain(1)
+    // The narrator-only block may remain as preceding cue context, but it is not actor-owned.
+    expect(cueIndexes).toEqual([0, 1])
+  })
+
+  it('supports narrator rehearsal using precomputed narrator-owned indexes', () => {
+    const stageIndex = blocks.findIndex((block) => block.type === 'stage-direction')
+    expect(stageIndex).toBeGreaterThanOrEqual(0)
+    const indexes = rehearsalCueIndexesForOwnIndexes(blocks, [stageIndex], stageIndex)
+    expect(indexes).toContain(stageIndex)
+  })
+
+  it('filters hidden stage directions out of narrator-owned navigation', () => {
+    const stageIndex = blocks.findIndex((block) => block.type === 'stage-direction')
+    const dialogueIndex = blocks.findIndex((block) => block.type === 'dialogue')
+    expect(stageIndex).toBeGreaterThanOrEqual(0)
+    expect(dialogueIndex).toBeGreaterThanOrEqual(0)
+
+    const indexes = visibleOwnedIndexes(blocks, [stageIndex, dialogueIndex], true)
+    expect(indexes).not.toContain(stageIndex)
+    expect(indexes).toContain(dialogueIndex)
   })
 
   it('removes stage directions from table-read navigation when hidden', () => {

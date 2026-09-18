@@ -8,7 +8,8 @@ export function buildYasrebiPlay(source: RawPlaySource, author: string): Play {
   const characters = source.characters.map((name, index) => ({
     id: characterIds.get(name) as string,
     name,
-    color: palette[index % palette.length]
+    color: palette[index % palette.length],
+    gender: source.characterGenders?.[name] ?? 'unknown'
   }))
 
   const blocks: PlayBlock[] = source.records.map((record, index) => {
@@ -24,6 +25,7 @@ export function buildYasrebiPlay(source: RawPlaySource, author: string): Play {
     id: `yasrebi-${source.id}`,
     title: source.title,
     author,
+    genres: source.genres,
     characters,
     acts: [{
       id: 'act-1',

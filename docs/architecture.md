@@ -29,7 +29,9 @@ There is no server-side runtime in the current architecture.
 - `stage-direction`: standalone narrator/stage instruction;
 - `section`: optional display heading.
 
-The reader never needs to parse parentheses in normal operation. This avoids the legacy ambiguity where directions and literal parentheses were mixed in one string.
+Characters may carry optional `gender` discovery metadata and plays may carry optional `genres`. Missing character gender is treated as `unknown` at runtime for backward compatibility; curated bundled plays provide explicit gender and genre metadata.
+
+Narrator is a virtual reader role rather than a stored character. It owns standalone stage directions, explicit dialogue `direction` parts, and balanced parenthetical segments found inside speech strings. Parenthetical classification is presentation/rehearsal metadata only: the canonical source text is not rewritten into new blocks or parts. Unbalanced parentheses remain ordinary character speech.
 
 ## Trust boundary
 
@@ -40,17 +42,17 @@ Imported JSON is untrusted input. `validatePlay()` checks the nested structure, 
 IndexedDB stores:
 
 - plays;
-- reading state (mode, selected roles, current block, own role);
+- reading state (mode, selected roles, current block, own character or narrator role, narrator highlight/color);
 - reader settings;
 - line notes;
 - line bookmarks.
 
-A first-run bundled demonstration play is inserted only when no local plays exist. The local database remains the source of truth for imported plays.
+Bundled plays are installed/upgraded deterministically while preserving unrelated user imports and customized role colors. The local database remains the source of truth for user-imported plays and reader state.
 
 ## Reader modes
 
-- **Read:** complete ordered document with optional role highlighting and stage-direction visibility.
-- **Rehearsal:** own-role navigation, optional cue-only rendering, and hidden/first-word/progressive reveal modes.
+- **Read:** complete ordered document with optional character/narrator highlighting and stage-direction visibility.
+- **Rehearsal:** own-character or narrator navigation, optional cue-only rendering, and hidden/first-word/progressive reveal modes.
 - **Table read:** a single current block with previous/next controls.
 
 Search and scene/timeline navigation operate on stable flattened block indexes so all modes share one canonical reading order.

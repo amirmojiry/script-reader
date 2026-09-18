@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import CharacterPanel from '../components/CharacterPanel.vue'
 import DialogueBlockView from '../components/DialogueBlock.vue'
 import ReaderToolbar from '../components/ReaderToolbar.vue'
+import RehearsalRevealText from '../components/RehearsalRevealText.vue'
 import {
   deleteNote,
   getReadingState,
@@ -18,9 +19,24 @@ import {
 import { canSpeak, speak, stopSpeaking } from '../services/speech'
 import { releaseWakeLock, requestWakeLock, wakeLockSupported } from '../services/wakeLock'
 import { usePlaysStore } from '../stores/plays'
-import type { DialogueBlock, NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
-import { analyzePlay, dialogueText, flattenBlocks } from '../utils/play'
-import { isBlockVisible, rehearsalCueIndexes, searchBlockIndexes, visibleBlockIndexes } from '../utils/reader'
+import type { NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
+import {
+  DEFAULT_NARRATOR_COLOR,
+  analyzeNarrator,
+  analyzePlay,
+  characterDialogueText,
+  dialogueRenderSegments,
+  flattenBlocks
+} from '../utils/play'
+import {
+  isBlockVisible,
+  isCharacterSpeechBlock,
+  rehearsalCueIndexes,
+  rehearsalCueIndexesForOwnIndexes,
+  searchBlockIndexes,
+  visibleBlockIndexes,
+  visibleOwnedIndexes
+} from '../utils/reader'
 import { makePairKey } from '../utils/storageKey'
 
 const defaultSettings: ReaderSettings = {
@@ -34,14 +50,24 @@ const defaultSettings: ReaderSettings = {
   rehearsalCueOnly: false
 }
 
+function defaultSidebarOpen(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true
+  return !window.matchMedia('(max-width: 980px)').matches
+}
+
 const route = useRoute()
 const router = useRouter()
 const store = usePlaysStore()
 const selected = ref<string[]>([])
 const myCharacterId = ref<string>()
+const narratorSelected = ref(false)
+const narratorIsMine = ref(false)
+const narratorColor = ref(DEFAULT_NARRATOR_COLOR)
 const mode = ref<ReaderMode>('read')
 const currentIndex = ref(0)
-const sidebarOpen = ref(true)
+const sidebarOpen = ref(defaultSidebarOpen())
+const readerRootRef = ref<HTMLElement | null>(null)
+const rolesOpenButtonRef = ref<HTMLButtonElement | null>(null)
 const settings = ref<ReaderSettings>({ ...defaultSettings })
 const searchQuery = ref('')
 const notes = ref<NoteRecord[]>([])
@@ -52,9 +78,27 @@ const statusMessage = ref('')
 const play = computed(() => store.byId(String(route.params.id)))
 const blocks = computed(() => play.value ? flattenBlocks(play.value) : [])
 const stats = computed(() => play.value ? analyzePlay(play.value) : {})
+const narratorStats = computed(() => play.value ? analyzeNarrator(play.value) : {
+  dialogueCount: 0,
+  wordCount: 0,
+  shareOfWords: 0,
+  estimatedMinutes: 0,
+  blockIndexes: []
+})
+const narratorOwnedIndexes = computed(() => visibleOwnedIndexes(
+  blocks.value,
+  narratorStats.value.blockIndexes,
+  settings.value.hideStageDirections
+))
 const characterMap = computed(() => new Map(play.value?.characters.map((character) => [character.id, character]) ?? []))
 const currentBlock = computed(() => blocks.value[currentIndex.value])
 const currentBookmarked = computed(() => Boolean(currentBlock.value && bookmarkIds.value.has(currentBlock.value.id)))
+const hasMyRole = computed(() => Boolean(myCharacterId.value || narratorIsMine.value))
+const myRoleLabel = computed(() => {
+  if (narratorIsMine.value) return 'راوی'
+  if (myCharacterId.value) return characterMap.value.get(myCharacterId.value)?.name ?? ''
+  return ''
+})
 const fontFamily = computed(() => {
   if (settings.value.font === 'serif') return 'Georgia, "Times New Roman", serif'
   if (settings.value.font === 'sans') return 'Arial, Tahoma, sans-serif'
@@ -63,12 +107,27 @@ const fontFamily = computed(() => {
 const searchIndexes = computed(() => searchBlockIndexes(blocks.value, searchQuery.value, settings.value.hideStageDirections))
 const readerEntries = computed(() => {
   const all = blocks.value.map((block, index) => ({ block, index }))
-  if (mode.value !== 'rehearsal' || !settings.value.rehearsalCueOnly || !myCharacterId.value) return all
+  if (mode.value !== 'rehearsal' || !settings.value.rehearsalCueOnly) return all
+
+  if (narratorIsMine.value) {
+    const indexes = new Set(rehearsalCueIndexesForOwnIndexes(
+      blocks.value,
+      narratorOwnedIndexes.value,
+      currentIndex.value,
+      searchIndexes.value
+    ))
+    return all.filter(({ index }) => indexes.has(index))
+  }
+
+  if (!myCharacterId.value) return all
   const indexes = new Set(rehearsalCueIndexes(blocks.value, myCharacterId.value, currentIndex.value, searchIndexes.value))
   return all.filter(({ index }) => indexes.has(index))
 })
 const tableReadIndexes = computed(() => visibleBlockIndexes(blocks.value, settings.value.hideStageDirections))
 const tableReadPosition = computed(() => tableReadIndexes.value.indexOf(currentIndex.value))
+const tableDialogueSegments = computed(() =>
+  currentBlock.value?.type === 'dialogue' ? dialogueRenderSegments(currentBlock.value) : []
+)
 
 onMounted(async () => {
   await store.initialize()
@@ -84,6 +143,10 @@ onMounted(async () => {
   if (state) {
     selected.value = state.selectedCharacterIds
     myCharacterId.value = state.myCharacterId
+    narratorSelected.value = state.narratorSelected ?? false
+    narratorIsMine.value = state.narratorIsMine ?? false
+    narratorColor.value = state.narratorColor ?? DEFAULT_NARRATOR_COLOR
+    if (narratorIsMine.value) myCharacterId.value = undefined
     mode.value = state.mode
     const index = state.currentBlockId ? blocks.value.findIndex((block) => block.id === state.currentBlockId) : 0
     currentIndex.value = Math.max(0, index)
@@ -92,6 +155,9 @@ onMounted(async () => {
   notes.value = await listNotes(play.value.id)
   bookmarkIds.value = new Set(await listBookmarks(play.value.id))
   syncNoteText()
+  if (mode.value === 'rehearsal' && narratorIsMine.value && !narratorOwnedIndexes.value.includes(currentIndex.value)) {
+    jumpToNearestOwnRolePart()
+  }
   if (mode.value === 'table-read') ensureCurrentTableReadVisible()
   if (settings.value.keepAwake) await requestWakeLock()
 })
@@ -101,13 +167,16 @@ onBeforeUnmount(() => {
   void releaseWakeLock()
 })
 
-watch([selected, myCharacterId, mode, currentIndex], async () => {
+watch([selected, myCharacterId, narratorSelected, narratorIsMine, narratorColor, mode, currentIndex], async () => {
   if (!play.value) return
   await saveReadingState({
     playId: play.value.id,
     currentBlockId: currentBlock.value?.id,
     selectedCharacterIds: selected.value,
     myCharacterId: myCharacterId.value,
+    narratorSelected: narratorSelected.value,
+    narratorIsMine: narratorIsMine.value,
+    narratorColor: narratorColor.value,
     mode: mode.value
   })
 }, { deep: true })
@@ -123,6 +192,9 @@ async function updateSettings(next: ReaderSettings) {
   const previousKeepAwake = settings.value.keepAwake
   settings.value = next
   await saveSettings(next)
+  if (mode.value === 'rehearsal' && narratorIsMine.value && !narratorOwnedIndexes.value.includes(currentIndex.value)) {
+    jumpToNearestOwnRolePart()
+  }
   if (mode.value === 'table-read') ensureCurrentTableReadVisible()
   if (next.keepAwake && !previousKeepAwake) await requestWakeLock()
   if (!next.keepAwake && previousKeepAwake) await releaseWakeLock()
@@ -130,7 +202,7 @@ async function updateSettings(next: ReaderSettings) {
 
 function setMode(next: ReaderMode): void {
   mode.value = next
-  if (next === 'rehearsal' && myCharacterId.value) jumpToNearestOwnDialogue()
+  if (next === 'rehearsal' && hasMyRole.value) jumpToNearestOwnRolePart()
   if (next === 'table-read') ensureCurrentTableReadVisible()
 }
 
@@ -139,8 +211,39 @@ function toggleCharacter(id: string) {
 }
 
 function chooseMine(id: string) {
-  myCharacterId.value = myCharacterId.value === id ? undefined : id
-  if (myCharacterId.value && mode.value === 'rehearsal') jumpToNearestOwnDialogue()
+  const next = myCharacterId.value === id ? undefined : id
+  myCharacterId.value = next
+  if (next) narratorIsMine.value = false
+  if (next && mode.value === 'rehearsal') jumpToNearestOwnRolePart()
+}
+
+async function openRolesPanel(): Promise<void> {
+  sidebarOpen.value = true
+  await nextTick()
+  readerRootRef.value?.querySelector<HTMLButtonElement>('.panel-close-button')?.focus()
+}
+
+async function closeRolesPanel(): Promise<void> {
+  sidebarOpen.value = false
+  await nextTick()
+  rolesOpenButtonRef.value?.focus()
+}
+
+function toggleNarrator(): void {
+  narratorSelected.value = !narratorSelected.value
+}
+
+function chooseNarratorMine(): void {
+  narratorIsMine.value = !narratorIsMine.value
+  if (narratorIsMine.value) {
+    myCharacterId.value = undefined
+    narratorSelected.value = true
+    if (mode.value === 'rehearsal') jumpToNearestOwnRolePart()
+  }
+}
+
+function changeNarratorColor(color: string): void {
+  narratorColor.value = color
 }
 
 async function changeCharacterColor(characterId: string, color: string): Promise<void> {
@@ -155,22 +258,20 @@ async function jump(index: number) {
   document.getElementById(`block-${blocks.value[currentIndex.value]?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
-function ownDialogueIndexes(): number[] {
+function ownRoleIndexes(): number[] {
+  if (narratorIsMine.value) return narratorOwnedIndexes.value
   if (!myCharacterId.value) return []
-  return blocks.value
-    .map((block, index) => ({ block, index }))
-    .filter(({ block }) => block.type === 'dialogue' && block.characterId === myCharacterId.value)
-    .map(({ index }) => index)
+  return stats.value[myCharacterId.value]?.blockIndexes ?? []
 }
 
-function jumpToNearestOwnDialogue(): void {
-  const indexes = ownDialogueIndexes()
+function jumpToNearestOwnRolePart(): void {
+  const indexes = ownRoleIndexes()
   const target = indexes.find((index) => index >= currentIndex.value) ?? indexes[0]
   if (target !== undefined) void jump(target)
 }
 
-function moveOwnDialogue(direction: -1 | 1) {
-  const indexes = ownDialogueIndexes()
+function moveOwnRolePart(direction: -1 | 1) {
+  const indexes = ownRoleIndexes()
   const target = direction > 0
     ? indexes.find((index) => index > currentIndex.value)
     : [...indexes].reverse().find((index) => index < currentIndex.value)
@@ -178,18 +279,20 @@ function moveOwnDialogue(direction: -1 | 1) {
 }
 
 async function speakOtherRoles() {
-  if (!myCharacterId.value || !canSpeak()) return
+  if (!myCharacterId.value || narratorIsMine.value || !canSpeak()) return
   stopSpeaking()
   let start = currentIndex.value
   const first = blocks.value[start]
-  if (first?.type === 'dialogue' && first.characterId === myCharacterId.value) start += 1
+  if (first && isCharacterSpeechBlock(first, myCharacterId.value)) start += 1
 
   for (let i = start; i < blocks.value.length; i += 1) {
     const block = blocks.value[i]
     if (block.type !== 'dialogue') continue
+    const text = characterDialogueText(block)
+    if (!text) continue
     currentIndex.value = i
-    if (block.characterId === myCharacterId.value) break
-    await speak(dialogueText(block))
+    if (isCharacterSpeechBlock(block, myCharacterId.value)) break
+    await speak(text)
   }
 }
 
@@ -292,20 +395,40 @@ function selectCurrent(index: number) {
 <template>
   <main
     v-if="play"
+    ref="readerRootRef"
     class="reader-layout"
     :class="{ 'sidebar-closed': !sidebarOpen, 'dark-theme': settings.theme === 'dark' }"
     :style="{ '--reader-font-size': `${settings.fontSize}px`, '--reader-line-height': settings.lineHeight, '--reader-font-family': fontFamily }"
   >
-    <button class="sidebar-toggle" @click="sidebarOpen = !sidebarOpen">{{ sidebarOpen ? 'بستن نقش‌ها' : 'نقش‌ها' }}</button>
+    <button
+      v-if="!sidebarOpen"
+      ref="rolesOpenButtonRef"
+      class="roles-open-button"
+      type="button"
+      aria-label="باز کردن نقش‌ها"
+      @click="openRolesPanel"
+    >
+      نقش‌ها
+    </button>
+
     <CharacterPanel
       v-if="sidebarOpen"
       :characters="play.characters"
       :stats="stats"
       :selected="selected"
       :my-character-id="myCharacterId"
+      :narrator-stats="narratorStats"
+      :narrator-jump-indexes="narratorOwnedIndexes"
+      :narrator-selected="narratorSelected"
+      :narrator-is-mine="narratorIsMine"
+      :narrator-color="narratorColor"
+      @close="closeRolesPanel"
       @toggle="toggleCharacter"
       @choose-mine="chooseMine"
+      @toggle-narrator="toggleNarrator"
+      @choose-narrator-mine="chooseNarratorMine"
       @change-color="changeCharacterColor"
+      @change-narrator-color="changeNarratorColor"
       @jump="jump"
     />
 
@@ -326,7 +449,7 @@ function selectCurrent(index: number) {
         :mode="mode"
         :settings="settings"
         :wake-lock-available="wakeLockSupported()"
-        :speech-available="canSpeak()"
+        :speech-available="canSpeak() && Boolean(myCharacterId) && !narratorIsMine"
         :search-query="searchQuery"
         :search-count="searchIndexes.length"
         @set-mode="setMode"
@@ -338,9 +461,9 @@ function selectCurrent(index: number) {
       />
 
       <div v-if="mode === 'rehearsal'" class="rehearsal-controls card">
-        <button class="secondary-button" :disabled="!myCharacterId" @click="moveOwnDialogue(-1)">دیالوگ قبلی نقش من</button>
-        <span>{{ myCharacterId ? `تمرین نقش ${characterMap.get(myCharacterId)?.name ?? ''}` : 'ابتدا «نقش من» را انتخاب کنید' }}</span>
-        <button class="primary-button" :disabled="!myCharacterId" @click="moveOwnDialogue(1)">دیالوگ بعدی نقش من</button>
+        <button class="secondary-button" :disabled="!hasMyRole" @click="moveOwnRolePart(-1)">بخش قبلی نقش من</button>
+        <span>{{ hasMyRole ? `تمرین نقش ${myRoleLabel}` : 'ابتدا «نقش من» را برای یک شخصیت یا راوی انتخاب کنید' }}</span>
+        <button class="primary-button" :disabled="!hasMyRole" @click="moveOwnRolePart(1)">بخش بعدی نقش من</button>
       </div>
 
       <nav class="scene-nav card" aria-label="صحنه‌ها">
@@ -376,9 +499,31 @@ function selectCurrent(index: number) {
         <button class="nav-arrow" :disabled="tableReadPosition <= 0" @click="moveTableRead(-1)">→</button>
         <div v-if="currentBlock?.type === 'dialogue'">
           <p class="eyebrow">{{ characterMap.get(currentBlock.characterId)?.name }}</p>
-          <p class="table-copy">{{ dialogueText(currentBlock as DialogueBlock) }}</p>
+          <p class="table-copy">
+            <template v-for="(segment, index) in tableDialogueSegments" :key="index">
+              <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
+              <em
+                v-else
+                class="inline-direction narrator-segment"
+                :class="{ 'narrator-highlighted': narratorSelected, 'narrator-mine': narratorIsMine }"
+                :style="narratorSelected || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
+              >{{ segment.text }}</em>
+            </template>
+          </p>
         </div>
-        <div v-else-if="currentBlock?.type === 'stage-direction' && visible(currentBlock)" class="stage-direction">{{ currentBlock.text }}</div>
+        <div
+          v-else-if="currentBlock?.type === 'stage-direction' && visible(currentBlock)"
+          class="stage-direction narrator-stage"
+          :class="{ 'narrator-highlighted': narratorSelected, 'narrator-mine': narratorIsMine }"
+          :style="narratorSelected || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
+        >
+          <span class="narrator-label">راوی</span>
+          <RehearsalRevealText
+            :text="currentBlock.text"
+            :active="false"
+            :reveal-mode="settings.rehearsalRevealMode"
+          />
+        </div>
         <div v-else-if="currentBlock?.type === 'section'">
           <p class="table-copy">{{ currentBlock.title }}</p>
         </div>
@@ -392,20 +537,33 @@ function selectCurrent(index: number) {
             :block="entry.block"
             :character="characterMap.get(entry.block.characterId)"
             :mode="mode"
-            :is-mine="entry.block.characterId === myCharacterId"
+            :is-mine="isCharacterSpeechBlock(entry.block, myCharacterId)"
             :highlighted="selected.includes(entry.block.characterId)"
             :current="isCurrent(entry.index)"
             :reveal-mode="settings.rehearsalRevealMode"
+            :narrator-highlighted="narratorSelected"
+            :narrator-is-mine="narratorIsMine"
+            :narrator-color="narratorColor"
             @click="selectCurrent(entry.index)"
           />
           <div
             v-else-if="entry.block.type === 'stage-direction' && visible(entry.block)"
             :id="`block-${entry.block.id}`"
-            class="stage-direction"
-            :class="{ current: isCurrent(entry.index) }"
+            class="stage-direction narrator-stage"
+            :class="{
+              current: isCurrent(entry.index),
+              'narrator-highlighted': narratorSelected,
+              'narrator-mine': narratorIsMine
+            }"
+            :style="narratorSelected || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
             @click="selectCurrent(entry.index)"
           >
-            {{ entry.block.text }}
+            <span class="narrator-label">راوی</span>
+            <RehearsalRevealText
+              :text="entry.block.text"
+              :active="mode === 'rehearsal' && narratorIsMine"
+              :reveal-mode="settings.rehearsalRevealMode"
+            />
           </div>
           <h2 v-else-if="entry.block.type === 'section'" :id="`block-${entry.block.id}`">{{ entry.block.title }}</h2>
         </template>

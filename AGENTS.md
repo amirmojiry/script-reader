@@ -20,7 +20,8 @@ Before editing, read:
 - Local-first is an invariant. Core reading and rehearsal workflows must not require an account or network after assets/data have been stored locally.
 - Persian is the primary UI direction. Keep layout responsive and accessible in RTL.
 - Never render imported play text with unsanitized `innerHTML`. Prefer Vue text interpolation and explicit structured parts.
-- Do not silently infer parentheses as stage directions in the canonical model. Imports may infer only in a reviewable migration layer.
+- Do not rewrite parenthetical speech into canonical stage-direction blocks. The reader may classify balanced parenthetical segments as virtual narrator content for presentation/rehearsal, while preserving the original source text. Structural import inference still belongs in a reviewable migration layer.
+- Every newly curated/bundled play must include one or more useful genres and explicit `male`/`female`/`unknown` gender metadata for every character. Use `unknown` when the supplied source does not establish gender; do not guess from an ambiguous name/title.
 
 ## Required GitHub workflow
 

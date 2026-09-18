@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-18
+
+### Added
+- Narrator role support for standalone stage directions, explicit inline directions, and parenthetical narration inside dialogue.
+- Character gender and play genre metadata for discovery and casting.
+- Library filters for author, translator, and genre plus sorting by title, duration, and role count.
+- Guided play-selection wizard based on available cast, male/female availability, available time, and preferred genre.
+
+### Changed
+- Mobile readers open with the roles panel collapsed, with role controls placed where they remain easy to reach.
+- Role cards can jump directly to the role's first dialogue.
+
+
 ## [1.4.1] - 2026-09-18
 
 ### Changed
@@ -63,7 +76,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amirmojiry/script-reader/compare/v1.2.0...v1.3.0
