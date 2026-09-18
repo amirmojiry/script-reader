@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The project follows Kee
 
 ### Changed
 - Optimized GitHub Actions so draft PRs allocate no validation runner, documentation-only releases skip frontend work, and review-ready application changes run the full frontend suite only once.
-- Master releases no longer repeat PR typechecking/tests; application-affecting releases perform one production Vite build before Pages deployment.
+- Review-ready PR checks validate GitHub's prospective merge tree rather than only the raw PR head, while master releases no longer repeat those typechecks/tests; application-affecting releases perform one production Vite build before Pages deployment.
 - CI now uses shallow history plus an explicit release base reference instead of fetching the complete repository history.
 - Documented batching and draft-review practices to avoid one CI run per intermediate file/commit.
 

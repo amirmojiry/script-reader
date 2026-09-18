@@ -47,8 +47,9 @@ GitHub Actions minutes are a constrained project resource.
 - When using GitHub API/connector writes, do not call one file-write endpoint per changed file when that creates one commit per file. Prefer creating the required blobs/tree and moving the branch once so a coherent multi-file batch is one commit/push.
 - Do not push intermediate commits merely to discover type/test errors when equivalent local or workspace validation is available.
 - PR `synchronize` events still validate ready PRs for safety, so batching before branch updates directly saves runner minutes.
+- Review-ready PR validation checks GitHub's prospective merge ref (PR head combined with the current base), not the raw head. Before merging, verify the PR is still current with `master` and lock the merge to the reviewed head SHA.
 - Documentation-only releases still require release-version validation, but frontend install/typecheck/tests/build are skipped when no application input changed.
-- On `master`, CI trusts the exact green PR candidate for typecheck/tests and does not repeat them; it validates release metadata and performs the production build/deployment only for application-affecting changes.
+- On `master`, CI trusts the green prospective-merge validation for typecheck/tests and does not repeat them; it validates release metadata and performs the production build/deployment only for application-affecting changes.
 
 ## Release invariant
 

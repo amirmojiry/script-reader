@@ -37,8 +37,9 @@ feature/play-editor
 - Keep unrelated refactors out of the PR.
 - Prefer squash merge for one focused release.
 - Draft PRs intentionally skip the validation runner.
-- Mark ready only after the candidate is self-reviewed; application-affecting ready PRs run the full frontend validation.
-- A green PR validates the candidate; deployment occurs only from the resulting push to `master`.
+- Mark ready only after the candidate is self-reviewed; application-affecting ready PRs run the full frontend validation against GitHub's prospective merge ref.
+- Before merging, verify the branch is still current with `master` and lock the merge to the reviewed head SHA.
+- A green PR validates the prospective merged tree; deployment occurs only from the resulting push to `master`.
 
 ## Release requirements
 

@@ -2,7 +2,7 @@
 
 ## Core rule
 
-`master` is the release/production branch. Draft pull requests are development workspaces and intentionally allocate no validation runner. Review-ready application changes validate fully before merge. A push to `master` does not repeat the already-green PR typecheck/test suite; it validates release metadata, builds the production artifact when application inputs changed, and deploys that artifact to GitHub Pages.
+`master` is the release/production branch. Draft pull requests are development workspaces and intentionally allocate no validation runner. Review-ready application changes validate GitHub's prospective merge tree (PR head combined with the current base) before merge. A push to `master` does not repeat the already-green PR typecheck/test suite; it validates release metadata, builds the production artifact when application inputs changed, and deploys that artifact to GitHub Pages.
 
 Documentation-only releases remain releases and must advance `VERSION`/changelogs, but they do not install frontend dependencies, run frontend tests, rebuild the application, or redeploy unchanged Pages output.
 
@@ -43,7 +43,7 @@ PR concurrency keeps `cancel-in-progress: true` so a newer candidate cancels an 
 
 ## Change classification
 
-After a shallow checkout, CI diffs the candidate against the explicit base commit.
+After a shallow checkout, PR CI checks out GitHub's `refs/pull/<number>/merge` ref and diffs that prospective merged tree against the explicit base commit.
 
 Application-affecting paths are:
 
@@ -66,7 +66,7 @@ A `master` push with no application-affecting path skips app build, artifact upl
 
 CI uses `fetch-depth: 2`, not the entire repository history.
 
-For PRs, the exact PR base SHA is fetched with depth 1 and passed to `scripts/validate-release-version.sh` as `RELEASE_BASE_REF`. For `master` pushes, `HEAD^` is available from the two-commit checkout.
+For PRs, checkout targets GitHub's synthetic merge ref rather than the raw head. The exact PR base SHA is fetched with depth 1 and passed to `scripts/validate-release-version.sh` as `RELEASE_BASE_REF`. The resulting typecheck/tests/build therefore exercise the tree that would be produced by merging that head with that base. For `master` pushes, `HEAD^` is available from the two-commit checkout.
 
 The release script still supports `origin/master` as a local fallback, but CI no longer needs a full-history checkout solely for version comparison.
 
@@ -74,7 +74,7 @@ The release script still supports `origin/master` as a local fallback, but CI no
 
 For application-affecting changes, one review-ready candidate performs:
 
-1. shallow checkout and exact base fetch;
+1. shallow checkout of the prospective merge ref and exact base fetch;
 2. npm cache setup keyed by `package-lock.json`;
 3. `npm ci --no-audit --no-fund`;
 4. release-version validation;
@@ -97,7 +97,7 @@ After an authorized squash merge:
 5. upload the exact `dist` artifact;
 6. run the lightweight Pages deploy job.
 
-The `master` path intentionally does not rerun typecheck or tests. Those belong to the exact review-ready PR candidate. The branch must not be stale before merge, and merge authorization should be locked to the reviewed head SHA.
+The `master` path intentionally does not rerun typecheck or tests. Those belong to the review-ready prospective merge tree. Immediately before merge, verify that the PR is still current with `master`; if the base has advanced, refresh/revalidate instead of reusing an older green result. Merge authorization should be locked to the reviewed head SHA.
 
 The deploy job itself does not checkout code, install dependencies, test, or rebuild.
 
@@ -148,7 +148,7 @@ Vitest defaults to `node`. Pure data, store, validation, and utility tests there
 
 ## Merge and deployment
 
-Do not merge a draft, red, pending, stale, or unexpectedly changed PR. Prefer squash merge for a focused release. After merge, monitor the workflow triggered by the new `master` commit; a green PR is validation evidence, while the `master` run owns the production build/deployment.
+Do not merge a draft, red, pending, stale, or unexpectedly changed PR. Prefer squash merge for a focused release. A green check is valid for the prospective merge ref/base combination it tested; if `master` advances, require a fresh validation before merging. After merge, monitor the workflow triggered by the new `master` commit; the `master` run owns the production build/deployment.
 
 After an application deployment, verify the public Pages URL and exercise library load, one search, one reader interaction, one rehearsal reveal, and persistence after refresh. For a docs-only release, no Pages redeployment is expected.
 
