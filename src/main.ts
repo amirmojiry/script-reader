@@ -6,6 +6,7 @@ import { router } from './router'
 import './styles.css'
 import './styles-v11.css'
 import './styles-v13.css'
+import './styles-v14.css'
 
 registerSW({ immediate: true })
 

@@ -46,6 +46,7 @@ Minimal example:
 ## Required invariants
 
 - `Play.id`, character ids, scene ids, act ids, and block ids should be stable identifiers.
+- Imported `Play.id` values must not start with `builtin:`; that namespace is reserved for application-bundled plays and collision-safe bundled migrations.
 - Character, act, and scene ids must be unique in their respective play structure.
 - Act and scene titles are required.
 - Block ids must be unique across the whole play.
@@ -59,9 +60,11 @@ Minimal example:
 
 JSON imports are user-controlled data. Imported strings remain text and are not inserted as raw HTML. Future HTML, DOCX, TXT, or PDF importers must convert into this structure and provide a review/validation step before saving inferred roles or directions.
 
+If a legacy local import already uses an id that collides with a bundled play, initialization preserves the user-owned entry and installs the bundled copy under a deterministic reserved fallback id instead of overwriting the local manuscript.
+
 ## Bundled source migration
 
-The version 1.1 bundled play is generated from user-supplied structured source containing ordered `dialogue` and `scene_direction` records. The migration creates stable block identifiers and canonical character references while preserving every supplied record in sequence. Parenthetical content inside a supplied dialogue remains part of that supplied dialogue rather than being guessed into a direction at runtime.
+Bundled plays generated from user-supplied structured source use ordered `dialogue` and `scene_direction` records. Migration creates stable block identifiers and canonical character references while preserving every supplied record in sequence. Parenthetical content inside a supplied dialogue remains part of that supplied dialogue rather than being guessed into a direction at runtime.
 
 ## Legacy migration note
 

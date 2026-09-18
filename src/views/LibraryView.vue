@@ -158,17 +158,22 @@ async function importFile(event: Event) {
 
     <section class="play-grid" aria-label="نمایشنامه‌های من">
       <article v-for="item in filteredCards" :key="item.play.id" class="play-card card">
-        <div>
+        <div class="play-card-copy">
           <p class="eyebrow">{{ item.play.author || 'نویسنده نامشخص' }}</p>
           <h2>{{ item.play.title }}</h2>
           <p v-if="item.play.translator" class="muted">مترجم: {{ item.play.translator }}</p>
         </div>
-        <div class="play-metrics">
-          <span>{{ item.metrics.characterCount }} نقش</span>
-          <span>{{ item.metrics.dialogueCount }} دیالوگ</span>
-          <span>حدود {{ item.metrics.estimatedMinutes }} دقیقه</span>
+        <div class="play-card-control-grid" aria-label="مشخصات نمایشنامه و باز کردن">
+          <span class="play-card-control play-card-metric">{{ item.metrics.characterCount }} نقش</span>
+          <span class="play-card-control play-card-metric">{{ item.metrics.dialogueCount }} دیالوگ</span>
+          <span class="play-card-control play-card-metric">حدود {{ item.metrics.estimatedMinutes }} دقیقه</span>
+          <button
+            class="primary-button play-card-control play-card-open"
+            @click="router.push({ name: 'reader', params: { id: item.play.id } })"
+          >
+            باز کردن
+          </button>
         </div>
-        <button class="primary-button" @click="router.push({ name: 'reader', params: { id: item.play.id } })">باز کردن</button>
       </article>
     </section>
 
@@ -176,11 +181,6 @@ async function importFile(event: Event) {
       <h2>نمایشی در این بازه پیدا نشد</h2>
       <p class="muted">بازهٔ تعداد شخصیت یا مدت زمان را بازتر کنید.</p>
       <button class="secondary-button" type="button" @click="resetFilters">نمایش همه</button>
-    </section>
-
-    <section class="card import-help">
-      <h2>فرمت ورود</h2>
-      <p>نمایشنامه‌ها در قالب JSON ساختاریافته ذخیره می‌شوند؛ متن گفتار و توضیح اجرایی داخل دیالوگ از هم جدا هستند تا تمرین و آمار دقیق بماند.</p>
     </section>
   </main>
 </template>

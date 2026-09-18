@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { bundledPlays, mergeBundledPlay } from '../data/bundledPlays'
+import {
+  bundledPlays,
+  isReservedBundledId,
+  resolveBundledPlayForStorage
+} from '../data/bundledPlays'
 import { deletePlay, listPlays, savePlay } from '../services/storage'
 import type { Play } from '../types'
 import { validatePlay } from '../utils/play'
@@ -14,10 +18,19 @@ export const usePlaysStore = defineStore('plays', () => {
   async function initialize(): Promise<void> {
     if (loaded.value) return
     const stored = await listPlays()
-    const bundledIds = new Set(bundledPlays.map((play) => play.id))
-    const currentBundled = bundledPlays.map((play) => mergeBundledPlay(play, stored.find((item) => item.id === play.id)))
+    const usedIds = new Set([...stored.map((play) => play.id), ...bundledPlays.map((play) => play.id)])
+    const resolvedBundled = bundledPlays.map((play) => {
+      const resolved = resolveBundledPlayForStorage(play, stored, usedIds)
+      usedIds.add(resolved.play.id)
+      return resolved
+    })
+    const ownedStoredIds = new Set(
+      resolvedBundled.flatMap((resolved) => resolved.ownedStoredId ? [resolved.ownedStoredId] : [])
+    )
+    const currentBundled = resolvedBundled.map((resolved) => resolved.play)
+
     for (const play of currentBundled) await savePlay(play)
-    plays.value = [...currentBundled, ...stored.filter((play) => !bundledIds.has(play.id))]
+    plays.value = [...currentBundled, ...stored.filter((play) => !ownedStoredIds.has(play.id))]
     loaded.value = true
   }
 
@@ -26,6 +39,9 @@ export const usePlaysStore = defineStore('plays', () => {
     const result = validatePlay(value)
     if (!result.valid) throw new Error(result.errors[0] ?? 'فایل با ساختار نمایشنامهٔ Script Reader سازگار نیست.')
     const play = value as Play
+    if (isReservedBundledId(play.id)) {
+      throw new Error('شناسه‌هایی که با builtin: شروع می‌شوند برای نمایشنامه‌های داخلی برنامه رزرو شده‌اند.')
+    }
     await savePlay(play)
     const index = plays.value.findIndex((item) => item.id === play.id)
     if (index >= 0) plays.value[index] = play
