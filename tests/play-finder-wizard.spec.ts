@@ -53,6 +53,51 @@ describe('PlayFinderWizard', () => {
     })
   })
 
+  it('keeps focus inside the dialog when advancing between wizard steps', async () => {
+    const app = document.createElement('div')
+    app.id = 'app'
+    const launcher = document.createElement('button')
+    launcher.textContent = 'باز کردن'
+    app.appendChild(launcher)
+    document.body.appendChild(app)
+    launcher.focus()
+
+    const wrapper = mount(PlayFinderWizard, {
+      attachTo: app,
+      props: { plays: [play] }
+    })
+    await nextTick()
+
+    const dialog = document.querySelector<HTMLElement>('.play-wizard')
+    expect(dialog).not.toBeNull()
+
+    const advance = () => Array.from(dialog?.querySelectorAll<HTMLButtonElement>('button') ?? [])
+      .find((button) => button.textContent?.trim() === 'ادامه')
+
+    let button = advance()
+    expect(button).toBeDefined()
+    button?.focus()
+    button?.click()
+    await nextTick()
+
+    expect(dialog?.contains(document.activeElement)).toBe(true)
+    expect(document.activeElement?.textContent).toContain('زمان و حال‌وهوای نمایش')
+
+    button = advance()
+    expect(button).toBeDefined()
+    button?.focus()
+    button?.click()
+    await nextTick()
+
+    expect(dialog?.contains(document.activeElement)).toBe(true)
+    expect(document.activeElement?.textContent).toContain('پیشنهاد مناسب')
+
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(wrapper.emitted('close')).toHaveLength(1)
+
+    wrapper.unmount()
+  })
+
   it('moves focus into the modal, traps tab focus, handles Escape, and restores the launcher', async () => {
     const app = document.createElement('div')
     app.id = 'app'

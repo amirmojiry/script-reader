@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const dialogRef = ref<HTMLElement | null>(null)
+const stepHeadingRef = ref<HTMLElement | null>(null)
 let opener: HTMLElement | null = null
 let appRoot: HTMLElement | null = null
 let appWasInert = false
@@ -117,6 +118,13 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 }
 
+async function changeStep(nextStep: number): Promise<void> {
+  step.value = Math.max(1, Math.min(3, nextStep))
+  await nextTick()
+  stepHeadingRef.value?.focus()
+  if (!dialogRef.value?.contains(document.activeElement)) dialogRef.value?.focus()
+}
+
 function applyCriteria(): void {
   emit('apply', criteria.value)
 }
@@ -149,7 +157,7 @@ function applyCriteria(): void {
         </div>
 
         <div v-if="step === 1" class="wizard-panel">
-          <h3>ترکیب گروه</h3>
+          <h3 ref="stepHeadingRef" tabindex="-1">ترکیب گروه</h3>
           <p class="muted">راوی نقش مجازی است و در تعداد بازیگران حساب نمی‌شود؛ می‌تواند توسط یکی از اعضای گروه هم خوانده شود.</p>
           <div class="wizard-field-grid">
             <label>
@@ -169,7 +177,7 @@ function applyCriteria(): void {
         </div>
 
         <div v-else-if="step === 2" class="wizard-panel">
-          <h3>زمان و حال‌وهوای نمایش</h3>
+          <h3 ref="stepHeadingRef" tabindex="-1">زمان و حال‌وهوای نمایش</h3>
           <label class="wizard-range">
             <span>حداکثر زمان: <strong>{{ maxMinutes }} دقیقه</strong></span>
             <input v-model.number="maxMinutes" type="range" min="1" :max="maxDuration" step="1" />
@@ -186,7 +194,7 @@ function applyCriteria(): void {
         <div v-else class="wizard-panel">
           <div class="wizard-result-heading">
             <div>
-              <h3>{{ matches.length }} پیشنهاد مناسب</h3>
+              <h3 ref="stepHeadingRef" tabindex="-1">{{ matches.length }} پیشنهاد مناسب</h3>
               <p class="muted">نتایج از کوتاه‌ترین نمایش مرتب شده‌اند.</p>
             </div>
           </div>
@@ -204,9 +212,9 @@ function applyCriteria(): void {
         </div>
 
         <footer class="wizard-actions">
-          <button v-if="step > 1" class="secondary-button" type="button" @click="step -= 1">مرحله قبل</button>
+          <button v-if="step > 1" class="secondary-button" type="button" @click="changeStep(step - 1)">مرحله قبل</button>
           <span class="wizard-spacer" />
-          <button v-if="step < 3" class="primary-button" type="button" @click="step += 1">ادامه</button>
+          <button v-if="step < 3" class="primary-button" type="button" @click="changeStep(step + 1)">ادامه</button>
           <button v-else class="primary-button" type="button" @click="applyCriteria">اعمال روی کتابخانه</button>
         </footer>
       </section>
