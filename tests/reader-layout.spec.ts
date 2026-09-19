@@ -168,8 +168,8 @@ describe('reader roles layout', () => {
   it('registers the scroll listener before async initialization and removes it if unmounted early', async () => {
     mockCompactViewport(false)
     let resolveInitialize!: () => void
-    mocks.initialize.mockImplementationOnce(() => new Promise<void>((resolve) => {
-      resolveInitialize = resolve
+    mocks.initialize.mockImplementationOnce(() => new Promise<undefined>((resolve) => {
+      resolveInitialize = () => resolve(undefined)
     }))
     const addSpy = vi.spyOn(window, 'addEventListener')
     const removeSpy = vi.spyOn(window, 'removeEventListener')
