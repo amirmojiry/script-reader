@@ -12,7 +12,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
   it('preserves the supplied two-act source in canonical order', () => {
     const blocks = flattenBlocks(hesabPardakhtNemishePlay)
 
-    expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([480, 534])
+    expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([479, 535])
     expect(hesabPardakhtNemishePlay.acts).toHaveLength(2)
     expect(blocks).toHaveLength(1014)
     expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(983)
@@ -54,10 +54,10 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
       })
     })
 
-    expect(blocks[479]?.id).toBe('a1-b0480')
-    expect(blocks[480]?.id).toBe('a2-b0001')
+    expect(blocks[478]?.id).toBe('a1-b0479')
+    expect(blocks[479]?.id).toBe('a2-b0001')
     expect(blocks.at(-1)).toEqual({
-      id: 'a2-b0534',
+      id: 'a2-b0535',
       type: 'stage-direction',
       text: '(با بیان آخرین جمله صحنه کم‌کم تاریک می‌شود.)'
     })
@@ -80,6 +80,9 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts).toContain('همبستگی چه می‌شد؟')
     expect(dialogueTexts).toContain('خواب دیدی! قبول کن!')
     expect(dialogueTexts).toContain('تنفس مصنوعی.')
+    expect(dialogueTexts).toContain('شما رفتار اعتماد‌برانگیزی دارید. همین‌جا زندگی می‌کنید؟')
+    expect(dialogueTexts).not.toContain('قطار را متوقف کردند.\nهذیان نگو')
+    expect(dialogueTexts + stageTexts).not.toContain('اچرا')
     expect(dialogueTexts).toContain('زن تو کاملا سالم است و کماکان می‌تواند بچه‌دار بشود')
     expect(dialogueTexts).toContain('امروز هم واقعاً مثل روز مادر است')
     expect(stageTexts).not.toContain('خانه‌ی پسر خانم رزا را تفتیش کردند')
