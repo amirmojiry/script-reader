@@ -86,7 +86,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts).toContain('خواب دیدی! قبول کن!')
     expect(dialogueTexts).toContain('تنفس مصنوعی.')
     expect(dialogueTexts).toContain('ننه‌جان دستم به دامنت!')
-    const jointBlock = blocks.find((block) => block.type === 'dialogue' && dialogueText(block) === 'ننه‌جان دستم به دامنت!')
+    const jointBlock = blocks.find((block) => block.type === 'dialogue' && dialogueText(block).startsWith('ننه‌جان دستم به دامنت!'))
     expect(jointBlock?.type).toBe('dialogue')
     if (jointBlock?.type === 'dialogue') {
       expect(dialogueCharacterIds(jointBlock)).toEqual(['giovanni', 'luigi'])
@@ -111,6 +111,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toContain('سیصٍث')
     expect(dialogueTexts + stageTexts).not.toContain('|')
     expect(dialogueTexts + stageTexts).not.toContain('آن‌وقت آنوقت')
+    expect(dialogueTexts + stageTexts).not.toMatch(/تولید کرده نا|نمی‌دهسیم|ولبی|یبک‌دیگر|وب گوش کن/)
     expect(dialogueTexts + stageTexts).not.toMatch(/آ»|بُزییاری|کش‌رفتماه|نو می‌خواستی|ریل راء‌آهن|طلب‌هاا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بودندا|کردندا|باشیدا|نکنندا|نشده بودا|تلقین بودا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بتو!نید|نور!نی|می‌تو!نستم/)
