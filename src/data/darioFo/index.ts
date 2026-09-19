@@ -42,7 +42,11 @@ export const hesabPardakhtNemisheSource: DarioFoSource = {
     { id: 'gendarme', name: 'ژاندارم', color: '#fff59d', gender: 'male' },
     { id: 'old-man', name: 'پیرمرد', color: '#a5d6a7', gender: 'male' },
     { id: 'gravedigger', name: 'گورکن', color: '#f48fb1', gender: 'male' },
-    { id: 'police-officers', name: 'ماموران پلیس', color: '#b0bec5', gender: 'unknown' }
+    { id: 'police-officers', name: 'ماموران پلیس', color: '#b0bec5', gender: 'unknown' },
+    { id: 'giovanni-antonia', name: 'جووانی و آنتونیا', color: '#b0bec5', gender: 'unknown' },
+    { id: 'antonia-margherita', name: 'آنتونیا و مارگریتا', color: '#b0bec5', gender: 'unknown' },
+    { id: 'giovanni-luigi', name: 'جووانی و لوئیجی', color: '#b0bec5', gender: 'unknown' },
+    { id: 'all', name: 'همگی', color: '#b0bec5', gender: 'unknown' }
   ],
   acts: [
     {

@@ -15,8 +15,8 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([479, 535])
     expect(hesabPardakhtNemishePlay.acts).toHaveLength(2)
     expect(blocks).toHaveLength(1014)
-    expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(983)
-    expect(blocks.filter((block) => block.type === 'stage-direction')).toHaveLength(31)
+    expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(989)
+    expect(blocks.filter((block) => block.type === 'stage-direction')).toHaveLength(25)
     expect(hesabPardakhtNemishePlay.characters.map((character) => character.name)).toEqual([
       'آنتونیا',
       'جووانی',
@@ -26,7 +26,11 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
       'ژاندارم',
       'پیرمرد',
       'گورکن',
-      'ماموران پلیس'
+      'ماموران پلیس',
+      'جووانی و آنتونیا',
+      'آنتونیا و مارگریتا',
+      'جووانی و لوئیجی',
+      'همگی'
     ])
     expect(validatePlay(hesabPardakhtNemishePlay)).toEqual({ valid: true, errors: [] })
 
@@ -80,6 +84,9 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts).toContain('همبستگی چه می‌شد؟')
     expect(dialogueTexts).toContain('خواب دیدی! قبول کن!')
     expect(dialogueTexts).toContain('تنفس مصنوعی.')
+    expect(dialogueTexts).toContain('ننه‌جان دستم به دامنت!')
+    expect(dialogueTexts).toContain('اویلالیای مقدس با شکم برآمده')
+    expect(dialogueTexts).toContain('قاتل‌ها! خوک‌ها! لعنتی‌ها!')
     expect(dialogueTexts).toContain('شما رفتار اعتماد‌برانگیزی دارید. همین‌جا زندگی می‌کنید؟')
     expect(dialogueTexts).not.toContain('قطار را متوقف کردند.\nهذیان نگو')
     expect(dialogueTexts + stageTexts).not.toMatch(/(^|[^\u0600-\u06FF])اچرا([^\u0600-\u06FF]|$)/)
@@ -97,6 +104,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toContain('داربو فو')
     expect(dialogueTexts + stageTexts).not.toContain('سیصٍث')
     expect(dialogueTexts + stageTexts).not.toContain('|')
+    expect(dialogueTexts + stageTexts).not.toMatch(/آ»|بُزییاری|کش‌رفتماه|نو می‌خواستی|ریل راء‌آهن|طلب‌هاا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بودندا|کردندا|باشیدا|نکنندا|نشده بودا|تلقین بودا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بتو!نید|نور!نی|می‌تو!نستم/)
     expect(dialogueTexts + stageTexts).not.toMatch(/می‌شودا|اگسر|نمی‌فهمندا|فکر می‌کنناد|می‌کردیدا|می‌روندا|نمی‌کشدا|می‌اندازدا|می‌رسیدا|ماچرا/)
