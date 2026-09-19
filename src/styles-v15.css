@@ -594,3 +594,10 @@
     z-index: 60;
   }
 }
+
+
+@media (max-width: 380px) {
+  .play-card-control-grid {
+    grid-template-columns: 1fr;
+  }
+}
