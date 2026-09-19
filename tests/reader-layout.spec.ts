@@ -165,6 +165,29 @@ describe('reader roles layout', () => {
     expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(true)
   })
 
+  it('registers the scroll listener before async initialization and removes it if unmounted early', async () => {
+    mockCompactViewport(false)
+    let resolveInitialize!: () => void
+    mocks.initialize.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      resolveInitialize = resolve
+    }))
+    const addSpy = vi.spyOn(window, 'addEventListener')
+    const removeSpy = vi.spyOn(window, 'removeEventListener')
+
+    const wrapper = shallowMount(ReaderView)
+    expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1)
+
+    wrapper.unmount()
+    expect(removeSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1)
+
+    resolveInitialize()
+    await flushPromises()
+    expect(addSpy.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1)
+
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
+  })
+
   it('shows a lower-left back-to-top control after scrolling and scrolls smoothly to the top', async () => {
     mockCompactViewport(false)
     const scrollTo = vi.fn()

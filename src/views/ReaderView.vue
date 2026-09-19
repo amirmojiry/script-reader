@@ -131,6 +131,9 @@ const tableDialogueSegments = computed(() =>
 )
 
 onMounted(async () => {
+  updateBackToTopVisibility()
+  window.addEventListener('scroll', updateBackToTopVisibility, { passive: true })
+
   await store.initialize()
   if (!play.value) {
     await router.replace('/')
@@ -161,8 +164,6 @@ onMounted(async () => {
   }
   if (mode.value === 'table-read') ensureCurrentTableReadVisible()
   if (settings.value.keepAwake) await requestWakeLock()
-  updateBackToTopVisibility()
-  window.addEventListener('scroll', updateBackToTopVisibility, { passive: true })
 })
 
 onBeforeUnmount(() => {

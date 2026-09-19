@@ -49,6 +49,12 @@ const translators = computed(() => [...new Set(
     .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
 )].sort((a, b) => a.localeCompare(b, 'fa')))
 const genres = computed(() => [...new Set(store.plays.flatMap(playGenres))].sort((a, b) => a.localeCompare(b, 'fa')))
+const wizardGenres = computed(() => wizardCriteria.value?.genres ?? [])
+const genreSelectValue = computed(() => {
+  if (genreFilter.value) return genreFilter.value
+  if (wizardGenres.value.length) return '__wizard__'
+  return ''
+})
 const filtersActive = computed(() =>
   characterMin.value !== null
   || characterMax.value !== null
@@ -133,8 +139,21 @@ function applyWizard(criteria: PlayWizardCriteria): void {
   wizardOpen.value = false
 }
 
+function setGenreFilter(value: string): void {
+  if (value === '__wizard__') return
+  genreFilter.value = value
+  if (wizardCriteria.value?.genres?.length) {
+    wizardCriteria.value = { ...wizardCriteria.value, genres: undefined }
+  }
+}
+
 function toggleGenreFilter(genre: string): void {
-  genreFilter.value = genreFilter.value === genre ? '' : genre
+  if (wizardGenres.value.includes(genre)) {
+    wizardCriteria.value = wizardCriteria.value ? { ...wizardCriteria.value, genres: undefined } : null
+    genreFilter.value = ''
+    return
+  }
+  setGenreFilter(genreFilter.value === genre ? '' : genre)
 }
 
 async function importFile(event: Event) {
@@ -261,8 +280,14 @@ async function importFile(event: Event) {
         </label>
         <label>
           <span>ژانر</span>
-          <select v-model="genreFilter">
+          <select
+            :value="genreSelectValue"
+            @change="setGenreFilter(($event.target as HTMLSelectElement).value)"
+          >
             <option value="">همهٔ ژانرها</option>
+            <option v-if="wizardGenres.length" value="__wizard__">
+              ژانرهای ویزارد: {{ wizardGenres.join('، ') }}
+            </option>
             <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
           </select>
         </label>
@@ -297,9 +322,9 @@ async function importFile(event: Event) {
               v-for="genre in playGenres(item.play)"
               :key="genre"
               class="genre-chip"
-              :class="{ active: genreFilter === genre }"
+              :class="{ active: genreFilter === genre || wizardGenres.includes(genre) }"
               type="button"
-              :aria-pressed="genreFilter === genre"
+              :aria-pressed="genreFilter === genre || wizardGenres.includes(genre)"
               @click="toggleGenreFilter(genre)"
             >
               {{ genre }}

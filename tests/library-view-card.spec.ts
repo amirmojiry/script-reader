@@ -64,6 +64,14 @@ const WizardApplyStub = defineComponent({
   >اعمال تست</button>`
 })
 
+const WizardGenreApplyStub = defineComponent({
+  emits: ['apply', 'close'],
+  template: `<button
+    class="wizard-genre-apply-test"
+    @click="$emit('apply', { totalPeople: 3, malePeople: 1, femalePeople: 1, maxMinutes: 3, genres: ['درام'] })"
+  >اعمال ژانر تست</button>`
+})
+
 describe('LibraryView play cards and discovery controls', () => {
   beforeEach(() => {
     routerMocks.push.mockReset()
@@ -117,6 +125,33 @@ describe('LibraryView play cards and discovery controls', () => {
     await ranges[1].findAll('input[type="range"]')[1].setValue(2)
     expect(wrapper.findAll('.play-card')).toHaveLength(1)
     expect(wrapper.get('.play-card h2').text()).toBe('ب نمایش')
+  })
+
+  it('lets the all-genres option clear a multi-genre wizard restriction without resetting other wizard criteria', async () => {
+    const wrapper = mount(LibraryView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          PlayFinderWizard: WizardGenreApplyStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const wizardButton = wrapper.findAll('button').find((button) => button.text() === 'ویزارد انتخاب نمایش')
+    await wizardButton?.trigger('click')
+    await wrapper.get('.wizard-genre-apply-test').trigger('click')
+
+    expect(wrapper.findAll('.play-card')).toHaveLength(1)
+    expect(wrapper.get('.play-card h2').text()).toBe('آ نمایش')
+
+    const genreSelect = wrapper.findAll('.metadata-filter-grid select')[2]
+    expect((genreSelect.element as HTMLSelectElement).value).toBe('__wizard__')
+    expect(genreSelect.text()).toContain('ژانرهای ویزارد: درام')
+
+    await genreSelect.setValue('')
+    expect(wrapper.findAll('.play-card')).toHaveLength(2)
+    expect((genreSelect.element as HTMLSelectElement).value).toBe('')
   })
 
   it('filters by clickable genre chips, author and select controls, and sorts alphabetically', async () => {

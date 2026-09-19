@@ -587,3 +587,10 @@
     bottom: 12px;
   }
 }
+
+
+@media (max-width: 980px) {
+  .character-panel {
+    z-index: 60;
+  }
+}
