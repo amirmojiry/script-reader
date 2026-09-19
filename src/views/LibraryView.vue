@@ -49,6 +49,12 @@ const translators = computed(() => [...new Set(
     .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
 )].sort((a, b) => a.localeCompare(b, 'fa')))
 const genres = computed(() => [...new Set(store.plays.flatMap(playGenres))].sort((a, b) => a.localeCompare(b, 'fa')))
+const wizardGenres = computed(() => wizardCriteria.value?.genres ?? [])
+const genreSelectValue = computed(() => {
+  if (genreFilter.value) return genreFilter.value
+  if (wizardGenres.value.length) return '__wizard__'
+  return ''
+})
 const filtersActive = computed(() =>
   characterMin.value !== null
   || characterMax.value !== null
@@ -71,7 +77,7 @@ const filteredCards = computed(() => sortPlayCards(
       ...wizardCriteria.value,
       totalPeople: wizardCharacterMaxOverride.value ?? wizardCriteria.value.totalPeople,
       maxMinutes: wizardDurationMaxOverride.value ?? wizardCriteria.value.maxMinutes,
-      genre: genreFilter.value || undefined
+      genres: genreFilter.value ? [genreFilter.value] : wizardCriteria.value.genres
     })) return false
     return true
   }),
@@ -126,11 +132,28 @@ function applyWizard(criteria: PlayWizardCriteria): void {
   durationMax.value = criteria.maxMinutes >= durationBounds.value.min
     ? Math.min(criteria.maxMinutes, durationBounds.value.max)
     : null
-  genreFilter.value = criteria.genre ?? ''
+  genreFilter.value = ''
   authorFilter.value = ''
   translatorFilter.value = ''
   sortMode.value = 'duration-asc'
   wizardOpen.value = false
+}
+
+function setGenreFilter(value: string): void {
+  if (value === '__wizard__') return
+  genreFilter.value = value
+  if (wizardCriteria.value?.genres?.length) {
+    wizardCriteria.value = { ...wizardCriteria.value, genres: undefined }
+  }
+}
+
+function toggleGenreFilter(genre: string): void {
+  if (wizardGenres.value.includes(genre)) {
+    wizardCriteria.value = wizardCriteria.value ? { ...wizardCriteria.value, genres: undefined } : null
+    genreFilter.value = ''
+    return
+  }
+  setGenreFilter(genreFilter.value === genre ? '' : genre)
 }
 
 async function importFile(event: Event) {
@@ -257,8 +280,14 @@ async function importFile(event: Event) {
         </label>
         <label>
           <span>ژانر</span>
-          <select v-model="genreFilter">
+          <select
+            :value="genreSelectValue"
+            @change="setGenreFilter(($event.target as HTMLSelectElement).value)"
+          >
             <option value="">همهٔ ژانرها</option>
+            <option v-if="wizardGenres.length" value="__wizard__">
+              ژانرهای ویزارد: {{ wizardGenres.join('، ') }}
+            </option>
             <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
           </select>
         </label>
@@ -279,26 +308,37 @@ async function importFile(event: Event) {
       <article v-for="item in filteredCards" :key="item.play.id" class="play-card card">
         <div class="play-card-copy">
           <p class="eyebrow">{{ item.play.author || 'نویسنده نامشخص' }}</p>
-          <h2>{{ item.play.title }}</h2>
+          <h2>
+            <RouterLink
+              class="play-title-link"
+              :to="{ name: 'reader', params: { id: item.play.id } }"
+            >
+              {{ item.play.title }}
+            </RouterLink>
+          </h2>
           <p v-if="item.play.translator" class="muted">مترجم: {{ item.play.translator }}</p>
-          <div class="play-card-tags">
-            <span v-for="genre in playGenres(item.play)" :key="genre" class="genre-chip">{{ genre }}</span>
+          <div class="play-card-tags" aria-label="ژانرهای نمایش">
+            <button
+              v-for="genre in playGenres(item.play)"
+              :key="genre"
+              class="genre-chip"
+              :class="{ active: genreFilter === genre || wizardGenres.includes(genre) }"
+              type="button"
+              :aria-pressed="genreFilter === genre || wizardGenres.includes(genre)"
+              @click="toggleGenreFilter(genre)"
+            >
+              {{ genre }}
+            </button>
           </div>
           <p class="cast-summary">
             {{ item.metrics.maleCount }} مرد · {{ item.metrics.femaleCount }} زن
             <template v-if="item.metrics.unknownCount"> · {{ item.metrics.unknownCount }} نامشخص</template>
           </p>
         </div>
-        <div class="play-card-control-grid" aria-label="مشخصات نمایشنامه و باز کردن">
+        <div class="play-card-control-grid" aria-label="مشخصات نمایشنامه">
           <span class="play-card-control play-card-metric">{{ item.metrics.characterCount }} نقش</span>
           <span class="play-card-control play-card-metric">{{ item.metrics.dialogueCount }} دیالوگ</span>
           <span class="play-card-control play-card-metric">حدود {{ item.metrics.estimatedMinutes }} دقیقه</span>
-          <button
-            class="primary-button play-card-control play-card-open"
-            @click="router.push({ name: 'reader', params: { id: item.play.id } })"
-          >
-            باز کردن
-          </button>
         </div>
       </article>
     </section>

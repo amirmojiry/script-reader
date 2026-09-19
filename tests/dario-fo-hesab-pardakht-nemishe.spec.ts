@@ -119,6 +119,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toMatch(/(?:^|\s)۱(?:\s|$|[؟?!.,،])/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بببیرون|ببیرون|اشتباههه|واقعاًً|اینن|یبن|بیاء|مار گریتا|سپیل|مقاببل|می‌کن،د|می‌تو!نیم|بتو!نم/)
     expect(dialogueTexts + stageTexts).not.toMatch(/صدا البته|مردانه باشدا|دستو رات|تقتیش/)
+    expect(dialogueTexts + stageTexts).not.toMatch(/مسسه|حدافل|منامن|فانون|مواطب/)
     expect((dialogueTexts + stageTexts).split('مارگریتا مایحتاج گوناگون را زیر پیراهنش جا می‌دهد').length - 1).toBe(1)
   })
 

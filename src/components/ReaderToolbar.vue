@@ -44,7 +44,6 @@ watch(
           <button :class="{ active: mode === 'rehearsal' }" @click="emit('setMode', 'rehearsal')">تمرین</button>
           <button :class="{ active: mode === 'table-read' }" @click="emit('setMode', 'table-read')">نمایشنامه‌خوانی</button>
         </div>
-        <RouterLink class="secondary-button settings-button" to="/settings">تنظیمات</RouterLink>
         <button v-if="speechAvailable" class="secondary-button" type="button" @click="emit('speakOthers')">خواندن نقش‌های دیگر</button>
       </div>
 

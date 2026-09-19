@@ -36,7 +36,7 @@ export interface PlayWizardCriteria {
   malePeople: number
   femalePeople: number
   maxMinutes: number
-  genre?: string
+  genres?: string[]
 }
 
 export interface PlayCardLike {
@@ -109,7 +109,10 @@ export function matchesWizardCriteria(play: Play, metrics: PlayLibraryMetrics, c
   if (metrics.femaleCount > femalePeople) return false
   if (metrics.unknownCount > remainingAfterTypedRoles) return false
   if (metrics.estimatedMinutes > maxMinutes) return false
-  if (criteria.genre && !playGenres(play).includes(criteria.genre)) return false
+  if (criteria.genres?.length) {
+    const availableGenres = playGenres(play)
+    if (!criteria.genres.some((genre) => availableGenres.includes(genre))) return false
+  }
   return true
 }
 
