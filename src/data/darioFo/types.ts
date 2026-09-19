@@ -1,1 +1,1 @@
-export type DarioFoRecord = ['s', string] | ['d', string, string]
+export type DarioFoRecord = ['s', string] | ['d', string | string[], string]

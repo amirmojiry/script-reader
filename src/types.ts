@@ -15,6 +15,7 @@ export interface DialogueBlock {
   id: string
   type: 'dialogue'
   characterId: string
+  characterIds?: string[]
   parts: DialoguePart[]
 }
 

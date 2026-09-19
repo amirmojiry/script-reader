@@ -7,6 +7,7 @@ import { characterDialogueText, dialogueRenderSegments } from '../utils/play'
 const props = defineProps<{
   block: DialogueBlock
   character?: Character
+  characters?: Character[]
   mode: ReaderMode
   isMine: boolean
   highlighted: boolean
@@ -25,6 +26,9 @@ watch(() => props.block.id, () => {
   progressiveWordCount.value = 5
 })
 
+const displayCharacters = computed(() => props.characters?.length ? props.characters : props.character ? [props.character] : [])
+const displayName = computed(() => displayCharacters.value.map((character) => character.name).join(' و ') || props.block.characterId)
+const highlightColor = computed(() => displayCharacters.value[0]?.color || '#e0e7ff')
 const spokenText = computed(() => characterDialogueText(props.block))
 const renderSegments = computed(() => dialogueRenderSegments(props.block))
 const narratorSegments = computed(() => renderSegments.value.filter((segment) => segment.type === 'narration'))
@@ -49,11 +53,11 @@ function revealNext(): void {
     :id="`block-${block.id}`"
     class="dialogue-block"
     :class="{ highlighted, current, mine: isMine, 'has-narration': hasNarration }"
-    :style="highlighted ? { '--highlight': character?.color || '#e0e7ff' } : undefined"
+    :style="highlighted ? { '--highlight': highlightColor } : undefined"
     tabindex="0"
   >
     <header>
-      <strong>{{ character?.name || block.characterId }}</strong>
+      <strong>{{ displayName }}</strong>
       <span v-if="isMine" class="mine-badge">نقش من</span>
       <span v-if="narratorIsMine && hasNarration" class="narrator-badge">راوی من</span>
     </header>

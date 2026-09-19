@@ -42,11 +42,7 @@ export const hesabPardakhtNemisheSource: DarioFoSource = {
     { id: 'gendarme', name: 'ژاندارم', color: '#fff59d', gender: 'male' },
     { id: 'old-man', name: 'پیرمرد', color: '#a5d6a7', gender: 'male' },
     { id: 'gravedigger', name: 'گورکن', color: '#f48fb1', gender: 'male' },
-    { id: 'police-officers', name: 'ماموران پلیس', color: '#b0bec5', gender: 'unknown' },
-    { id: 'giovanni-antonia', name: 'جووانی و آنتونیا', color: '#b0bec5', gender: 'unknown' },
-    { id: 'antonia-margherita', name: 'آنتونیا و مارگریتا', color: '#b0bec5', gender: 'unknown' },
-    { id: 'giovanni-luigi', name: 'جووانی و لوئیجی', color: '#b0bec5', gender: 'unknown' },
-    { id: 'all', name: 'همگی', color: '#b0bec5', gender: 'unknown' }
+    { id: 'police-officers', name: 'ماموران پلیس', color: '#b0bec5', gender: 'unknown' }
   ],
   acts: [
     {
@@ -67,9 +63,21 @@ function buildBlocks(records: DarioFoRecord[], actNumber: number, characterIds: 
     const id = `a${actNumber}-b${String(index + 1).padStart(4, '0')}`
     if (record[0] === 's') return { id, type: 'stage-direction', text: record[1] }
 
-    const characterId = characterIds.get(record[1])
-    if (!characterId) throw new Error(`Unknown character in ${hesabPardakhtNemisheSource.id}: ${record[1]}`)
-    return { id, type: 'dialogue', characterId, parts: [{ type: 'speech', text: record[2] }] }
+    const characterNames = Array.isArray(record[1]) ? record[1] : [record[1]]
+    const ownerIds = characterNames.map((name) => {
+      const characterId = characterIds.get(name)
+      if (!characterId) throw new Error(`Unknown character in ${hesabPardakhtNemisheSource.id}: ${name}`)
+      return characterId
+    })
+    const characterId = ownerIds[0]
+    if (!characterId) throw new Error(`Dialogue without character in ${hesabPardakhtNemisheSource.id}`)
+    return {
+      id,
+      type: 'dialogue',
+      characterId,
+      ...(ownerIds.length > 1 ? { characterIds: ownerIds } : {}),
+      parts: [{ type: 'speech', text: record[2] }]
+    }
   })
 }
 

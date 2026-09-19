@@ -40,6 +40,20 @@ describe('reader filtering utilities', () => {
     expect(cueIndexes).toEqual([0, 1])
   })
 
+  it('treats joint dialogue as owned by every participating character', () => {
+    const joint = {
+      id: 'joint',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      characterIds: ['mother', 'messenger'],
+      parts: [{ type: 'speech' as const, text: 'با هم.' }]
+    }
+
+    expect(isCharacterSpeechBlock(joint, 'mother')).toBe(true)
+    expect(isCharacterSpeechBlock(joint, 'messenger')).toBe(true)
+    expect(isCharacterSpeechBlock(joint, 'other')).toBe(false)
+  })
+
   it('supports narrator rehearsal using precomputed narrator-owned indexes', () => {
     const stageIndex = blocks.findIndex((block) => block.type === 'stage-direction')
     expect(stageIndex).toBeGreaterThanOrEqual(0)

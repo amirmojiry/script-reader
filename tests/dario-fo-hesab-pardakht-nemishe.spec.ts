@@ -6,7 +6,7 @@ import {
   hesabPardakhtNemisheSource
 } from '../src/data/darioFo'
 import type { DialogueBlock } from '../src/types'
-import { dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
+import { dialogueCharacterIds, dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
 describe('حساب پرداخت نمی‌شه! bundled play', () => {
   it('preserves the supplied two-act source in canonical order', () => {
@@ -14,6 +14,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
 
     expect(hesabPardakhtNemisheSource.acts.map((act) => act.records.length)).toEqual([479, 535])
     expect(hesabPardakhtNemishePlay.acts).toHaveLength(2)
+    expect(hesabPardakhtNemishePlay.characters).toHaveLength(9)
     expect(blocks).toHaveLength(1014)
     expect(blocks.filter((block) => block.type === 'dialogue')).toHaveLength(989)
     expect(blocks.filter((block) => block.type === 'stage-direction')).toHaveLength(25)
@@ -26,11 +27,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
       'ژاندارم',
       'پیرمرد',
       'گورکن',
-      'ماموران پلیس',
-      'جووانی و آنتونیا',
-      'آنتونیا و مارگریتا',
-      'جووانی و لوئیجی',
-      'همگی'
+      'ماموران پلیس'
     ])
     expect(validatePlay(hesabPardakhtNemishePlay)).toEqual({ valid: true, errors: [] })
 
@@ -49,7 +46,11 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
         } else {
           expect(block.type).toBe('dialogue')
           const dialogue = block as DialogueBlock
-          expect(hesabPardakhtNemishePlay.characters.find((character) => character.id === dialogue.characterId)?.name).toBe(record[1])
+          const expectedNames = Array.isArray(record[1]) ? record[1] : [record[1]]
+          const actualNames = dialogueCharacterIds(dialogue).map((id) =>
+            hesabPardakhtNemishePlay.characters.find((character) => character.id === id)?.name
+          )
+          expect(actualNames).toEqual(expectedNames)
           expect(dialogue.parts).toEqual([{ type: 'speech', text: record[2] }])
           expect(dialogueText(dialogue)).toBe(record[2])
         }
@@ -85,6 +86,11 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts).toContain('خواب دیدی! قبول کن!')
     expect(dialogueTexts).toContain('تنفس مصنوعی.')
     expect(dialogueTexts).toContain('ننه‌جان دستم به دامنت!')
+    const jointBlock = blocks.find((block) => block.type === 'dialogue' && dialogueText(block) === 'ننه‌جان دستم به دامنت!')
+    expect(jointBlock?.type).toBe('dialogue')
+    if (jointBlock?.type === 'dialogue') {
+      expect(dialogueCharacterIds(jointBlock)).toEqual(['giovanni', 'luigi'])
+    }
     expect(dialogueTexts).toContain('اویلالیای مقدس با شکم برآمده')
     expect(dialogueTexts).toContain('قاتل‌ها! خوک‌ها! لعنتی‌ها!')
     expect(dialogueTexts).toContain('شما رفتار اعتماد‌برانگیزی دارید. همین‌جا زندگی می‌کنید؟')
@@ -104,6 +110,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toContain('داربو فو')
     expect(dialogueTexts + stageTexts).not.toContain('سیصٍث')
     expect(dialogueTexts + stageTexts).not.toContain('|')
+    expect(dialogueTexts + stageTexts).not.toContain('آن‌وقت آنوقت')
     expect(dialogueTexts + stageTexts).not.toMatch(/آ»|بُزییاری|کش‌رفتماه|نو می‌خواستی|ریل راء‌آهن|طلب‌هاا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بودندا|کردندا|باشیدا|نکنندا|نشده بودا|تلقین بودا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بتو!نید|نور!نی|می‌تو!نستم/)
