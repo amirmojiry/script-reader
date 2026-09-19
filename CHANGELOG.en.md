@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-19
+
+### Added
+- Progressive single-page play finder with cast sliders, constrained male/female availability, multi-genre toggles, and live recommendations.
+- Sticky reader title/actions and a floating back-to-top control after scrolling.
+
+### Changed
+- Library play titles now open the reader directly and genre chips act as filters, replacing the separate open button.
+- Reader roles, bookmark, JSON export, and settings actions now use compact accessible icons grouped in the sticky header.
+
 ## [1.5.0] - 2026-09-18
 
 ### Added
@@ -76,7 +86,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/amirmojiry/script-reader/compare/v1.3.0...v1.4.0
