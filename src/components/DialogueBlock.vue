@@ -11,6 +11,7 @@ const props = defineProps<{
   mode: ReaderMode
   isMine: boolean
   highlighted: boolean
+  highlightColor?: string
   current: boolean
   revealMode: RehearsalRevealMode
   narratorHighlighted: boolean
@@ -28,7 +29,7 @@ watch(() => props.block.id, () => {
 
 const displayCharacters = computed(() => props.characters?.length ? props.characters : props.character ? [props.character] : [])
 const displayName = computed(() => displayCharacters.value.map((character) => character.name).join(' و ') || props.block.characterId)
-const highlightColor = computed(() => displayCharacters.value[0]?.color || '#e0e7ff')
+const resolvedHighlightColor = computed(() => props.highlightColor || displayCharacters.value[0]?.color || '#e0e7ff')
 const spokenText = computed(() => characterDialogueText(props.block))
 const renderSegments = computed(() => dialogueRenderSegments(props.block))
 const narratorSegments = computed(() => renderSegments.value.filter((segment) => segment.type === 'narration'))
@@ -53,7 +54,7 @@ function revealNext(): void {
     :id="`block-${block.id}`"
     class="dialogue-block"
     :class="{ highlighted, current, mine: isMine, 'has-narration': hasNarration }"
-    :style="highlighted ? { '--highlight': highlightColor } : undefined"
+    :style="highlighted ? { '--highlight': resolvedHighlightColor } : undefined"
     tabindex="0"
   >
     <header>
