@@ -97,6 +97,7 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toContain('داربو فو')
     expect(dialogueTexts + stageTexts).not.toContain('سیصٍث')
     expect(dialogueTexts + stageTexts).not.toContain('|')
+    expect(dialogueTexts + stageTexts).not.toMatch(/بودندا|کردندا|باشیدا|نکنندا|نشده بودا|تلقین بودا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/بتو!نید|نور!نی|می‌تو!نستم/)
     expect(dialogueTexts + stageTexts).not.toMatch(/می‌شودا|اگسر|نمی‌فهمندا|فکر می‌کنناد|می‌کردیدا|می‌روندا|نمی‌کشدا|می‌اندازدا|می‌رسیدا|ماچرا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/(?:^|\s)۱(?:\s|$|[؟?!.,،])/)
