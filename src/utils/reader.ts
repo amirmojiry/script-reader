@@ -39,7 +39,7 @@ export function rehearsalCueIndexesForOwnIndexes(
 }
 
 export function isCharacterSpeechBlock(block: PlayBlock, characterId: string | undefined): boolean {
-  return Boolean(characterId)
+  return characterId !== undefined
     && block.type === 'dialogue'
     && dialogueCharacterIds(block).includes(characterId)
     && Boolean(characterDialogueText(block))
