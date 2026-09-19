@@ -399,6 +399,11 @@ function dialogueHighlighted(block: DialogueBlock): boolean {
   return dialogueCharacterIds(block).some((id) => selected.value.includes(id))
 }
 
+function dialogueHighlightColor(block: DialogueBlock): string | undefined {
+  const selectedOwnerId = dialogueCharacterIds(block).find((id) => selected.value.includes(id))
+  return selectedOwnerId ? characterMap.value.get(selectedOwnerId)?.color : undefined
+}
+
 function isCurrent(index: number) {
   return index === currentIndex.value
 }
@@ -556,6 +561,7 @@ function selectCurrent(index: number) {
             :mode="mode"
             :is-mine="isCharacterSpeechBlock(entry.block, myCharacterId)"
             :highlighted="dialogueHighlighted(entry.block)"
+            :highlight-color="dialogueHighlightColor(entry.block)"
             :current="isCurrent(entry.index)"
             :reveal-mode="settings.rehearsalRevealMode"
             :narrator-highlighted="narratorSelected"
