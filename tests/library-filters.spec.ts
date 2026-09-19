@@ -46,6 +46,21 @@ describe('library filters', () => {
     expect(metrics).toMatchObject({ characterCount: 5, dialogueCount: 1, spokenWordCount: 261, estimatedMinutes: 3 })
   })
 
+  it('does not count joint dialogue as extra cast slots or duplicate duration', () => {
+    const play = makePlay(2, 4, ['male', 'female'])
+    const dialogue = play.acts[0].scenes[0].blocks[0]
+    if (dialogue.type !== 'dialogue') throw new Error('Expected dialogue')
+    dialogue.characterIds = ['c-1', 'c-2']
+
+    expect(playLibraryMetrics(play)).toMatchObject({
+      characterCount: 2,
+      dialogueCount: 1,
+      spokenWordCount: 4,
+      maleCount: 1,
+      femaleCount: 1
+    })
+  })
+
   it('builds dynamic slider bounds from available metrics', () => {
     expect(numericBounds([5, 8, 3, 5])).toEqual({ min: 3, max: 8 })
     expect(numericBounds([])).toEqual({ min: 0, max: 0 })

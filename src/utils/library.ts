@@ -1,5 +1,5 @@
 import type { CharacterGender, Play } from '../types'
-import { analyzeNarrator, analyzePlay, characterGender } from './play'
+import { analyzeNarrator, characterDialogueText, characterGender, flattenBlocks, wordCount } from './play'
 
 export interface PlayLibraryMetrics {
   characterCount: number
@@ -55,15 +55,19 @@ export function playGenres(play: Play): string[] {
 }
 
 export function playLibraryMetrics(play: Play): PlayLibraryMetrics {
-  const stats = Object.values(analyzePlay(play))
   const narrator = analyzeNarrator(play)
-  const characterSpokenWordCount = stats.reduce((sum, entry) => sum + entry.wordCount, 0)
+  const spokenDialogueBlocks = flattenBlocks(play).filter((block) =>
+    block.type === 'dialogue' && Boolean(characterDialogueText(block))
+  )
+  const characterSpokenWordCount = spokenDialogueBlocks.reduce((sum, block) =>
+    block.type === 'dialogue' ? sum + wordCount(characterDialogueText(block)) : sum
+  , 0)
   const genders = play.characters.map((character) => characterGender(character.gender))
   const totalWords = characterSpokenWordCount + narrator.wordCount
 
   return {
     characterCount: play.characters.length,
-    dialogueCount: stats.reduce((sum, entry) => sum + entry.dialogueCount, 0),
+    dialogueCount: spokenDialogueBlocks.length,
     spokenWordCount: characterSpokenWordCount,
     narratorWordCount: narrator.wordCount,
     estimatedMinutes: totalWords === 0 ? 0 : Math.max(1, Math.ceil(totalWords / 130)),

@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-09-19
+
+### Added
+- Complete user-supplied Persian «حساب پرداخت نمی‌شه!» by داریو فو, translated by حامد جهانشاهی, as a bundled two-act library play with explicit discovery metadata and regression coverage.
+- Joint-dialogue ownership support so simultaneous lines retain all participating roles for highlighting, rehearsal, statistics, and reading.
+
+### Changed
+- Proofread and cleaned the bundled play against the supplied scan, restoring speaker ownership and removing OCR/page-scan artifacts.
+
 ## [1.6.0] - 2026-09-19
 
 ### Added
@@ -86,7 +95,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...v1.4.1
