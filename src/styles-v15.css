@@ -420,3 +420,170 @@
   color: #5b21b6;
   font-style: normal;
 }
+
+
+/* v1.6 discovery and reader interaction refinements */
+.play-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.play-title-link:hover,
+.play-title-link:focus-visible {
+  color: #4338ca;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.play-card-control-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.genre-chip {
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.genre-chip:hover,
+.genre-chip:focus-visible,
+.genre-chip.active {
+  border-color: #8b5cf6;
+  background: #e9e5ff;
+  color: #4c1d95;
+}
+.wizard-progress {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+.wizard-slider-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.wizard-range small {
+  color: #64748b;
+  font-size: 11px;
+}
+.wizard-continue {
+  margin-top: 18px;
+}
+.wizard-genres {
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
+}
+.wizard-genres legend {
+  margin-bottom: 6px;
+  font-weight: 800;
+}
+.wizard-genre-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.wizard-results-panel {
+  min-height: 0;
+}
+.reader-header {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, .94);
+}
+.reader-title-block {
+  min-width: 0;
+}
+.reader-title-block h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reader-primary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reader-action-button {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  padding: 9px;
+}
+.reader-action-button svg,
+.back-to-top-button svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.reader-action-button.active svg {
+  fill: currentColor;
+}
+.reader-settings-link {
+  display: inline-grid;
+  place-items: center;
+  text-decoration: none;
+}
+.back-to-top-button {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 50;
+  width: 46px;
+  height: 46px;
+  padding: 10px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .18);
+}
+.dark-theme .reader-header {
+  background: rgba(15, 23, 42, .94);
+}
+.dark-theme .back-to-top-button {
+  background: #172033;
+  color: #f8fafc;
+}
+@media (max-width: 820px) {
+  .wizard-slider-grid {
+    grid-template-columns: 1fr;
+  }
+  .reader-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+  .reader-library-link {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .reader-primary-actions {
+    gap: 5px;
+  }
+  .reader-action-button {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    padding: 8px;
+  }
+}
+@media (max-width: 560px) {
+  .play-card-control-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .reader-header {
+    padding: 12px;
+  }
+  .reader-title-block h1 {
+    font-size: 1.15rem;
+  }
+  .reader-title-block .muted {
+    display: none;
+  }
+  .back-to-top-button {
+    left: 12px;
+    bottom: 12px;
+  }
+}

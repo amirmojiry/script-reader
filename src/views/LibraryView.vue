@@ -71,7 +71,7 @@ const filteredCards = computed(() => sortPlayCards(
       ...wizardCriteria.value,
       totalPeople: wizardCharacterMaxOverride.value ?? wizardCriteria.value.totalPeople,
       maxMinutes: wizardDurationMaxOverride.value ?? wizardCriteria.value.maxMinutes,
-      genre: genreFilter.value || undefined
+      genres: genreFilter.value ? [genreFilter.value] : wizardCriteria.value.genres
     })) return false
     return true
   }),
@@ -126,11 +126,15 @@ function applyWizard(criteria: PlayWizardCriteria): void {
   durationMax.value = criteria.maxMinutes >= durationBounds.value.min
     ? Math.min(criteria.maxMinutes, durationBounds.value.max)
     : null
-  genreFilter.value = criteria.genre ?? ''
+  genreFilter.value = ''
   authorFilter.value = ''
   translatorFilter.value = ''
   sortMode.value = 'duration-asc'
   wizardOpen.value = false
+}
+
+function toggleGenreFilter(genre: string): void {
+  genreFilter.value = genreFilter.value === genre ? '' : genre
 }
 
 async function importFile(event: Event) {
@@ -279,26 +283,37 @@ async function importFile(event: Event) {
       <article v-for="item in filteredCards" :key="item.play.id" class="play-card card">
         <div class="play-card-copy">
           <p class="eyebrow">{{ item.play.author || 'نویسنده نامشخص' }}</p>
-          <h2>{{ item.play.title }}</h2>
+          <h2>
+            <RouterLink
+              class="play-title-link"
+              :to="{ name: 'reader', params: { id: item.play.id } }"
+            >
+              {{ item.play.title }}
+            </RouterLink>
+          </h2>
           <p v-if="item.play.translator" class="muted">مترجم: {{ item.play.translator }}</p>
-          <div class="play-card-tags">
-            <span v-for="genre in playGenres(item.play)" :key="genre" class="genre-chip">{{ genre }}</span>
+          <div class="play-card-tags" aria-label="ژانرهای نمایش">
+            <button
+              v-for="genre in playGenres(item.play)"
+              :key="genre"
+              class="genre-chip"
+              :class="{ active: genreFilter === genre }"
+              type="button"
+              :aria-pressed="genreFilter === genre"
+              @click="toggleGenreFilter(genre)"
+            >
+              {{ genre }}
+            </button>
           </div>
           <p class="cast-summary">
             {{ item.metrics.maleCount }} مرد · {{ item.metrics.femaleCount }} زن
             <template v-if="item.metrics.unknownCount"> · {{ item.metrics.unknownCount }} نامشخص</template>
           </p>
         </div>
-        <div class="play-card-control-grid" aria-label="مشخصات نمایشنامه و باز کردن">
+        <div class="play-card-control-grid" aria-label="مشخصات نمایشنامه">
           <span class="play-card-control play-card-metric">{{ item.metrics.characterCount }} نقش</span>
           <span class="play-card-control play-card-metric">{{ item.metrics.dialogueCount }} دیالوگ</span>
           <span class="play-card-control play-card-metric">حدود {{ item.metrics.estimatedMinutes }} دقیقه</span>
-          <button
-            class="primary-button play-card-control play-card-open"
-            @click="router.push({ name: 'reader', params: { id: item.play.id } })"
-          >
-            باز کردن
-          </button>
         </div>
       </article>
     </section>

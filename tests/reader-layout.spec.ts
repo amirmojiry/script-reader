@@ -120,7 +120,7 @@ describe('reader roles layout', () => {
 
     expect(main.classes()).toContain('sidebar-closed')
     expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(false)
-    expect(wrapper.get('.roles-open-button').text()).toBe('نقش‌ها')
+    expect(wrapper.get('.reader-roles-button').attributes('aria-label')).toBe('باز کردن نقش‌ها')
   })
 
   it('moves focus into the roles panel when opened and back to the opener when closed', async () => {
@@ -135,7 +135,7 @@ describe('reader roles layout', () => {
     })
     await flushPromises()
 
-    const opener = wrapper.get<HTMLButtonElement>('.roles-open-button')
+    const opener = wrapper.get<HTMLButtonElement>('.reader-roles-button')
     opener.element.focus()
     await opener.trigger('click')
     await wrapper.vm.$nextTick()
@@ -146,7 +146,7 @@ describe('reader roles layout', () => {
     await closeButton.trigger('click')
     await wrapper.vm.$nextTick()
 
-    const restoredOpener = wrapper.get<HTMLButtonElement>('.roles-open-button')
+    const restoredOpener = wrapper.get<HTMLButtonElement>('.reader-roles-button')
     expect(document.activeElement).toBe(restoredOpener.element)
 
     wrapper.unmount()
@@ -159,9 +159,29 @@ describe('reader roles layout', () => {
 
     expect(wrapper.get('main.reader-layout').classes()).toContain('sidebar-closed')
     expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(false)
-    expect(wrapper.find('.roles-open-button').exists()).toBe(true)
+    expect(wrapper.find('.reader-roles-button').exists()).toBe(true)
 
-    await wrapper.get('.roles-open-button').trigger('click')
+    await wrapper.get('.reader-roles-button').trigger('click')
     expect(wrapper.findComponent({ name: 'CharacterPanel' }).exists()).toBe(true)
+  })
+
+  it('shows a lower-left back-to-top control after scrolling and scrolls smoothly to the top', async () => {
+    mockCompactViewport(false)
+    const scrollTo = vi.fn()
+    Object.defineProperty(window, 'scrollTo', { configurable: true, value: scrollTo })
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    expect(wrapper.find('.back-to-top-button').exists()).toBe(false)
+
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 700, writable: true })
+    window.dispatchEvent(new Event('scroll'))
+    await wrapper.vm.$nextTick()
+
+    const button = wrapper.get('.back-to-top-button')
+    expect(button.attributes('aria-label')).toBe('برگشت به بالای صفحه')
+    await button.trigger('click')
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
   })
 })

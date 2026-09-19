@@ -89,7 +89,7 @@ describe('library filters', () => {
       malePeople: 2,
       femalePeople: 1,
       maxMinutes: 5,
-      genre: 'درام'
+      genres: ['درام']
     })).toBe(true)
 
     expect(matchesWizardCriteria(play, metrics, {
@@ -97,7 +97,7 @@ describe('library filters', () => {
       malePeople: 1,
       femalePeople: 2,
       maxMinutes: 5,
-      genre: 'درام'
+      genres: ['درام']
     })).toBe(false)
 
     expect(matchesWizardCriteria(play, metrics, {
@@ -105,8 +105,16 @@ describe('library filters', () => {
       malePeople: 2,
       femalePeople: 1,
       maxMinutes: 5,
-      genre: 'کمدی'
+      genres: ['کمدی']
     })).toBe(false)
+
+    expect(matchesWizardCriteria(play, metrics, {
+      totalPeople: 4,
+      malePeople: 2,
+      femalePeople: 1,
+      maxMinutes: 5,
+      genres: ['کمدی', 'درام']
+    })).toBe(true)
   })
 
   it('sorts by title, duration, and role count', () => {

@@ -72,7 +72,7 @@ describe('LibraryView play cards and discovery controls', () => {
     storeMocks.initialize.mockResolvedValue(undefined)
   })
 
-  it('uses four equal-control cells and omits the import-format box', async () => {
+  it('links play titles, uses three metric cells, and omits the separate open button', async () => {
     const wrapper = mount(LibraryView, {
       global: {
         stubs: {
@@ -85,9 +85,10 @@ describe('LibraryView play cards and discovery controls', () => {
     await flushPromises()
 
     const card = wrapper.findAll('.play-card')[0]
-    expect(card.findAll('.play-card-control')).toHaveLength(4)
+    expect(card.findAll('.play-card-control')).toHaveLength(3)
     expect(card.findAll('.play-card-metric')).toHaveLength(3)
-    expect(card.get('.play-card-open').text()).toBe('باز کردن')
+    expect(card.find('.play-card-open').exists()).toBe(false)
+    expect(card.get('.play-title-link').text()).toBe('آ نمایش')
     expect(wrapper.find('.import-help').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('فرمت ورود')
   })
@@ -118,7 +119,7 @@ describe('LibraryView play cards and discovery controls', () => {
     expect(wrapper.get('.play-card h2').text()).toBe('ب نمایش')
   })
 
-  it('filters by author and genre and sorts alphabetically', async () => {
+  it('filters by clickable genre chips, author and select controls, and sorts alphabetically', async () => {
     const wrapper = mount(LibraryView, {
       global: {
         stubs: {
@@ -128,6 +129,13 @@ describe('LibraryView play cards and discovery controls', () => {
       }
     })
     await flushPromises()
+
+    const comedyChip = wrapper.findAll<HTMLButtonElement>('.genre-chip').find((chip) => chip.text() === 'کمدی')
+    await comedyChip?.trigger('click')
+    expect(wrapper.findAll('.play-card')).toHaveLength(1)
+    expect(wrapper.get('.play-card h2').text()).toBe('ب نمایش')
+    await wrapper.get<HTMLButtonElement>('.genre-chip.active').trigger('click')
+    expect(wrapper.findAll('.play-card')).toHaveLength(2)
 
     const selects = wrapper.findAll('.metadata-filter-grid select')
     await selects[0].setValue('نویسنده اول')

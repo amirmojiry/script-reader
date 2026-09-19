@@ -74,6 +74,7 @@ const notes = ref<NoteRecord[]>([])
 const noteText = ref('')
 const bookmarkIds = ref<Set<string>>(new Set())
 const statusMessage = ref('')
+const showBackToTop = ref(false)
 
 const play = computed(() => store.byId(String(route.params.id)))
 const blocks = computed(() => play.value ? flattenBlocks(play.value) : [])
@@ -160,9 +161,12 @@ onMounted(async () => {
   }
   if (mode.value === 'table-read') ensureCurrentTableReadVisible()
   if (settings.value.keepAwake) await requestWakeLock()
+  updateBackToTopVisibility()
+  window.addEventListener('scroll', updateBackToTopVisibility, { passive: true })
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateBackToTopVisibility)
   stopSpeaking()
   void releaseWakeLock()
 })
@@ -227,6 +231,14 @@ async function closeRolesPanel(): Promise<void> {
   sidebarOpen.value = false
   await nextTick()
   rolesOpenButtonRef.value?.focus()
+}
+
+function updateBackToTopVisibility(): void {
+  showBackToTop.value = window.scrollY > 480
+}
+
+function scrollToTop(): void {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function toggleNarrator(): void {
@@ -400,17 +412,6 @@ function selectCurrent(index: number) {
     :class="{ 'sidebar-closed': !sidebarOpen, 'dark-theme': settings.theme === 'dark' }"
     :style="{ '--reader-font-size': `${settings.fontSize}px`, '--reader-line-height': settings.lineHeight, '--reader-font-family': fontFamily }"
   >
-    <button
-      v-if="!sidebarOpen"
-      ref="rolesOpenButtonRef"
-      class="roles-open-button"
-      type="button"
-      aria-label="باز کردن نقش‌ها"
-      @click="openRolesPanel"
-    >
-      نقش‌ها
-    </button>
-
     <CharacterPanel
       v-if="sidebarOpen"
       :characters="play.characters"
@@ -434,14 +435,49 @@ function selectCurrent(index: number) {
 
     <section class="reader-main">
       <header class="reader-header card">
-        <button class="text-button" @click="router.push('/')">← کتابخانه</button>
-        <div>
+        <button class="text-button reader-library-link" @click="router.push('/')">← کتابخانه</button>
+        <div class="reader-title-block">
           <h1>{{ play.title }}</h1>
           <p class="muted">{{ play.author }}<template v-if="play.translator"> · مترجم: {{ play.translator }}</template></p>
         </div>
-        <div class="header-actions">
-          <button class="secondary-button" @click="toggleCurrentBookmark">{{ currentBookmarked ? 'حذف نشانک' : 'نشانک' }}</button>
-          <button class="secondary-button" @click="exportPlay">خروجی JSON</button>
+        <div class="header-actions reader-primary-actions">
+          <button
+            ref="rolesOpenButtonRef"
+            class="icon-button reader-action-button reader-roles-button"
+            type="button"
+            :aria-label="sidebarOpen ? 'بستن نقش‌ها' : 'باز کردن نقش‌ها'"
+            :title="sidebarOpen ? 'بستن نقش‌ها' : 'نقش‌ها'"
+            @click="sidebarOpen ? closeRolesPanel() : openRolesPanel()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
+          <button
+            class="icon-button reader-action-button"
+            type="button"
+            :class="{ active: currentBookmarked }"
+            :aria-label="currentBookmarked ? 'حذف نشانک سطر جاری' : 'نشانک‌گذاری سطر جاری'"
+            :title="currentBookmarked ? 'حذف نشانک' : 'نشانک'"
+            @click="toggleCurrentBookmark"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg>
+          </button>
+          <button
+            class="icon-button reader-action-button"
+            type="button"
+            aria-label="خروجی JSON"
+            title="خروجی JSON"
+            @click="exportPlay"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 11l4 4 4-4M5 21h14"/></svg>
+          </button>
+          <RouterLink
+            class="icon-button reader-action-button reader-settings-link"
+            to="/settings"
+            aria-label="تنظیمات"
+            title="تنظیمات"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 3.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2V9.6h.1A1.7 1.7 0 0 0 3.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8 3.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V2h4v.1A1.7 1.7 0 0 0 15 3.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 8a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.1v4h-.1A1.7 1.7 0 0 0 19.4 15z"/></svg>
+          </RouterLink>
         </div>
       </header>
 
@@ -569,5 +605,16 @@ function selectCurrent(index: number) {
         </template>
       </section>
     </section>
+
+    <button
+      v-if="showBackToTop"
+      class="back-to-top-button icon-button"
+      type="button"
+      aria-label="برگشت به بالای صفحه"
+      title="برگشت به بالا"
+      @click="scrollToTop"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+    </button>
   </main>
 </template>
