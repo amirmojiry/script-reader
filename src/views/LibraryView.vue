@@ -156,6 +156,10 @@ function toggleGenreFilter(genre: string): void {
   setGenreFilter(genreFilter.value === genre ? '' : genre)
 }
 
+function openImportPicker(): void {
+  fileInput.value?.click()
+}
+
 async function importFile(event: Event) {
   error.value = ''
   const file = (event.target as HTMLInputElement).files?.[0]
@@ -180,12 +184,34 @@ async function importFile(event: Event) {
         <p>مطالعه، تمرین نقش و نمایشنامه‌خوانی؛ آفلاین و بدون حساب کاربری.</p>
       </div>
       <div class="hero-actions">
-        <button class="secondary-button" type="button" :disabled="!playCards.length" @click="wizardOpen = true">ویزارد انتخاب نمایش</button>
-        <RouterLink class="secondary-button action-link" to="/settings">تنظیمات</RouterLink>
-        <label class="primary-button file-button">
-          افزودن JSON
-          <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="importFile" />
-        </label>
+        <button
+          class="icon-button library-action-button library-wizard-button"
+          type="button"
+          :disabled="!playCards.length"
+          aria-label="ویزارد انتخاب نمایش"
+          title="ویزارد انتخاب نمایش"
+          @click="wizardOpen = true"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14M7 8h10M9 12h6M12 16v4M8.5 18.5 12 22l3.5-3.5"/></svg>
+        </button>
+        <RouterLink
+          class="icon-button library-action-button action-link"
+          :to="{ name: 'settings', query: { from: 'library' } }"
+          aria-label="تنظیمات"
+          title="تنظیمات"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 3.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2V9.6h.1A1.7 1.7 0 0 0 3.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8 3.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V2h4v.1A1.7 1.7 0 0 0 15 3.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 8a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.1v4h-.1A1.7 1.7 0 0 0 19.4 15z"/></svg>
+        </RouterLink>
+        <button
+          class="icon-button library-action-button"
+          type="button"
+          aria-label="افزودن JSON"
+          title="افزودن JSON"
+          @click="openImportPicker"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M8 13l4-4 4 4M5 3h14"/></svg>
+        </button>
+        <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="importFile" />
       </div>
     </header>
 
