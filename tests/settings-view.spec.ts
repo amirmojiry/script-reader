@@ -74,6 +74,17 @@ describe('SettingsView', () => {
     })
     fromReader.unmount()
 
+    routeMocks.query = { from: 'reader', play: '  spaced-play-id  ' }
+    const spacedReader = mount(SettingsView, {
+      global: { stubs: { RouterLink: RouterLinkStub } }
+    })
+    await flushPromises()
+    expect(JSON.parse(spacedReader.get('.settings-back-link').attributes('data-to')!)).toEqual({
+      name: 'reader',
+      params: { id: '  spaced-play-id  ' }
+    })
+    spacedReader.unmount()
+
     routeMocks.query = { from: 'library' }
     const fromLibrary = mount(SettingsView, {
       global: { stubs: { RouterLink: RouterLinkStub } }
