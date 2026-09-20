@@ -176,3 +176,29 @@ describe('DialogueBlock joint-role highlighting', () => {
     expect(wrapper.get('.dialogue-block').attributes('style')).toContain('--highlight: #222222')
   })
 })
+
+
+describe('DialogueBlock proofreading mode', () => {
+  it('shows the full line during rehearsal and emits the full block text on click when no selection exists', async () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'rehearsal',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true
+      }
+    })
+
+    expect(wrapper.text()).toContain('صبر کن')
+    expect(wrapper.text()).toContain('(آرام)')
+    await wrapper.get('.dialogue-block').trigger('click')
+    expect(wrapper.emitted('proofread')?.[0]?.[0]).toBe('صبر کن و چند لحظه همین جا بمان. (آرام) بعد برگرد.')
+  })
+})

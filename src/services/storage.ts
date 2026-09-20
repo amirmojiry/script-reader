@@ -1,10 +1,10 @@
 import { openDB } from 'idb'
-import type { NoteRecord, Play, ReaderSettings, ReadingState } from '../types'
+import type { NoteRecord, Play, ProofreadingCorrection, ReaderSettings, ReadingState } from '../types'
 import { normalizeReaderSettings } from '../utils/settings'
 import { makePairKey, parsePairKey } from '../utils/storageKey'
 
 const DB_NAME = 'script-reader'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const BUNDLED_PLAY_ID = 'horses-behind-the-window'
 
 const dbPromise = openDB(DB_NAME, DB_VERSION, {
@@ -14,6 +14,7 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
     if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings')
     if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' })
     if (!db.objectStoreNames.contains('bookmarks')) db.createObjectStore('bookmarks')
+    if (!db.objectStoreNames.contains('proofreadingCorrections')) db.createObjectStore('proofreadingCorrections', { keyPath: 'id' })
   }
 })
 
@@ -96,4 +97,18 @@ export async function listBookmarks(playId: string): Promise<string[]> {
     const pair = parsePairKey(key)
     return pair?.[0] === playId ? [pair[1]] : []
   })
+}
+
+
+export async function saveProofreadingCorrection(correction: ProofreadingCorrection): Promise<void> {
+  const db = await dbPromise
+  await db.put('proofreadingCorrections', correction)
+}
+
+export async function listProofreadingCorrections(playId: string): Promise<ProofreadingCorrection[]> {
+  const db = await dbPromise
+  const all = await db.getAll('proofreadingCorrections') as ProofreadingCorrection[]
+  return all
+    .filter((correction) => correction.playId === playId)
+    .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
 }

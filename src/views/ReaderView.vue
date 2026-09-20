@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CharacterPanel from '../components/CharacterPanel.vue'
 import DialogueBlockView from '../components/DialogueBlock.vue'
+import ProofreadingEditor from '../components/ProofreadingEditor.vue'
 import ReaderToolbar from '../components/ReaderToolbar.vue'
 import RehearsalRevealText from '../components/RehearsalRevealText.vue'
 import {
@@ -11,7 +12,9 @@ import {
   getSettings,
   listBookmarks,
   listNotes,
+  listProofreadingCorrections,
   saveNote,
+  saveProofreadingCorrection,
   saveReadingState,
   saveSettings,
   toggleBookmark
@@ -19,11 +22,12 @@ import {
 import { canSpeak, speak, stopSpeaking } from '../services/speech'
 import { releaseWakeLock, requestWakeLock, wakeLockSupported } from '../services/wakeLock'
 import { usePlaysStore } from '../stores/plays'
-import type { Character, DialogueBlock, NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
+import type { Character, DialogueBlock, NoteRecord, PlayBlock, ProofreadingCorrection, ReaderMode, ReaderSettings } from '../types'
 import {
   DEFAULT_NARRATOR_COLOR,
   analyzeNarrator,
   analyzePlay,
+  blockText,
   characterDialogueText,
   dialogueCharacterIds,
   dialogueRenderSegments,
@@ -38,6 +42,7 @@ import {
   visibleBlockIndexes,
   visibleOwnedIndexes
 } from '../utils/reader'
+import { correctionClipboardText, serializeProofreadingExport } from '../utils/proofreading'
 import { makePairKey } from '../utils/storageKey'
 
 const defaultSettings: ReaderSettings = {
@@ -76,6 +81,16 @@ const noteText = ref('')
 const bookmarkIds = ref<Set<string>>(new Set())
 const statusMessage = ref('')
 const showBackToTop = ref(false)
+const proofreadingMode = ref(false)
+const proofreadingCorrections = ref<ProofreadingCorrection[]>([])
+const proofreadingDraft = ref<{
+  blockId: string
+  blockIndex: number
+  blockType: PlayBlock['type']
+  dialogueNumber?: number
+  label: string
+  originalText: string
+} | null>(null)
 
 const play = computed(() => store.byId(String(route.params.id)))
 const blocks = computed(() => play.value ? flattenBlocks(play.value) : [])
@@ -109,7 +124,7 @@ const fontFamily = computed(() => {
 const searchIndexes = computed(() => searchBlockIndexes(blocks.value, searchQuery.value, settings.value.hideStageDirections))
 const readerEntries = computed(() => {
   const all = blocks.value.map((block, index) => ({ block, index }))
-  if (mode.value !== 'rehearsal' || !settings.value.rehearsalCueOnly) return all
+  if (proofreadingMode.value || mode.value !== 'rehearsal' || !settings.value.rehearsalCueOnly) return all
 
   if (narratorIsMine.value) {
     const indexes = new Set(rehearsalCueIndexesForOwnIndexes(
@@ -130,6 +145,16 @@ const tableReadPosition = computed(() => tableReadIndexes.value.indexOf(currentI
 const tableDialogueSegments = computed(() =>
   currentBlock.value?.type === 'dialogue' ? dialogueRenderSegments(currentBlock.value) : []
 )
+const dialogueNumbers = computed(() => {
+  const numbers = new Map<string, number>()
+  let dialogueNumber = 0
+  for (const block of blocks.value) {
+    if (block.type !== 'dialogue') continue
+    dialogueNumber += 1
+    numbers.set(block.id, dialogueNumber)
+  }
+  return numbers
+})
 
 onMounted(async () => {
   updateBackToTopVisibility()
@@ -159,6 +184,7 @@ onMounted(async () => {
 
   notes.value = await listNotes(play.value.id)
   bookmarkIds.value = new Set(await listBookmarks(play.value.id))
+  proofreadingCorrections.value = await listProofreadingCorrections(play.value.id)
   syncNoteText()
   if (mode.value === 'rehearsal' && narratorIsMine.value && !narratorOwnedIndexes.value.includes(currentIndex.value)) {
     jumpToNearestOwnRolePart()
@@ -241,6 +267,125 @@ function updateBackToTopVisibility(): void {
 
 function scrollToTop(): void {
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function toggleProofreadingMode(): void {
+  proofreadingMode.value = !proofreadingMode.value
+  proofreadingDraft.value = null
+  if (proofreadingMode.value) {
+    setMode('read')
+    statusMessage.value = 'حالت عیب‌یابی فعال شد؛ بخشی از متن را انتخاب کنید یا روی یک بخش کلیک کنید.'
+  } else {
+    statusMessage.value = 'حالت عیب‌یابی بسته شد.'
+  }
+}
+
+function selectedTextWithin(target: EventTarget | null): string {
+  if (!proofreadingMode.value || !(target instanceof HTMLElement) || typeof window === 'undefined') return ''
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return ''
+  const range = selection.getRangeAt(0)
+  const node = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+    ? range.commonAncestorContainer as Element
+    : range.commonAncestorContainer.parentElement
+  if (!node || !target.contains(node)) return ''
+  return selection.toString().trim()
+}
+
+function proofreadingLocation(block: PlayBlock, index: number): { dialogueNumber?: number; label: string } {
+  const dialogueNumber = dialogueNumbers.value.get(block.id)
+  if (dialogueNumber) return { dialogueNumber, label: `دیالوگ شماره ${dialogueNumber}` }
+  if (block.type === 'stage-direction') return { label: `توضیح صحنه، بخش ${index + 1}` }
+  return { label: `عنوان بخش ${index + 1}` }
+}
+
+function openProofreading(block: PlayBlock, index: number, originalText: string): void {
+  if (!proofreadingMode.value) return
+  const text = originalText.trim()
+  if (!text) return
+  currentIndex.value = index
+  const location = proofreadingLocation(block, index)
+  proofreadingDraft.value = {
+    blockId: block.id,
+    blockIndex: index + 1,
+    blockType: block.type,
+    dialogueNumber: location.dialogueNumber,
+    label: location.label,
+    originalText: text
+  }
+}
+
+function captureProofreadingSelection(block: PlayBlock, index: number, event: MouseEvent): void {
+  const selected = selectedTextWithin(event.currentTarget)
+  if (selected) openProofreading(block, index, selected)
+}
+
+function handleProofreadingBlockClick(block: PlayBlock, index: number, event: MouseEvent): void {
+  selectCurrent(index)
+  if (!proofreadingMode.value) return
+  if (!selectedTextWithin(event.currentTarget)) openProofreading(block, index, blockText(block))
+}
+
+function makeCorrectionId(): string {
+  const suffix = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return `${play.value?.id ?? 'play'}:${proofreadingDraft.value?.blockId ?? 'block'}:${suffix}`
+}
+
+async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    if (!navigator.clipboard?.writeText) return false
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function saveProofreadingDraft(correctedText: string): Promise<void> {
+  if (!play.value || !proofreadingDraft.value) return
+  const draft = proofreadingDraft.value
+  const correction: ProofreadingCorrection = {
+    id: makeCorrectionId(),
+    playId: play.value.id,
+    playTitle: play.value.title,
+    blockId: draft.blockId,
+    blockIndex: draft.blockIndex,
+    blockType: draft.blockType,
+    ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
+    originalText: draft.originalText,
+    correctedText,
+    createdAt: new Date().toISOString()
+  }
+
+  await saveProofreadingCorrection(correction)
+  proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
+    .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+  proofreadingDraft.value = null
+
+  const copied = await writeClipboard(correctionClipboardText(correction))
+  statusMessage.value = copied
+    ? 'اصلاح ذخیره و در کلیپ‌بورد کپی شد.'
+    : 'اصلاح ذخیره شد، اما دسترسی به کلیپ‌بورد ممکن نبود.'
+}
+
+async function copyAllProofreadingCorrections(): Promise<void> {
+  if (!play.value || proofreadingCorrections.value.length === 0) return
+  const copied = await writeClipboard(serializeProofreadingExport(play.value, proofreadingCorrections.value))
+  statusMessage.value = copied ? 'گزارش کامل عیب‌ها در کلیپ‌بورد کپی شد.' : 'کپی گزارش در کلیپ‌بورد ناموفق بود.'
+}
+
+function downloadProofreadingCorrections(): void {
+  if (!play.value || proofreadingCorrections.value.length === 0) return
+  const blob = new Blob([serializeProofreadingExport(play.value, proofreadingCorrections.value)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${play.value.id}-proofreading.json`
+  link.click()
+  URL.revokeObjectURL(url)
+  statusMessage.value = 'فایل گزارش عیب‌ها آماده شد.'
 }
 
 function toggleNarrator(): void {
@@ -394,7 +539,7 @@ function moveTableRead(direction: -1 | 1): void {
 }
 
 function visible(block: PlayBlock): boolean {
-  return isBlockVisible(block, settings.value.hideStageDirections)
+  return proofreadingMode.value || isBlockVisible(block, settings.value.hideStageDirections)
 }
 
 function dialogueCharacters(block: DialogueBlock): Character[] {
@@ -431,7 +576,7 @@ function selectCurrent(index: number) {
     v-if="play"
     ref="readerRootRef"
     class="reader-layout"
-    :class="{ 'sidebar-closed': !sidebarOpen, 'dark-theme': settings.theme === 'dark' }"
+    :class="{ 'sidebar-closed': !sidebarOpen, 'dark-theme': settings.theme === 'dark', 'proofreading-editing': Boolean(proofreadingDraft) }"
     :style="{ '--reader-font-size': `${settings.fontSize}px`, '--reader-line-height': settings.lineHeight, '--reader-font-family': fontFamily }"
   >
     <CharacterPanel
@@ -486,6 +631,17 @@ function selectCurrent(index: number) {
           <button
             class="icon-button reader-action-button"
             type="button"
+            :class="{ active: proofreadingMode }"
+            :aria-pressed="proofreadingMode"
+            aria-label="حالت عیب‌یابی متن"
+            title="عیب‌یابی متن"
+            @click="toggleProofreadingMode"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h6M9 13h6M10 3h4l1 3h3v12H6V6h3l1-3zM4 10H2M22 10h-2M4 15H2M22 15h-2"/></svg>
+          </button>
+          <button
+            class="icon-button reader-action-button"
+            type="button"
             aria-label="خروجی JSON"
             title="خروجی JSON"
             @click="exportPlay"
@@ -517,6 +673,17 @@ function selectCurrent(index: number) {
         @search-next="moveSearch(1)"
         @search-previous="moveSearch(-1)"
       />
+
+      <section v-if="proofreadingMode" class="proofreading-status card" aria-label="وضعیت عیب‌یابی">
+        <div>
+          <strong>حالت عیب‌یابی فعال است</strong>
+          <span class="muted">{{ proofreadingCorrections.length }} عیب ثبت‌شده</span>
+        </div>
+        <div class="proofreading-status-actions">
+          <button class="secondary-button" type="button" :disabled="!proofreadingCorrections.length" @click="copyAllProofreadingCorrections">کپی همه به‌صورت JSON</button>
+          <button class="secondary-button" type="button" :disabled="!proofreadingCorrections.length" @click="downloadProofreadingCorrections">دانلود JSON</button>
+        </div>
+      </section>
 
       <div v-if="mode === 'rehearsal'" class="rehearsal-controls card">
         <button class="secondary-button" :disabled="!hasMyRole" @click="moveOwnRolePart(-1)">بخش قبلی نقش من</button>
@@ -604,6 +771,8 @@ function selectCurrent(index: number) {
             :narrator-highlighted="narratorSelected"
             :narrator-is-mine="narratorIsMine"
             :narrator-color="narratorColor"
+            :debug-mode="proofreadingMode"
+            @proofread="openProofreading(entry.block, entry.index, $event)"
             @click="selectCurrent(entry.index)"
           />
           <div
@@ -616,7 +785,8 @@ function selectCurrent(index: number) {
               'narrator-mine': narratorIsMine
             }"
             :style="narratorSelected || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
-            @click="selectCurrent(entry.index)"
+            @mouseup="captureProofreadingSelection(entry.block, entry.index, $event)"
+            @click="handleProofreadingBlockClick(entry.block, entry.index, $event)"
           >
             <span class="narrator-label">راوی</span>
             <RehearsalRevealText
@@ -625,10 +795,23 @@ function selectCurrent(index: number) {
               :reveal-mode="settings.rehearsalRevealMode"
             />
           </div>
-          <h2 v-else-if="entry.block.type === 'section'" :id="`block-${entry.block.id}`">{{ entry.block.title }}</h2>
+          <h2
+            v-else-if="entry.block.type === 'section'"
+            :id="`block-${entry.block.id}`"
+            :class="{ 'proofreading-target': proofreadingMode }"
+            @mouseup="captureProofreadingSelection(entry.block, entry.index, $event)"
+            @click="handleProofreadingBlockClick(entry.block, entry.index, $event)"
+          >{{ entry.block.title }}</h2>
         </template>
       </section>
     </section>
+
+    <ProofreadingEditor
+      v-if="proofreadingDraft"
+      :draft="proofreadingDraft"
+      @save="saveProofreadingDraft"
+      @cancel="proofreadingDraft = null"
+    />
 
     <button
       v-if="showBackToTop"

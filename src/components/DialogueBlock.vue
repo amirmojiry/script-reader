@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import RehearsalRevealText from './RehearsalRevealText.vue'
 import type { Character, DialogueBlock, ReaderMode, RehearsalRevealMode } from '../types'
-import { characterDialogueText, dialogueRenderSegments } from '../utils/play'
+import { blockText, characterDialogueText, dialogueRenderSegments } from '../utils/play'
 
 const props = defineProps<{
   block: DialogueBlock
@@ -17,6 +17,11 @@ const props = defineProps<{
   narratorHighlighted: boolean
   narratorIsMine: boolean
   narratorColor: string
+  debugMode?: boolean
+}>()
+
+const emit = defineEmits<{
+  proofread: [originalText: string]
 }>()
 
 const revealAll = ref(false)
@@ -34,11 +39,36 @@ const spokenText = computed(() => characterDialogueText(props.block))
 const renderSegments = computed(() => dialogueRenderSegments(props.block))
 const narratorSegments = computed(() => renderSegments.value.filter((segment) => segment.type === 'narration'))
 const hasNarration = computed(() => narratorSegments.value.length > 0)
-const narratorOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.narratorIsMine)
+const narratorOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.narratorIsMine && !props.debugMode)
 const firstWords = computed(() => spokenText.value.split(/\s+/u).slice(0, 3).join(' '))
 const progressiveText = computed(() => spokenText.value.split(/\s+/u).slice(0, progressiveWordCount.value).join(' '))
-const isOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.isMine && !revealAll.value)
+const isOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.isMine && !revealAll.value && !props.debugMode)
 const hasMoreProgressive = computed(() => progressiveWordCount.value < spokenText.value.split(/\s+/u).length)
+
+function selectedTextInBlock(): string {
+  if (typeof window === 'undefined') return ''
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return ''
+  const range = selection.getRangeAt(0)
+  const root = document.getElementById(`block-${props.block.id}`)
+  const node = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+    ? range.commonAncestorContainer as Element
+    : range.commonAncestorContainer.parentElement
+  if (!root || !node || !root.contains(node)) return ''
+  return selection.toString().trim()
+}
+
+function proofreadSelection(): void {
+  if (!props.debugMode) return
+  const selected = selectedTextInBlock()
+  if (selected) emit('proofread', selected)
+}
+
+function proofreadFallback(): void {
+  if (!props.debugMode) return
+  const selected = selectedTextInBlock()
+  if (!selected) emit('proofread', blockText(props.block))
+}
 
 function revealNext(): void {
   if (props.revealMode === 'progressive' && hasMoreProgressive.value) {
@@ -53,9 +83,11 @@ function revealNext(): void {
   <article
     :id="`block-${block.id}`"
     class="dialogue-block"
-    :class="{ highlighted, current, mine: isMine, 'has-narration': hasNarration }"
     :style="highlighted ? { '--highlight': resolvedHighlightColor } : undefined"
     tabindex="0"
+    :class="{ highlighted, current, mine: isMine, 'has-narration': hasNarration, 'proofreading-target': debugMode }"
+    @mouseup="proofreadSelection"
+    @click="proofreadFallback"
   >
     <header>
       <strong>{{ displayName }}</strong>
