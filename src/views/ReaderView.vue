@@ -383,12 +383,13 @@ async function saveProofreadingDraft(correctedText: string): Promise<void> {
   }
 
   try {
+    const clipboardPromise = writeClipboard(correctionClipboardText(correction))
     await saveProofreadingCorrection(correction)
     proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
       .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
     proofreadingDraft.value = null
 
-    const copied = await writeClipboard(correctionClipboardText(correction))
+    const copied = await clipboardPromise
     statusMessage.value = copied
       ? 'اصلاح ذخیره و در کلیپ‌بورد کپی شد.'
       : 'اصلاح ذخیره شد، اما دسترسی به کلیپ‌بورد ممکن نبود.'
