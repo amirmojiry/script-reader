@@ -484,6 +484,16 @@
 .wizard-results-panel {
   min-height: 0;
 }
+.library-action-button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: inline-grid;
+  place-items: center;
+  padding: 9px;
+  text-decoration: none;
+}
+.library-action-button svg,
 .reader-header {
   position: sticky;
   top: 0;
@@ -498,6 +508,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.reader-play-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+.reader-play-metadata span {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .reader-primary-actions {
   display: flex;
@@ -543,6 +566,9 @@
 .dark-theme .reader-header {
   background: rgba(15, 23, 42, .94);
 }
+.dark-theme .reader-play-metadata {
+  color: #94a3b8;
+}
 .dark-theme .back-to-top-button {
   background: #172033;
   color: #f8fafc;
@@ -579,8 +605,9 @@
   .reader-title-block h1 {
     font-size: 1.15rem;
   }
-  .reader-title-block .muted {
-    display: none;
+  .reader-play-metadata {
+    gap: 3px 9px;
+    font-size: 11px;
   }
   .back-to-top-button {
     left: 12px;
@@ -634,8 +661,12 @@
 }
 .dialogue-block.proofreading-target:hover,
 .proofreading-target.narrator-stage:hover,
-.reader-document h2.proofreading-target:hover {
+.reader-document h2.proofreading-target:hover,
+.dialogue-block.proofreading-target:focus-visible,
+.proofreading-target.narrator-stage:focus-visible,
+.reader-document h2.proofreading-target:focus-visible {
   outline-color: #818cf8;
+  outline-width: 2px;
 }
 .proofreading-editor-dock {
   position: fixed;
