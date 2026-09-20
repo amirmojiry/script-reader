@@ -19,12 +19,13 @@ import {
 import { canSpeak, speak, stopSpeaking } from '../services/speech'
 import { releaseWakeLock, requestWakeLock, wakeLockSupported } from '../services/wakeLock'
 import { usePlaysStore } from '../stores/plays'
-import type { NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
+import type { Character, DialogueBlock, NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
 import {
   DEFAULT_NARRATOR_COLOR,
   analyzeNarrator,
   analyzePlay,
   characterDialogueText,
+  dialogueCharacterIds,
   dialogueRenderSegments,
   flattenBlocks
 } from '../utils/play'
@@ -396,6 +397,26 @@ function visible(block: PlayBlock): boolean {
   return isBlockVisible(block, settings.value.hideStageDirections)
 }
 
+function dialogueCharacters(block: DialogueBlock): Character[] {
+  return dialogueCharacterIds(block)
+    .map((id) => characterMap.value.get(id))
+    .filter((character): character is Character => Boolean(character))
+}
+
+function dialogueLabel(block: DialogueBlock): string {
+  const names = dialogueCharacters(block).map((character) => character.name)
+  return names.length > 0 ? names.join(' و ') : block.characterId
+}
+
+function dialogueHighlighted(block: DialogueBlock): boolean {
+  return dialogueCharacterIds(block).some((id) => selected.value.includes(id))
+}
+
+function dialogueHighlightColor(block: DialogueBlock): string | undefined {
+  const selectedOwnerId = dialogueCharacterIds(block).find((id) => selected.value.includes(id))
+  return selectedOwnerId ? characterMap.value.get(selectedOwnerId)?.color : undefined
+}
+
 function isCurrent(index: number) {
   return index === currentIndex.value
 }
@@ -535,7 +556,7 @@ function selectCurrent(index: number) {
       <section v-if="mode === 'table-read'" class="table-read card">
         <button class="nav-arrow" :disabled="tableReadPosition <= 0" @click="moveTableRead(-1)">→</button>
         <div v-if="currentBlock?.type === 'dialogue'">
-          <p class="eyebrow">{{ characterMap.get(currentBlock.characterId)?.name }}</p>
+          <p class="eyebrow">{{ dialogueLabel(currentBlock) }}</p>
           <p class="table-copy">
             <template v-for="(segment, index) in tableDialogueSegments" :key="index">
               <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
@@ -573,9 +594,11 @@ function selectCurrent(index: number) {
             v-if="entry.block.type === 'dialogue' && visible(entry.block)"
             :block="entry.block"
             :character="characterMap.get(entry.block.characterId)"
+            :characters="dialogueCharacters(entry.block)"
             :mode="mode"
             :is-mine="isCharacterSpeechBlock(entry.block, myCharacterId)"
-            :highlighted="selected.includes(entry.block.characterId)"
+            :highlighted="dialogueHighlighted(entry.block)"
+            :highlight-color="dialogueHighlightColor(entry.block)"
             :current="isCurrent(entry.index)"
             :reveal-mode="settings.rehearsalRevealMode"
             :narrator-highlighted="narratorSelected"

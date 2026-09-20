@@ -88,6 +88,11 @@ export function dialogueText(block: DialogueBlock): string {
   return block.parts.filter((part) => part.type === 'speech').map((part) => part.text).join(' ').trim()
 }
 
+export function dialogueCharacterIds(block: DialogueBlock): string[] {
+  const ids = block.characterIds?.filter(Boolean) ?? []
+  return ids.length > 0 ? [...new Set(ids)] : [block.characterId]
+}
+
 export function characterDialogueText(block: DialogueBlock): string {
   return dialogueRenderSegments(block)
     .filter((segment) => segment.type === 'speech')
@@ -132,13 +137,16 @@ export function analyzePlay(play: Play): Record<string, CharacterStats> {
     const spokenText = characterDialogueText(block)
     if (!spokenText) return
     const count = wordCount(spokenText)
-    const entry = stats[block.characterId] ?? { dialogueCount: 0, wordCount: 0, shareOfWords: 0, estimatedMinutes: 0, blockIndexes: [] }
-    entry.dialogueCount += 1
-    entry.wordCount += count
-    entry.estimatedMinutes = entry.wordCount / 130
-    entry.blockIndexes.push(index)
-    stats[block.characterId] = entry
-    totalWords += count
+    const owners = dialogueCharacterIds(block)
+    for (const characterId of owners) {
+      const entry = stats[characterId] ?? { dialogueCount: 0, wordCount: 0, shareOfWords: 0, estimatedMinutes: 0, blockIndexes: [] }
+      entry.dialogueCount += 1
+      entry.wordCount += count
+      entry.estimatedMinutes = entry.wordCount / 130
+      entry.blockIndexes.push(index)
+      stats[characterId] = entry
+    }
+    totalWords += count * owners.length
   })
 
   for (const entry of Object.values(stats)) {
@@ -179,7 +187,7 @@ export function analyzeNarrator(play: Play): CharacterStats {
 export function getDialogueIndexes(play: Play, characterId: string): number[] {
   return flattenBlocks(play)
     .map((block, index) => ({ block, index }))
-    .filter(({ block }) => block.type === 'dialogue' && block.characterId === characterId && Boolean(characterDialogueText(block)))
+    .filter(({ block }) => block.type === 'dialogue' && dialogueCharacterIds(block).includes(characterId) && Boolean(characterDialogueText(block)))
     .map(({ index }) => index)
 }
 
@@ -268,6 +276,14 @@ export function validatePlay(value: unknown): PlayValidationResult {
         if (blockCandidate.type === 'dialogue') {
           if (!nonEmptyString(blockCandidate.characterId) || !characterIds.has(blockCandidate.characterId)) {
             errors.push(`دیالوگ ${blockCandidate.id} به شخصیت ناشناخته اشاره می‌کند.`)
+          }
+          if (blockCandidate.characterIds !== undefined) {
+            if (!Array.isArray(blockCandidate.characterIds) || blockCandidate.characterIds.length === 0
+              || blockCandidate.characterIds.some((id) => !nonEmptyString(id) || !characterIds.has(id))
+              || new Set(blockCandidate.characterIds).size !== blockCandidate.characterIds.length
+              || !blockCandidate.characterIds.includes(blockCandidate.characterId)) {
+              errors.push(`characterIds دیالوگ ${blockCandidate.id} باید آرایه‌ای یکتا از شخصیت‌های معتبر و شامل characterId باشد.`)
+            }
           }
           if (!Array.isArray(blockCandidate.parts) || blockCandidate.parts.length === 0) {
             errors.push(`دیالوگ ${blockCandidate.id} باید حداقل یک part داشته باشد.`)

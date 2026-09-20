@@ -141,3 +141,38 @@ describe('DialogueBlock rehearsal', () => {
     expect(wrapper.text()).toContain('راوی من')
   })
 })
+
+
+describe('DialogueBlock joint-role highlighting', () => {
+  it('uses the selected joint participant color', () => {
+    const jointBlock = {
+      id: 'joint-line',
+      type: 'dialogue' as const,
+      characterId: 'simmias',
+      characterIds: ['simmias', 'agathon'],
+      parts: [{ type: 'speech' as const, text: 'با هم.' }]
+    }
+
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block: jointBlock,
+        characters: [
+          { id: 'simmias', name: 'سیمیاس', color: '#111111' },
+          { id: 'agathon', name: 'آگاتن', color: '#222222' }
+        ],
+        mode: 'read',
+        isMine: false,
+        highlighted: true,
+        highlightColor: '#222222',
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe'
+      }
+    })
+
+    expect(wrapper.text()).toContain('سیمیاس و آگاتن')
+    expect(wrapper.get('.dialogue-block').attributes('style')).toContain('--highlight: #222222')
+  })
+})

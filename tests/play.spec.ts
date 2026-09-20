@@ -4,6 +4,7 @@ import {
   analyzeNarrator,
   analyzePlay,
   characterDialogueText,
+  dialogueCharacterIds,
   dialogueRenderSegments,
   dialogueText,
   flattenBlocks,
@@ -99,6 +100,29 @@ describe('play utilities', () => {
     expect(narrator.dialogueCount).toBeGreaterThan(0)
     expect(narrator.wordCount).toBeGreaterThan(0)
     expect(narrator.blockIndexes.length).toBe(narrator.dialogueCount)
+  })
+
+  it('supports joint dialogue ownership without synthetic characters', () => {
+    const play = structuredClone(demoPlay)
+    const scene = play.acts[0].scenes[0]
+    const owners = play.characters.slice(0, 2).map((character) => character.id)
+    scene.blocks.push({
+      id: 'joint-dialogue',
+      type: 'dialogue',
+      characterId: owners[0],
+      characterIds: owners,
+      parts: [{ type: 'speech', text: 'با هم.' }]
+    })
+
+    const block = scene.blocks.at(-1)
+    expect(block?.type).toBe('dialogue')
+    if (!block || block.type !== 'dialogue') throw new Error('Expected joint dialogue')
+    expect(dialogueCharacterIds(block)).toEqual(owners)
+    const absoluteIndex = flattenBlocks(play).indexOf(block)
+    const stats = analyzePlay(play)
+    expect(stats[owners[0]].blockIndexes).toContain(absoluteIndex)
+    expect(stats[owners[1]].blockIndexes).toContain(absoluteIndex)
+    expect(validatePlay(play)).toEqual({ valid: true, errors: [] })
   })
 
   it('validates the complete nested play contract', () => {
