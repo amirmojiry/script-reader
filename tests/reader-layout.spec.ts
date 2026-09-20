@@ -118,7 +118,7 @@ describe('reader roles layout', () => {
     expect(debugButton.attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('.proofreading-status').text()).toContain('0 عیب ثبت‌شده')
 
-    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlock' })
     expect(dialogue.props('debugMode')).toBe(true)
     dialogue.vm.$emit('proofread', 'سلام')
     await wrapper.vm.$nextTick()
