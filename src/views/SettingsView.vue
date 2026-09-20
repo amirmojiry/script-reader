@@ -12,8 +12,8 @@ const settings = ref<ReaderSettings>({ ...DEFAULT_READER_SETTINGS })
 const loaded = ref(false)
 const status = ref('')
 const settingsBackTarget = computed(() => {
-  const playId = typeof route.query.play === 'string' ? route.query.play.trim() : ''
-  if (route.query.from === 'reader' && playId) {
+  const playId = typeof route.query.play === 'string' ? route.query.play : ''
+  if (route.query.from === 'reader' && playId.trim()) {
     return { name: 'reader', params: { id: playId } }
   }
   return { name: 'library' }
