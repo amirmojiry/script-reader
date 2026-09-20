@@ -99,6 +99,13 @@ describe('LibraryView play cards and discovery controls', () => {
     expect(card.get('.play-title-link').text()).toBe('آ نمایش')
     expect(wrapper.find('.import-help').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('فرمت ورود')
+    const heroActions = wrapper.findAll('.library-action-button')
+    expect(heroActions).toHaveLength(3)
+    expect(heroActions.map((action) => action.attributes('aria-label'))).toEqual([
+      'ویزارد انتخاب نمایش',
+      'تنظیمات',
+      'افزودن JSON'
+    ])
   })
 
   it('preserves wizard limits below library slider minima until the user changes those sliders', async () => {
@@ -112,7 +119,7 @@ describe('LibraryView play cards and discovery controls', () => {
     })
     await flushPromises()
 
-    const wizardButton = wrapper.findAll('button').find((button) => button.text() === 'ویزارد انتخاب نمایش')
+    const wizardButton = wrapper.find<HTMLButtonElement>('.library-wizard-button')
     await wizardButton?.trigger('click')
     await wrapper.get('.wizard-apply-test').trigger('click')
 
@@ -138,7 +145,7 @@ describe('LibraryView play cards and discovery controls', () => {
     })
     await flushPromises()
 
-    const wizardButton = wrapper.findAll('button').find((button) => button.text() === 'ویزارد انتخاب نمایش')
+    const wizardButton = wrapper.find<HTMLButtonElement>('.library-wizard-button')
     await wizardButton?.trigger('click')
     await wrapper.get('.wizard-genre-apply-test').trigger('click')
 
