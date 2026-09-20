@@ -34,7 +34,11 @@ vi.mock('../src/stores/plays', () => ({
       acts: [{ id: 'act-1', title: 'پرده', scenes: [{
         id: 'scene-1',
         title: 'صحنه',
-        blocks: [{ id: 'block-1', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'سلام' }] }]
+        blocks: [
+          { id: 'block-1', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'سلام' }] },
+          { id: 'block-2', type: 'stage-direction', text: 'نور کم می‌شود.' },
+          { id: 'block-3', type: 'section', title: 'بخش دوم' }
+        ]
       }] }]
     } : undefined
   })
@@ -172,8 +176,8 @@ describe('reader roles layout', () => {
       value: { writeText: mocks.clipboardWrite }
     })
     let resolveSave!: () => void
-    mocks.saveProofreadingCorrection.mockImplementationOnce(() => new Promise<void>((resolve) => {
-      resolveSave = resolve
+    mocks.saveProofreadingCorrection.mockImplementationOnce(() => new Promise<undefined>((resolve) => {
+      resolveSave = () => resolve(undefined)
     }))
 
     const wrapper = shallowMount(ReaderView)
@@ -194,9 +198,35 @@ describe('reader roles layout', () => {
     expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن درست: درود'))
     expect(editor.props('saving')).toBe(true)
 
+    dialogue.vm.$emit('proofread', 'متن دوم')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      originalText: 'سلام'
+    })
+
     resolveSave()
     await flushPromises()
     expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+  })
+
+  it('restores focus to the proofreading trigger after canceling the editor', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView, { attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const section = wrapper.get<HTMLHeadingElement>('#block-block-3')
+    section.element.focus()
+    await section.trigger('keydown', { key: 'Enter' })
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.exists()).toBe(true)
+    editor.vm.$emit('cancel')
+    await flushPromises()
+
+    expect(document.activeElement).toBe(section.element)
+    wrapper.unmount()
   })
 
   it('turns proofreading off before entering table-read mode', async () => {
