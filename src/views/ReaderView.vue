@@ -83,6 +83,7 @@ const bookmarkIds = ref<Set<string>>(new Set())
 const statusMessage = ref('')
 const showBackToTop = ref(false)
 const proofreadingMode = ref(false)
+const proofreadingSaving = ref(false)
 const proofreadingCorrections = ref<ProofreadingCorrection[]>([])
 const proofreadingDraft = ref<{
   blockId: string
@@ -365,7 +366,8 @@ async function writeClipboard(text: string): Promise<boolean> {
 }
 
 async function saveProofreadingDraft(correctedText: string): Promise<void> {
-  if (!play.value || !proofreadingDraft.value) return
+  if (proofreadingSaving.value || !play.value || !proofreadingDraft.value) return
+  proofreadingSaving.value = true
   const draft = proofreadingDraft.value
   const correction: ProofreadingCorrection = {
     id: makeCorrectionId(),
@@ -380,15 +382,19 @@ async function saveProofreadingDraft(correctedText: string): Promise<void> {
     createdAt: new Date().toISOString()
   }
 
-  await saveProofreadingCorrection(correction)
-  proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
-    .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
-  proofreadingDraft.value = null
+  try {
+    await saveProofreadingCorrection(correction)
+    proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
+      .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+    proofreadingDraft.value = null
 
-  const copied = await writeClipboard(correctionClipboardText(correction))
-  statusMessage.value = copied
-    ? 'اصلاح ذخیره و در کلیپ‌بورد کپی شد.'
-    : 'اصلاح ذخیره شد، اما دسترسی به کلیپ‌بورد ممکن نبود.'
+    const copied = await writeClipboard(correctionClipboardText(correction))
+    statusMessage.value = copied
+      ? 'اصلاح ذخیره و در کلیپ‌بورد کپی شد.'
+      : 'اصلاح ذخیره شد، اما دسترسی به کلیپ‌بورد ممکن نبود.'
+  } finally {
+    proofreadingSaving.value = false
+  }
 }
 
 async function copyAllProofreadingCorrections(): Promise<void> {
@@ -844,6 +850,7 @@ function selectCurrent(index: number) {
     <ProofreadingEditor
       v-if="proofreadingDraft"
       :draft="proofreadingDraft"
+      :saving="proofreadingSaving"
       @save="saveProofreadingDraft"
       @cancel="proofreadingDraft = null"
     />
