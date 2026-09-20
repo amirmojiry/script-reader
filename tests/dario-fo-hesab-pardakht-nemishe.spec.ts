@@ -132,6 +132,11 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toMatch(/از سک هم بدتریم|می‌کذارد|بعد همم|لوئیجی وجووانی/)
     expect(dialogueTexts + stageTexts).not.toMatch(/گرماو رطوبتی|۳۰۰ نفر شاغل»/)
     expect(dialogueTexts + stageTexts).not.toMatch(/([\u064B-\u0652\u0670])\1/u)
+    for (const block of blocks) {
+      const text = block.type === 'dialogue' ? dialogueText(block) : block.text
+      expect((text.match(/«/g) ?? []).length).toBe((text.match(/»/g) ?? []).length)
+    }
+    expect(dialogueTexts + stageTexts).not.toMatch(/سسوی|دررا|ومی‌گویید|موادغذایی|بااحتیاط|دونفر/)
     expect(dialogueTexts + stageTexts).not.toContain('مرد و زن»')
     expect(dialogueTexts).toContain('مرد و زن، و واقعاً دست به یک اقدام پرشهامت زدیم.')
     expect(dialogueTexts).toContain('بعداً، بعداً... بهتر است آنتونیا برایت تعریف کند...')
