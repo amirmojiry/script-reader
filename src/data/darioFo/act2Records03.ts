@@ -693,7 +693,7 @@ export const act2Records03: DarioFoRecord[] = [
   [
     "d",
     "آنتونیا",
-    "سلام. پدرا"
+    "سلام، پدر!"
   ],
   [
     "d",
