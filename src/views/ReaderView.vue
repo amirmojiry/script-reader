@@ -20,6 +20,7 @@ import { canSpeak, speak, stopSpeaking } from '../services/speech'
 import { releaseWakeLock, requestWakeLock, wakeLockSupported } from '../services/wakeLock'
 import { usePlaysStore } from '../stores/plays'
 import type { Character, DialogueBlock, NoteRecord, PlayBlock, ReaderMode, ReaderSettings } from '../types'
+import { playLibraryMetrics } from '../utils/library'
 import {
   DEFAULT_NARRATOR_COLOR,
   analyzeNarrator,
@@ -78,6 +79,7 @@ const statusMessage = ref('')
 const showBackToTop = ref(false)
 
 const play = computed(() => store.byId(String(route.params.id)))
+const playMetrics = computed(() => play.value ? playLibraryMetrics(play.value) : null)
 const blocks = computed(() => play.value ? flattenBlocks(play.value) : [])
 const stats = computed(() => play.value ? analyzePlay(play.value) : {})
 const narratorStats = computed(() => play.value ? analyzeNarrator(play.value) : {
@@ -460,7 +462,12 @@ function selectCurrent(index: number) {
         <button class="text-button reader-library-link" @click="router.push('/')">← کتابخانه</button>
         <div class="reader-title-block">
           <h1>{{ play.title }}</h1>
-          <p class="muted">{{ play.author }}<template v-if="play.translator"> · مترجم: {{ play.translator }}</template></p>
+          <div class="reader-play-metadata" aria-label="مشخصات نمایشنامه">
+            <span>نویسنده: {{ play.author || 'نامشخص' }}</span>
+            <span v-if="play.translator">مترجم: {{ play.translator }}</span>
+            <span>{{ playMetrics?.characterCount ?? play.characters.length }} شخصیت</span>
+            <span>حدود {{ playMetrics?.estimatedMinutes ?? 0 }} دقیقه</span>
+          </div>
         </div>
         <div class="header-actions reader-primary-actions">
           <button
@@ -494,7 +501,7 @@ function selectCurrent(index: number) {
           </button>
           <RouterLink
             class="icon-button reader-action-button reader-settings-link"
-            to="/settings"
+            :to="{ name: 'settings', query: { from: 'reader', play: play.id } }"
             aria-label="تنظیمات"
             title="تنظیمات"
           >

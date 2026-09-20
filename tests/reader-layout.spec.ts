@@ -25,6 +25,8 @@ vi.mock('../src/stores/plays', () => ({
     byId: (id: string) => id === 'test-play' ? {
       id: 'test-play',
       title: 'نمایش تست',
+      author: 'نویسنده تست',
+      translator: 'مترجم تست',
       genres: ['درام'],
       characters: [{ id: 'role-1', name: 'نقش یک', gender: 'unknown' }],
       acts: [{ id: 'act-1', title: 'پرده', scenes: [{
@@ -97,6 +99,19 @@ function mockCompactViewport(matches: boolean): void {
 }
 
 describe('reader roles layout', () => {
+  it('shows play author, translator, character count, and estimated duration in the header', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    const metadata = wrapper.get('.reader-play-metadata').text()
+    expect(metadata).toContain('نویسنده: نویسنده تست')
+    expect(metadata).toContain('مترجم: مترجم تست')
+    expect(metadata).toContain('1 شخصیت')
+    expect(metadata).toContain('حدود 1 دقیقه')
+  })
+
+
   it('keeps roles open by default on desktop and expands fully when closed', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)

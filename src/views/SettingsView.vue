@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel.vue'
 import { getSettings, saveSettings } from '../services/storage'
 import { wakeLockSupported } from '../services/wakeLock'
 import type { ReaderSettings } from '../types'
 import { DEFAULT_READER_SETTINGS, fontFamilyFor, normalizeReaderSettings } from '../utils/settings'
 
+const route = useRoute()
 const settings = ref<ReaderSettings>({ ...DEFAULT_READER_SETTINGS })
 const loaded = ref(false)
 const status = ref('')
+const settingsBackTarget = computed(() => {
+  const playId = typeof route.query.play === 'string' ? route.query.play : ''
+  if (route.query.from === 'reader' && playId.trim()) {
+    return { name: 'reader', params: { id: playId } }
+  }
+  return { name: 'library' }
+})
 
 function applyFont(next: ReaderSettings): void {
   document.documentElement.style.setProperty('--app-reader-font-family', fontFamilyFor(next.font))
@@ -36,7 +45,7 @@ async function updateSettings(next: ReaderSettings): Promise<void> {
     :style="{ '--app-reader-font-family': fontFamilyFor(settings.font) }"
   >
     <header class="settings-page-header card">
-      <RouterLink class="text-button" to="/">← کتابخانه</RouterLink>
+      <RouterLink class="text-button settings-back-link" :to="settingsBackTarget">← برگشت</RouterLink>
       <div>
         <p class="eyebrow">تنظیمات</p>
         <h1>ظاهر و رفتار خوانش</h1>
