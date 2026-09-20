@@ -121,7 +121,13 @@ const fontFamily = computed(() => {
   if (settings.value.font === 'sans') return 'Arial, Tahoma, sans-serif'
   return 'Tahoma, Arial, sans-serif'
 })
-const searchIndexes = computed(() => searchBlockIndexes(blocks.value, searchQuery.value, settings.value.hideStageDirections))
+const searchIndexes = computed(() =>
+  searchBlockIndexes(
+    blocks.value,
+    searchQuery.value,
+    proofreadingMode.value ? false : settings.value.hideStageDirections
+  )
+)
 const readerEntries = computed(() => {
   const all = blocks.value.map((block, index) => ({ block, index }))
   if (proofreadingMode.value || mode.value !== 'rehearsal' || !settings.value.rehearsalCueOnly) return all
@@ -233,10 +239,12 @@ async function updateSettings(next: ReaderSettings) {
 }
 
 function setMode(next: ReaderMode): void {
-  if (next === 'table-read' && proofreadingMode.value) {
+  if (next !== 'read' && proofreadingMode.value) {
     proofreadingMode.value = false
     proofreadingDraft.value = null
-    statusMessage.value = 'حالت عیب‌یابی برای نمایشنامه‌خوانی بسته شد.'
+    statusMessage.value = next === 'table-read'
+      ? 'حالت عیب‌یابی برای نمایشنامه‌خوانی بسته شد.'
+      : 'حالت عیب‌یابی برای تمرین بسته شد.'
   }
   mode.value = next
   if (next === 'rehearsal' && hasMyRole.value) jumpToNearestOwnRolePart()
