@@ -4,6 +4,12 @@
 
 ## [منتشرنشده]
 
+## [1.8.0] - 2026-09-20
+
+### افزوده‌شده
+- ترجمهٔ فارسی کامل دو اثر وودی آلن، «مرگ در می‌زند» و «در نقش سقراط»، به کتابخانهٔ همراه برنامه اضافه شد و متن هر صفحه با اسکن منبع بازبینی شد.
+- مالکیت مشترک دیالوگ برای سطرهایی که چند نقش هم‌زمان می‌گویند، بدون ساخت نقش مصنوعی.
+
 ## [1.6.0] - 2026-09-19
 
 ### افزوده‌شده
@@ -86,7 +92,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...v1.8.0
 [1.6.0]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/amirmojiry/script-reader/compare/v1.4.0...v1.4.1

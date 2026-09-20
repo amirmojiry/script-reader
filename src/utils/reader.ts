@@ -1,5 +1,5 @@
 import type { PlayBlock } from '../types'
-import { blockText, characterDialogueText } from './play'
+import { blockText, characterDialogueText, dialogueCharacterIds } from './play'
 
 export function isBlockVisible(block: PlayBlock, hideStageDirections: boolean): boolean {
   return !(hideStageDirections && block.type === 'stage-direction')
@@ -39,9 +39,9 @@ export function rehearsalCueIndexesForOwnIndexes(
 }
 
 export function isCharacterSpeechBlock(block: PlayBlock, characterId: string | undefined): boolean {
-  return Boolean(characterId)
+  return characterId !== undefined
     && block.type === 'dialogue'
-    && block.characterId === characterId
+    && dialogueCharacterIds(block).includes(characterId)
     && Boolean(characterDialogueText(block))
 }
 

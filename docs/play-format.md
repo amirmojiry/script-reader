@@ -32,6 +32,7 @@ Minimal example:
               "id": "line-1",
               "type": "dialogue",
               "characterId": "a",
+              "characterIds": ["a"],
               "parts": [
                 { "type": "speech", "text": "(با تعجب) سلام." },
                 { "type": "direction", "text": "مکث" },
@@ -59,6 +60,7 @@ Minimal example:
 - Act and scene titles are required.
 - Block ids must be unique across the whole play.
 - Every `dialogue.characterId` must reference a declared character.
+- Joint dialogue may set `dialogue.characterIds` to a unique non-empty array of declared character ids. It must include the primary `characterId`; when omitted, ownership is the single `characterId`.
 - Dialogue parts are only `speech` or `direction` and contain non-empty text.
 - Standalone directions use `type: "stage-direction"`.
 - Display-only headings use `type: "section"` and a `title`.
