@@ -13,6 +13,15 @@ All notable changes to this project are documented here. The project follows Kee
 ### Changed
 - Proofreading mode reveals the full document for review without mutating the bundled or imported play source.
 
+## [1.9.0] - 2026-09-20
+
+### Added
+- Play metadata in the reader header, including author, translator, character count, and the same estimated duration used by library discovery.
+
+### Changed
+- Library hero actions for play finder, settings, and JSON import now use compact accessible icon controls.
+- Settings now returns to the exact play it was opened from, or to the library when opened there or directly.
+
 ## [1.8.0] - 2026-09-20
 
 ### Added
@@ -102,7 +111,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
 [Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...HEAD
-[1.10.0]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...v1.10.0
+[1.10.0]: https://github.com/amirmojiry/script-reader/compare/v1.9.0...v1.10.0
+[1.9.0]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...v1.8.0
 [1.6.0]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...v1.5.0
