@@ -628,3 +628,148 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Proofreading / text debugging */
+.proofreading-status {
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-color: #c7d2fe;
+  background: #f5f7ff;
+}
+.proofreading-status > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+.proofreading-status-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.proofreading-target {
+  cursor: text;
+}
+.dialogue-block.proofreading-target,
+.proofreading-target.narrator-stage,
+.reader-document h2.proofreading-target {
+  outline: 1px dashed transparent;
+  outline-offset: 3px;
+}
+.dialogue-block.proofreading-target:hover,
+.proofreading-target.narrator-stage:hover,
+.reader-document h2.proofreading-target:hover,
+.dialogue-block.proofreading-target:focus-visible,
+.proofreading-target.narrator-stage:focus-visible,
+.reader-document h2.proofreading-target:focus-visible {
+  outline-color: #818cf8;
+  outline-width: 2px;
+}
+.proofreading-editor-dock {
+  position: fixed;
+  right: calc(var(--panel-width) + 44px);
+  left: 24px;
+  bottom: 16px;
+  z-index: 90;
+  max-height: min(52vh, 430px);
+  overflow: auto;
+  padding: 16px;
+  border-color: #a5b4fc;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, .24);
+}
+.reader-layout.sidebar-closed .proofreading-editor-dock {
+  right: 24px;
+}
+.reader-layout.proofreading-editing .reader-main {
+  padding-bottom: 390px;
+}
+.proofreading-editor-heading,
+.proofreading-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.proofreading-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.proofreading-editor-grid label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+.proofreading-editor-grid textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 92px;
+  padding: 10px 12px;
+  border: 1px solid #d8deea;
+  border-radius: 10px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  line-height: 1.8;
+}
+.proofreading-editor-grid textarea[readonly] {
+  background: #f8fafc;
+}
+.dark-theme .proofreading-status,
+.dark-theme .proofreading-editor-dock {
+  background: rgba(15, 23, 42, .98);
+  border-color: #4338ca;
+  color: #e5e7eb;
+}
+.dark-theme .proofreading-editor-grid label {
+  color: #cbd5e1;
+}
+.dark-theme .proofreading-editor-grid textarea {
+  background: #111c2e;
+  border-color: #334155;
+  color: #e5e7eb;
+}
+.dark-theme .proofreading-editor-grid textarea[readonly] {
+  background: #0f172a;
+}
+@media (max-width: 980px) {
+  .proofreading-editor-dock {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+  }
+}
+@media (max-width: 640px) {
+  .proofreading-status,
+  .proofreading-editor-heading,
+  .proofreading-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .proofreading-editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .reader-layout.proofreading-editing .reader-main {
+    padding-bottom: 560px;
+  }
+}
+
+.reader-proofreading-button.active {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+.reader-proofreading-button.active svg {
+  fill: none;
+}
+.dark-theme .reader-proofreading-button.active {
+  background: #312e81;
+  color: #e0e7ff;
+  border-color: #6366f1;
+}

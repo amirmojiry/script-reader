@@ -99,3 +99,19 @@ export interface NoteRecord {
   createdAt: string
   updatedAt: string
 }
+
+
+export type ProofreadingBlockType = PlayBlock['type']
+
+export interface ProofreadingCorrection {
+  id: string
+  playId: string
+  playTitle: string
+  blockId: string
+  blockIndex: number
+  blockType: ProofreadingBlockType
+  dialogueNumber?: number
+  originalText: string
+  correctedText: string
+  createdAt: string
+}
