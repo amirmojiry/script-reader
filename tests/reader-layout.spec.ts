@@ -165,8 +165,12 @@ describe('reader roles layout', () => {
   })
 
 
-  it('ignores duplicate proofreading submissions while persistence is pending', async () => {
+  it('ignores duplicate proofreading submissions while persistence is pending and starts clipboard copy immediately', async () => {
     mockCompactViewport(false)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: mocks.clipboardWrite }
+    })
     let resolveSave!: () => void
     mocks.saveProofreadingCorrection.mockImplementationOnce(() => new Promise<void>((resolve) => {
       resolveSave = resolve
@@ -186,6 +190,8 @@ describe('reader roles layout', () => {
     await wrapper.vm.$nextTick()
 
     expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
+    expect(mocks.clipboardWrite).toHaveBeenCalledTimes(1)
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن درست: درود'))
     expect(editor.props('saving')).toBe(true)
 
     resolveSave()
