@@ -2,7 +2,7 @@
 
 Script Reader is a static, offline-first Vue 3 web application for reading plays, rehearsing roles, and running table reads. It is designed for GitHub Pages and requires no backend, account, or server database.
 
-## Version 1.6 features
+## Version 1.7 features
 
 - Local play library backed by IndexedDB.
 - Structured acts, scenes, dialogue, spoken text, inline directions, and stage directions.
