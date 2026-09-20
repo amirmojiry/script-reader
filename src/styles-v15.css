@@ -527,7 +527,9 @@
   font-size: 12px;
 }
 .reader-play-metadata span {
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .reader-primary-actions {
   display: flex;
