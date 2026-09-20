@@ -68,7 +68,7 @@ describe('SettingsView', () => {
       global: { stubs: { RouterLink: RouterLinkStub } }
     })
     await flushPromises()
-    expect(JSON.parse(fromReader.get('.settings-back-link').attributes('data-to'))).toEqual({
+    expect(JSON.parse(fromReader.get('.settings-back-link').attributes('data-to')!))).toEqual({
       name: 'reader',
       params: { id: 'test-play' }
     })
@@ -79,7 +79,7 @@ describe('SettingsView', () => {
       global: { stubs: { RouterLink: RouterLinkStub } }
     })
     await flushPromises()
-    expect(JSON.parse(fromLibrary.get('.settings-back-link').attributes('data-to'))).toEqual({
+    expect(JSON.parse(fromLibrary.get('.settings-back-link').attributes('data-to')!))).toEqual({
       name: 'library'
     })
     fromLibrary.unmount()
@@ -89,7 +89,7 @@ describe('SettingsView', () => {
       global: { stubs: { RouterLink: RouterLinkStub } }
     })
     await flushPromises()
-    expect(JSON.parse(invalidReader.get('.settings-back-link').attributes('data-to'))).toEqual({
+    expect(JSON.parse(invalidReader.get('.settings-back-link').attributes('data-to')!))).toEqual({
       name: 'library'
     })
   })
