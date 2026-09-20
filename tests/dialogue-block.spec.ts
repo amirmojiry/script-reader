@@ -198,7 +198,12 @@ describe('DialogueBlock proofreading mode', () => {
 
     expect(wrapper.text()).toContain('صبر کن')
     expect(wrapper.text()).toContain('(آرام)')
-    await wrapper.get('.dialogue-block').trigger('click')
+    const target = wrapper.get('.dialogue-block')
+    await target.trigger('click')
     expect(wrapper.emitted('proofread')?.[0]?.[0]).toBe('صبر کن و چند لحظه همین جا بمان. (آرام) بعد برگرد.')
+
+    await target.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('proofread')?.[1]?.[0]).toBe('صبر کن و چند لحظه همین جا بمان. (آرام) بعد برگرد.')
+    expect(target.attributes('role')).toBe('button')
   })
 })
