@@ -629,7 +629,7 @@ function selectCurrent(index: number) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg>
           </button>
           <button
-            class="icon-button reader-action-button"
+            class="icon-button reader-action-button reader-proofreading-button"
             type="button"
             :class="{ active: proofreadingMode }"
             :aria-pressed="proofreadingMode"
@@ -782,7 +782,8 @@ function selectCurrent(index: number) {
             :class="{
               current: isCurrent(entry.index),
               'narrator-highlighted': narratorSelected,
-              'narrator-mine': narratorIsMine
+              'narrator-mine': narratorIsMine,
+              'proofreading-target': proofreadingMode
             }"
             :style="narratorSelected || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
             @mouseup="captureProofreadingSelection(entry.block, entry.index, $event)"

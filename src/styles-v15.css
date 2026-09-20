@@ -728,3 +728,17 @@
     padding-bottom: 560px;
   }
 }
+
+.reader-proofreading-button.active {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+.reader-proofreading-button.active svg {
+  fill: none;
+}
+.dark-theme .reader-proofreading-button.active {
+  background: #312e81;
+  color: #e0e7ff;
+  border-color: #6366f1;
+}

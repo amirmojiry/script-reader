@@ -10,7 +10,9 @@ const mocks = vi.hoisted(() => ({
   updateCharacterColor: vi.fn(async () => undefined),
   push: vi.fn(),
   replace: vi.fn(),
-  saveReadingState: vi.fn(async () => undefined)
+  saveReadingState: vi.fn(async () => undefined),
+  saveProofreadingCorrection: vi.fn(async () => undefined),
+  clipboardWrite: vi.fn(async () => undefined)
 }))
 
 vi.mock('vue-router', () => ({
@@ -51,7 +53,9 @@ vi.mock('../src/services/storage', () => ({
   })),
   listBookmarks: vi.fn(async () => []),
   listNotes: vi.fn(async () => []),
+  listProofreadingCorrections: vi.fn(async () => []),
   saveNote: vi.fn(async () => undefined),
+  saveProofreadingCorrection: mocks.saveProofreadingCorrection,
   saveReadingState: mocks.saveReadingState,
   saveSettings: vi.fn(async () => undefined),
   toggleBookmark: vi.fn(async () => undefined)
@@ -77,6 +81,8 @@ const FocusableCharacterPanelStub = defineComponent({
 
 afterEach(() => {
   document.body.innerHTML = ''
+  mocks.saveProofreadingCorrection.mockClear()
+  mocks.clipboardWrite.mockClear()
 })
 
 function mockCompactViewport(matches: boolean): void {
@@ -97,6 +103,53 @@ function mockCompactViewport(matches: boolean): void {
 }
 
 describe('reader roles layout', () => {
+  it('records a proofreading correction locally and copies its dialogue summary', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: mocks.clipboardWrite }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    const debugButton = wrapper.get('.reader-proofreading-button')
+    await debugButton.trigger('click')
+    expect(debugButton.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.proofreading-status').text()).toContain('0 عیب ثبت‌شده')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    expect(dialogue.props('debugMode')).toBe(true)
+    dialogue.vm.$emit('proofread', 'سلام')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.exists()).toBe(true)
+    expect(editor.props('draft')).toMatchObject({
+      label: 'دیالوگ شماره 1',
+      originalText: 'سلام'
+    })
+
+    editor.vm.$emit('save', 'درود')
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      playId: 'test-play',
+      blockId: 'block-1',
+      blockIndex: 1,
+      dialogueNumber: 1,
+      originalText: 'سلام',
+      correctedText: 'درود'
+    }))
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('دیالوگ شماره 1'))
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن اشتباه: سلام'))
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن درست: درود'))
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+    expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
+  })
+
+
   it('keeps roles open by default on desktop and expands fully when closed', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)

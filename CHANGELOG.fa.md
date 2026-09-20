@@ -4,6 +4,15 @@
 
 ## [منتشرنشده]
 
+## [1.10.0] - 2026-09-20
+
+### افزوده‌شده
+- حالت اختیاری عیب‌یابی/بازبینی متن نمایش با انتخاب بخشی از متن یا انتخاب کل بخش، ویرایشگر چسبیده به پایین صفحه و شماره‌گذاری دیالوگ‌ها.
+- ذخیرهٔ محلی اصلاحات در IndexedDB، کپی خلاصهٔ هر اصلاح در کلیپ‌بورد و امکان کپی یا دانلود گزارش کامل به‌صورت JSON.
+
+### تغییرکرده
+- در حالت عیب‌یابی، متن کامل برای بازبینی نمایش داده می‌شود و متن اصلی نمایشنامه هیچ تغییری نمی‌کند.
+
 ## [1.8.0] - 2026-09-20
 
 ### افزوده‌شده
@@ -92,7 +101,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...v1.10.0
 [1.8.0]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...v1.8.0
 [1.6.0]: https://github.com/amirmojiry/script-reader/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/amirmojiry/script-reader/compare/v1.4.1...v1.5.0
