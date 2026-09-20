@@ -26,6 +26,7 @@ const emit = defineEmits<{
 
 const revealAll = ref(false)
 const progressiveWordCount = ref(5)
+const dialogueCopyRef = ref<HTMLElement | null>(null)
 
 watch(() => props.block.id, () => {
   revealAll.value = false
@@ -50,7 +51,7 @@ function selectedTextInBlock(): string {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return ''
   const range = selection.getRangeAt(0)
-  const root = document.getElementById(`block-${props.block.id}`)
+  const root = dialogueCopyRef.value
   const node = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
     ? range.commonAncestorContainer as Element
     : range.commonAncestorContainer.parentElement
@@ -118,7 +119,7 @@ function revealNext(): void {
       </div>
     </template>
 
-    <p v-else class="dialogue-copy">
+    <p v-else ref="dialogueCopyRef" class="dialogue-copy">
       <template v-for="(segment, index) in renderSegments" :key="index">
         <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
         <RehearsalRevealText
