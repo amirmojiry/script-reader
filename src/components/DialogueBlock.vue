@@ -85,9 +85,12 @@ function revealNext(): void {
     class="dialogue-block"
     :style="highlighted ? { '--highlight': resolvedHighlightColor } : undefined"
     tabindex="0"
+    :role="debugMode ? 'button' : undefined"
     :class="{ highlighted, current, mine: isMine, 'has-narration': hasNarration, 'proofreading-target': debugMode }"
     @mouseup="proofreadSelection"
     @click="proofreadFallback"
+    @keydown.enter.prevent="proofreadFallback"
+    @keydown.space.prevent="proofreadFallback"
   >
     <header>
       <strong>{{ displayName }}</strong>
