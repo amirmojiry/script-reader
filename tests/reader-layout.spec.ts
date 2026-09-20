@@ -167,6 +167,23 @@ describe('reader roles layout', () => {
     expect(wrapper.find('.table-read').exists()).toBe(true)
   })
 
+  it('turns proofreading off before entering rehearsal mode', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+    expect(wrapper.get('.reader-proofreading-button').attributes('aria-pressed')).toBe('true')
+
+    const toolbar = wrapper.findComponent({ name: 'ReaderToolbar' })
+    toolbar.vm.$emit('setMode', 'rehearsal')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('.reader-proofreading-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('.proofreading-status').exists()).toBe(false)
+    expect(wrapper.find('.rehearsal-controls').exists()).toBe(true)
+  })
+
   it('keeps roles open by default on desktop and expands fully when closed', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)
