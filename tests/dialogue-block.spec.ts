@@ -179,6 +179,53 @@ describe('DialogueBlock joint-role highlighting', () => {
 
 
 describe('DialogueBlock proofreading mode', () => {
+  it('ignores UI/header selections and captures only dialogue source text', async () => {
+    const wrapper = mount(DialogueBlock, {
+      attachTo: document.body,
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true
+      }
+    })
+
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+
+    const headerText = wrapper.get('header strong').element.firstChild
+    expect(headerText).not.toBeNull()
+    if (!headerText) throw new Error('Header text missing')
+    const headerRange = document.createRange()
+    headerRange.selectNodeContents(headerText)
+    selection.removeAllRanges()
+    selection.addRange(headerRange)
+    await wrapper.get('.dialogue-block').trigger('mouseup')
+    expect(wrapper.emitted('proofread')).toBeUndefined()
+
+    const speechText = wrapper.get('.dialogue-copy span').element.firstChild
+    expect(speechText).not.toBeNull()
+    if (!speechText) throw new Error('Dialogue text missing')
+    const speechRange = document.createRange()
+    speechRange.setStart(speechText, 0)
+    speechRange.setEnd(speechText, 4)
+    selection.removeAllRanges()
+    selection.addRange(speechRange)
+    await wrapper.get('.dialogue-block').trigger('mouseup')
+    expect(wrapper.emitted('proofread')?.[0]?.[0]).toBe('صبر')
+
+    selection.removeAllRanges()
+    wrapper.unmount()
+  })
+
   it('shows the full line during rehearsal and emits the full block text on click when no selection exists', async () => {
     const wrapper = mount(DialogueBlock, {
       props: {
