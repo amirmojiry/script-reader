@@ -8,6 +8,7 @@ interface ProofreadingDraft {
 
 const props = defineProps<{
   draft: ProofreadingDraft
+  saving?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -34,7 +35,7 @@ function submit(): void {
         <p class="eyebrow">عیب‌یابی متن</p>
         <strong>{{ draft.label }}</strong>
       </div>
-      <button class="text-button" type="button" @click="emit('cancel')">بستن</button>
+      <button class="text-button" type="button" :disabled="saving" @click="emit('cancel')">بستن</button>
     </div>
     <div class="proofreading-editor-grid">
       <label>
@@ -43,12 +44,12 @@ function submit(): void {
       </label>
       <label>
         <span>متن درست</span>
-        <textarea v-model="correctedText" rows="3" autofocus />
+        <textarea v-model="correctedText" rows="3" :disabled="saving" autofocus />
       </label>
     </div>
     <div class="proofreading-editor-actions">
-      <button class="primary-button" type="button" :disabled="correctedText === draft.originalText" @click="submit">
-        ثبت و کپی
+      <button class="primary-button" type="button" :disabled="saving || correctedText === draft.originalText" @click="submit">
+        {{ saving ? 'در حال ثبت…' : 'ثبت و کپی' }}
       </button>
       <span class="muted">متن نمایشنامه تغییر نمی‌کند؛ اصلاح فقط در گزارش محلی ذخیره می‌شود.</span>
     </div>
