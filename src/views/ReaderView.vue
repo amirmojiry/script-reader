@@ -84,6 +84,7 @@ const statusMessage = ref('')
 const showBackToTop = ref(false)
 const proofreadingMode = ref(false)
 const proofreadingSaving = ref(false)
+let proofreadingTrigger: HTMLElement | null = null
 const proofreadingCorrections = ref<ProofreadingCorrection[]>([])
 const proofreadingDraft = ref<{
   blockId: string
@@ -316,10 +317,11 @@ function proofreadingLocation(block: PlayBlock, index: number): { dialogueNumber
 }
 
 function openProofreading(block: PlayBlock, index: number, originalText: string): void {
-  if (!proofreadingMode.value) return
+  if (!proofreadingMode.value || proofreadingSaving.value) return
   const text = originalText.trim()
   if (!text) return
   currentIndex.value = index
+  proofreadingTrigger = document.getElementById(`block-${block.id}`)
   const location = proofreadingLocation(block, index)
   proofreadingDraft.value = {
     blockId: block.id,
@@ -331,21 +333,44 @@ function openProofreading(block: PlayBlock, index: number, originalText: string)
   }
 }
 
+function proofreadingSourceTarget(block: PlayBlock, eventTarget: EventTarget | null): HTMLElement | null {
+  if (!(eventTarget instanceof HTMLElement)) return null
+  if (block.type === 'stage-direction') {
+    return eventTarget.querySelector<HTMLElement>('.narrator-rehearsal-text')
+  }
+  return eventTarget
+}
+
 function captureProofreadingSelection(block: PlayBlock, index: number, event: MouseEvent): void {
-  const selected = selectedTextWithin(event.currentTarget)
+  const selected = selectedTextWithin(proofreadingSourceTarget(block, event.currentTarget))
   if (selected) openProofreading(block, index, selected)
 }
 
 function handleProofreadingBlockClick(block: PlayBlock, index: number, event: MouseEvent): void {
   selectCurrent(index)
   if (!proofreadingMode.value) return
-  if (!selectedTextWithin(event.currentTarget)) openProofreading(block, index, blockText(block))
+  if (!selectedTextWithin(proofreadingSourceTarget(block, event.currentTarget))) {
+    openProofreading(block, index, blockText(block))
+  }
 }
 
 function handleProofreadingKeyboard(block: PlayBlock, index: number): void {
   if (!proofreadingMode.value) return
   selectCurrent(index)
   openProofreading(block, index, blockText(block))
+}
+
+async function clearProofreadingDraftAndRestoreFocus(): Promise<void> {
+  const trigger = proofreadingTrigger
+  proofreadingDraft.value = null
+  proofreadingTrigger = null
+  await nextTick()
+  trigger?.focus()
+}
+
+async function cancelProofreadingDraft(): Promise<void> {
+  if (proofreadingSaving.value) return
+  await clearProofreadingDraftAndRestoreFocus()
 }
 
 function makeCorrectionId(): string {
@@ -387,7 +412,7 @@ async function saveProofreadingDraft(correctedText: string): Promise<void> {
     await saveProofreadingCorrection(correction)
     proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
       .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
-    proofreadingDraft.value = null
+    await clearProofreadingDraftAndRestoreFocus()
 
     const copied = await clipboardPromise
     statusMessage.value = copied
@@ -853,7 +878,7 @@ function selectCurrent(index: number) {
       :draft="proofreadingDraft"
       :saving="proofreadingSaving"
       @save="saveProofreadingDraft"
-      @cancel="proofreadingDraft = null"
+      @cancel="cancelProofreadingDraft"
     />
 
     <button
