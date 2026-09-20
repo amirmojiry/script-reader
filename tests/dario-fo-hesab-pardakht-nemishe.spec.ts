@@ -133,7 +133,11 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toMatch(/گرماو رطوبتی|۳۰۰ نفر شاغل»/)
     expect(dialogueTexts + stageTexts).not.toMatch(/([\u064B-\u0652\u0670])\1/u)
     for (const block of blocks) {
-      const text = block.type === 'dialogue' ? dialogueText(block) : block.text
+      const text = block.type === 'dialogue'
+        ? dialogueText(block)
+        : block.type === 'stage-direction'
+          ? block.text
+          : block.title
       expect((text.match(/«/g) ?? []).length).toBe((text.match(/»/g) ?? []).length)
     }
     expect(dialogueTexts + stageTexts).not.toMatch(/سسوی|دررا|ومی‌گویید|موادغذایی|بااحتیاط|دونفر/)
