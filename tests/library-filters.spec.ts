@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CharacterGender, Play } from '../src/types'
-import { characterGender } from '../src/utils/play'
+import { analyzePlay, characterGender } from '../src/utils/play'
 import {
   matchesLibraryRanges,
   matchesWizardCriteria,
@@ -46,19 +46,22 @@ describe('library filters', () => {
     expect(metrics).toMatchObject({ characterCount: 5, dialogueCount: 1, spokenWordCount: 261, estimatedMinutes: 3 })
   })
 
-  it('does not count joint dialogue as extra cast slots or duplicate duration', () => {
-    const play = makePlay(2, 4, ['male', 'female'])
-    const dialogue = play.acts[0].scenes[0].blocks[0]
-    if (dialogue.type !== 'dialogue') throw new Error('Expected dialogue')
-    dialogue.characterIds = ['c-1', 'c-2']
+  it('counts joint dialogue once in whole-play metrics while crediting every owner', () => {
+    const play = makePlay(2, 130)
+    const block = play.acts[0].scenes[0].blocks[0]
+    if (block.type !== 'dialogue') throw new Error('Expected dialogue block')
+    block.characterIds = play.characters.map((character) => character.id)
 
     expect(playLibraryMetrics(play)).toMatchObject({
-      characterCount: 2,
       dialogueCount: 1,
-      spokenWordCount: 4,
-      maleCount: 1,
-      femaleCount: 1
+      spokenWordCount: 130,
+      estimatedMinutes: 1
     })
+
+    const roleStats = analyzePlay(play)
+    for (const character of play.characters) {
+      expect(roleStats[character.id]).toMatchObject({ dialogueCount: 1, wordCount: 130 })
+    }
   })
 
   it('builds dynamic slider bounds from available metrics', () => {

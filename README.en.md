@@ -2,14 +2,14 @@
 
 Script Reader is a static, offline-first Vue 3 web application for reading plays, rehearsing roles, and running table reads. It is designed for GitHub Pages and requires no backend, account, or server database.
 
-## Version 1.7 features
+## Version 1.9 features
 
 - Local play library backed by IndexedDB.
 - Structured acts, scenes, dialogue, spoken text, inline directions, and stage directions.
-- Six bundled user-supplied plays: “Horses at the Window”, «مهمان ناخوانده» by اریک امانوئل اشمیت translated by تینوش نظم‌جو, «حساب پرداخت نمی‌شه!» by داریو فو translated by حامد جهانشاهی, plus «بانو و مرد مرده», «جنایت و مکافات», and «عکس دسته جمعی با خانم بزرگ» by Chista Yasrebi.
+- Eight bundled user-supplied plays: “Horses at the Window”, «مهمان ناخوانده» by اریک امانوئل اشمیت translated by تینوش نظم‌جو, «حساب پرداخت نمی‌شه!» by داریو فو translated by حامد جهانشاهی, «مرگ در می‌زند» and «در نقش سقراط» by Woody Allen, plus «بانو و مرد مرده», «جنایت و مکافات», and «عکس دسته جمعی با خانم بزرگ» by Chista Yasrebi.
 - Library filters for character count, estimated duration, author, translator, and genre, plus sorting by title, duration, and role count.
 - A guided play-selection wizard recommends plays from available cast size, male/female availability, available time, and preferred genre.
-- Each library card presents its three metrics and the open action in an equal-sized control grid.
+- Each library card links its play title directly to the reader, exposes clickable genre filters, and presents its three metrics in a compact control grid.
 - Character highlighting with configurable colors, gender metadata, dialogue count, spoken-word share, estimated speaking time, clickable RTL role timelines, and a «شروع» shortcut to the role's first line.
 - A virtual narrator role covers stage directions, explicit inline directions, and balanced parenthetical segments inside dialogue; narrator highlighting/color and rehearsal ownership are persisted per play.
 - Vazirmatn as the default font plus Noto Sans Arabic, Noto Naskh Arabic, Amiri, Lalezar, Katibeh, and Parastoo choices.

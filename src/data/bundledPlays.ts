@@ -2,10 +2,11 @@ import type { Play } from '../types'
 import { bundledPlay } from './bundledPlay'
 import { hesabPardakhtNemishePlay } from './darioFo'
 import { unexpectedGuestPlay } from './unexpectedGuest'
+import { woodyAllenBundledPlays } from './woodyAllen'
 import { yasrebiBundledPlays } from './yasrebi'
 
 export const BUNDLED_ID_PREFIX = 'builtin:'
-export const bundledPlays: Play[] = [bundledPlay, ...yasrebiBundledPlays, hesabPardakhtNemishePlay, unexpectedGuestPlay]
+export const bundledPlays: Play[] = [bundledPlay, ...yasrebiBundledPlays, hesabPardakhtNemishePlay, ...woodyAllenBundledPlays, unexpectedGuestPlay]
 
 export interface ResolvedBundledPlay {
   play: Play

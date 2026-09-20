@@ -148,8 +148,8 @@ describe('DialogueBlock joint-role highlighting', () => {
     const jointBlock = {
       id: 'joint-line',
       type: 'dialogue' as const,
-      characterId: 'giovanni',
-      characterIds: ['giovanni', 'antonia'],
+      characterId: 'simmias',
+      characterIds: ['simmias', 'agathon'],
       parts: [{ type: 'speech' as const, text: 'با هم.' }]
     }
 
@@ -157,8 +157,8 @@ describe('DialogueBlock joint-role highlighting', () => {
       props: {
         block: jointBlock,
         characters: [
-          { id: 'giovanni', name: 'جووانی', color: '#111111' },
-          { id: 'antonia', name: 'آنتونیا', color: '#222222' }
+          { id: 'simmias', name: 'سیمیاس', color: '#111111' },
+          { id: 'agathon', name: 'آگاتن', color: '#222222' }
         ],
         mode: 'read',
         isMine: false,
@@ -172,6 +172,7 @@ describe('DialogueBlock joint-role highlighting', () => {
       }
     })
 
+    expect(wrapper.text()).toContain('سیمیاس و آگاتن')
     expect(wrapper.get('.dialogue-block').attributes('style')).toContain('--highlight: #222222')
   })
 })

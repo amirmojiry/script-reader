@@ -56,19 +56,19 @@ export function playGenres(play: Play): string[] {
 
 export function playLibraryMetrics(play: Play): PlayLibraryMetrics {
   const narrator = analyzeNarrator(play)
-  const spokenDialogueBlocks = flattenBlocks(play).filter((block) =>
-    block.type === 'dialogue' && Boolean(characterDialogueText(block))
-  )
-  const characterSpokenWordCount = spokenDialogueBlocks.reduce((sum, block) =>
-    block.type === 'dialogue' ? sum + wordCount(characterDialogueText(block)) : sum
-  , 0)
+  const spokenTexts = flattenBlocks(play).flatMap((block) => {
+    if (block.type !== 'dialogue') return []
+    const text = characterDialogueText(block)
+    return text ? [text] : []
+  })
+  const spokenWordCount = spokenTexts.reduce((sum, text) => sum + wordCount(text), 0)
   const genders = play.characters.map((character) => characterGender(character.gender))
-  const totalWords = characterSpokenWordCount + narrator.wordCount
+  const totalWords = spokenWordCount + narrator.wordCount
 
   return {
     characterCount: play.characters.length,
-    dialogueCount: spokenDialogueBlocks.length,
-    spokenWordCount: characterSpokenWordCount,
+    dialogueCount: spokenTexts.length,
+    spokenWordCount,
     narratorWordCount: narrator.wordCount,
     estimatedMinutes: totalWords === 0 ? 0 : Math.max(1, Math.ceil(totalWords / 130)),
     maleCount: genders.filter((gender) => gender === 'male').length,
