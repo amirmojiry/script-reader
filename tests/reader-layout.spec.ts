@@ -85,6 +85,14 @@ const FocusableCharacterPanelStub = defineComponent({
   template: '<aside><button class="panel-close-button" type="button" @click="$emit(\'close\')">بستن</button></aside>'
 })
 
+const ProofreadingRevealTextStub = defineComponent({
+  name: 'RehearsalRevealText',
+  props: {
+    text: { type: String, required: true }
+  },
+  template: '<span class="narrator-rehearsal-text">{{ text }}</span>'
+})
+
 afterEach(() => {
   document.body.innerHTML = ''
   mocks.saveProofreadingCorrection.mockClear()
@@ -207,6 +215,52 @@ describe('reader roles layout', () => {
     resolveSave()
     await flushPromises()
     expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+  })
+
+  it('captures stage-direction source text without the narrator UI label', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          RehearsalRevealText: ProofreadingRevealTextStub
+        }
+      }
+    })
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const stage = wrapper.get('#block-block-2')
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+
+    const labelText = stage.get('.narrator-label').element.firstChild
+    expect(labelText).not.toBeNull()
+    if (!labelText) throw new Error('Narrator label missing')
+    const labelRange = document.createRange()
+    labelRange.selectNodeContents(labelText)
+    selection.removeAllRanges()
+    selection.addRange(labelRange)
+    await stage.trigger('mouseup')
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+
+    const sourceText = stage.get('.narrator-rehearsal-text').element.firstChild
+    expect(sourceText).not.toBeNull()
+    if (!sourceText) throw new Error('Stage source text missing')
+    const sourceRange = document.createRange()
+    sourceRange.selectNodeContents(sourceText)
+    selection.removeAllRanges()
+    selection.addRange(sourceRange)
+    await stage.trigger('mouseup')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      originalText: 'نور کم می‌شود.'
+    })
+
+    selection.removeAllRanges()
+    wrapper.unmount()
   })
 
   it('restores focus to the proofreading trigger after canceling the editor', async () => {
