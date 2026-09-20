@@ -233,6 +233,11 @@ async function updateSettings(next: ReaderSettings) {
 }
 
 function setMode(next: ReaderMode): void {
+  if (next === 'table-read' && proofreadingMode.value) {
+    proofreadingMode.value = false
+    proofreadingDraft.value = null
+    statusMessage.value = 'حالت عیب‌یابی برای نمایشنامه‌خوانی بسته شد.'
+  }
   mode.value = next
   if (next === 'rehearsal' && hasMyRole.value) jumpToNearestOwnRolePart()
   if (next === 'table-read') ensureCurrentTableReadVisible()
@@ -324,6 +329,12 @@ function handleProofreadingBlockClick(block: PlayBlock, index: number, event: Mo
   selectCurrent(index)
   if (!proofreadingMode.value) return
   if (!selectedTextWithin(event.currentTarget)) openProofreading(block, index, blockText(block))
+}
+
+function handleProofreadingKeyboard(block: PlayBlock, index: number): void {
+  if (!proofreadingMode.value) return
+  selectCurrent(index)
+  openProofreading(block, index, blockText(block))
 }
 
 function makeCorrectionId(): string {
@@ -786,8 +797,12 @@ function selectCurrent(index: number) {
               'proofreading-target': proofreadingMode
             }"
             :style="narratorSelected || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
+            :tabindex="proofreadingMode ? 0 : undefined"
+            :role="proofreadingMode ? 'button' : undefined"
             @mouseup="captureProofreadingSelection(entry.block, entry.index, $event)"
             @click="handleProofreadingBlockClick(entry.block, entry.index, $event)"
+            @keydown.enter.prevent="handleProofreadingKeyboard(entry.block, entry.index)"
+            @keydown.space.prevent="handleProofreadingKeyboard(entry.block, entry.index)"
           >
             <span class="narrator-label">راوی</span>
             <RehearsalRevealText
@@ -800,8 +815,12 @@ function selectCurrent(index: number) {
             v-else-if="entry.block.type === 'section'"
             :id="`block-${entry.block.id}`"
             :class="{ 'proofreading-target': proofreadingMode }"
+            :tabindex="proofreadingMode ? 0 : undefined"
+            :role="proofreadingMode ? 'button' : undefined"
             @mouseup="captureProofreadingSelection(entry.block, entry.index, $event)"
             @click="handleProofreadingBlockClick(entry.block, entry.index, $event)"
+            @keydown.enter.prevent="handleProofreadingKeyboard(entry.block, entry.index)"
+            @keydown.space.prevent="handleProofreadingKeyboard(entry.block, entry.index)"
           >{{ entry.block.title }}</h2>
         </template>
       </section>
