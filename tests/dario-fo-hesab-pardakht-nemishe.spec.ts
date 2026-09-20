@@ -142,8 +142,8 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     }
     expect(dialogueTexts + stageTexts).not.toMatch(/سسوی|دررا|ومی‌گویید|موادغذایی|بااحتیاط|دونفر/)
     expect(dialogueTexts + stageTexts).not.toMatch(/ابداء|بازیکر|شماء|کلا‌بردار|این‌پا و آنپا/)
-    expect(dialogueTexts).toContain('نمی‌دانستم تمام این وسائل را چطور به خانه ببرم.')
-    expect(dialogueTexts).toContain('و اگر پلیس از راه برسد و همه‌ی خانه‌ها را تفتیش کند چه؟')
+    expect(dialogueTexts).toContain('نمی‌دانستم تمام این وسائل را چطوری حمل کنم.')
+    expect(dialogueTexts).toContain('و اگر پلیس از راه برسد و همه‌ی خانه‌ها را تفتیش بکند چه؟')
     expect(dialogueTexts).toContain('آن‌ها دارند همه جا را خانه به خانه تفتیش می‌کنند!')
     expect(dialogueTexts).toContain('ما باید خانه را تفتیش کنیم.')
     expect(dialogueTexts).toContain('ما دو واحد کاملا مستقل از هم‌دیگر هستیم.')
