@@ -23,7 +23,7 @@ watch(() => props.draft, (draft) => {
 }, { deep: true })
 
 function submit(): void {
-  if (correctedText.value === props.draft.originalText) return
+  if (props.saving || correctedText.value === props.draft.originalText) return
   emit('save', correctedText.value)
 }
 </script>
