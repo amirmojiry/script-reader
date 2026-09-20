@@ -165,6 +165,34 @@ describe('reader roles layout', () => {
   })
 
 
+  it('ignores duplicate proofreading submissions while persistence is pending', async () => {
+    mockCompactViewport(false)
+    let resolveSave!: () => void
+    mocks.saveProofreadingCorrection.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      resolveSave = resolve
+    }))
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('save', 'درود')
+    editor.vm.$emit('save', 'درود')
+    await wrapper.vm.$nextTick()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
+    expect(editor.props('saving')).toBe(true)
+
+    resolveSave()
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+  })
+
   it('turns proofreading off before entering table-read mode', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)
