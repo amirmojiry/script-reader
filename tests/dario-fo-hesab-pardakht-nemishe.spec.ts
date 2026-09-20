@@ -125,6 +125,8 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toMatch(/پول به م[,،]/)
     expect(dialogueTexts + stageTexts).not.toContain('قرص ار نکرده')
     expect(dialogueTexts + stageTexts).not.toMatch(/بار نمی‌کنشد|وکارشان|گذر کننداه|ارتتش|سرنگاه|ماسیده‌هاا|داشته باشده/)
+    expect(dialogueTexts).toContain('مامباتی و فوسانی را دستگیر کردند')
+    expect(dialogueTexts + stageTexts).not.toMatch(/مامباتی\s*"|فوسانی\s*"/)
     expect(dialogueTexts).toContain('انگار داریم در ارتش خدمت می‌کنیم!')
     expect(dialogueTexts).toContain('آن‌چه روی کامیون نوشته‌اند، بار نمی‌کنند و کارشان منظم است!')
     expect(dialogueTexts).toContain('به آن پشت، پشت سر نگاه کن!')
