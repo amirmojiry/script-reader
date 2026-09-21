@@ -119,6 +119,12 @@ export function applyProofreadingCorrections(
       continue
     }
 
+    const sourceSnapshotChanged = correction.sourceBlockText !== undefined
+      && correction.sourceBlockText !== sourceText
+    if (sourceSnapshotChanged && offset !== undefined && exactIndex < 0) {
+      continue
+    }
+
     const fallbackIndex = exactIndex >= 0 ? exactIndex : text.indexOf(correction.originalText)
 
     if (offset === undefined && correction.correctedText) {
