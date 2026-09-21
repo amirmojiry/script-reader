@@ -7,7 +7,9 @@ import ProofreadingEditor from '../components/ProofreadingEditor.vue'
 import ReaderToolbar from '../components/ReaderToolbar.vue'
 import RehearsalRevealText from '../components/RehearsalRevealText.vue'
 import {
+  clearProofreadingCorrections,
   deleteNote,
+  deleteProofreadingCorrectionsForBlock,
   getReadingState,
   getSettings,
   listBookmarks,
@@ -43,7 +45,13 @@ import {
   visibleBlockIndexes,
   visibleOwnedIndexes
 } from '../utils/reader'
-import { correctionClipboardText, serializeProofreadingExport } from '../utils/proofreading'
+import {
+  applyProofreadingCorrections,
+  correctionClipboardText,
+  proofreadingCorrectionsForBlock,
+  proofreadingDisplaySegments,
+  serializeProofreadingExport
+} from '../utils/proofreading'
 import { makePairKey } from '../utils/storageKey'
 
 const defaultSettings: ReaderSettings = {
@@ -74,6 +82,7 @@ const mode = ref<ReaderMode>('read')
 const currentIndex = ref(0)
 const sidebarOpen = ref(defaultSidebarOpen())
 const readerRootRef = ref<HTMLElement | null>(null)
+const readerHeaderRef = ref<HTMLElement | null>(null)
 const readerTitleBlockRef = ref<HTMLElement | null>(null)
 const readerTitleRef = ref<HTMLHeadingElement | null>(null)
 const rolesOpenButtonRef = ref<HTMLButtonElement | null>(null)
@@ -85,9 +94,11 @@ const bookmarkIds = ref<Set<string>>(new Set())
 const statusMessage = ref('')
 const showBackToTop = ref(false)
 const readerHeaderScrolled = ref(false)
+const readerHeaderHeight = ref(0)
 const readerTitleFontSize = ref(28)
 const readerTitleWrap = ref(false)
 let readerTitleResizeObserver: ResizeObserver | undefined
+let readerHeaderResizeObserver: ResizeObserver | undefined
 let lastReaderTitleWidth = 0
 let readerFontsReady = false
 const proofreadingMode = ref(false)
@@ -100,7 +111,7 @@ const proofreadingDraft = ref<{
   blockType: PlayBlock['type']
   dialogueNumber?: number
   label: string
-  originalText: string
+  text: string
 } | null>(null)
 
 const play = computed(() => store.byId(String(route.params.id)))
@@ -173,6 +184,18 @@ const dialogueNumbers = computed(() => {
   }
   return numbers
 })
+const proofreadingCanRevertCurrent = computed(() =>
+  Boolean(proofreadingDraft.value && proofreadingCorrectionsForBlock(
+    proofreadingCorrections.value,
+    proofreadingDraft.value.blockId
+  ).length)
+)
+const proofreadingCanGoPrevious = computed(() =>
+  proofreadingDraft.value ? adjacentProofreadingIndex(proofreadingDraft.value.blockIndex - 1, -1) !== undefined : false
+)
+const proofreadingCanGoNext = computed(() =>
+  proofreadingDraft.value ? adjacentProofreadingIndex(proofreadingDraft.value.blockIndex - 1, 1) !== undefined : false
+)
 
 onMounted(async () => {
   updateBackToTopVisibility()
@@ -206,6 +229,7 @@ onMounted(async () => {
   syncNoteText()
   await nextTick()
   setupReaderTitleResizeObserver()
+  setupReaderHeaderResizeObserver()
   await fitReaderTitle()
   void refitReaderTitleAfterFontsReady()
   if (mode.value === 'rehearsal' && narratorIsMine.value && !narratorOwnedIndexes.value.includes(currentIndex.value)) {
@@ -218,6 +242,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateBackToTopVisibility)
   readerTitleResizeObserver?.disconnect()
+  readerHeaderResizeObserver?.disconnect()
   stopSpeaking()
   void releaseWakeLock()
 })
@@ -291,6 +316,21 @@ async function closeRolesPanel(): Promise<void> {
   sidebarOpen.value = false
   await nextTick()
   rolesOpenButtonRef.value?.focus()
+}
+
+function setupReaderHeaderResizeObserver(): void {
+  readerHeaderResizeObserver?.disconnect()
+  const header = readerHeaderRef.value
+  if (!header) return
+
+  const updateHeight = () => {
+    readerHeaderHeight.value = header.offsetHeight
+  }
+  updateHeight()
+
+  if (typeof ResizeObserver === 'undefined') return
+  readerHeaderResizeObserver = new ResizeObserver(updateHeight)
+  readerHeaderResizeObserver.observe(header)
 }
 
 async function refitReaderTitleAfterFontsReady(): Promise<void> {
@@ -373,9 +413,30 @@ function proofreadingLocation(block: PlayBlock, index: number): { dialogueNumber
   return { label: `عنوان بخش ${index + 1}` }
 }
 
-function openProofreading(block: PlayBlock, index: number, originalText: string): void {
+function proofreadingBlockCorrections(blockId: string): ProofreadingCorrection[] {
+  return proofreadingCorrectionsForBlock(proofreadingCorrections.value, blockId)
+}
+
+function effectiveProofreadingText(block: PlayBlock): string {
+  return applyProofreadingCorrections(blockText(block), proofreadingBlockCorrections(block.id))
+}
+
+function proofreadingSegmentsForBlock(block: PlayBlock) {
+  const corrections = proofreadingBlockCorrections(block.id)
+  if (corrections.length === 0) return undefined
+  return proofreadingDisplaySegments(blockText(block), corrections)
+}
+
+function adjacentProofreadingIndex(index: number, direction: -1 | 1): number | undefined {
+  for (let next = index + direction; next >= 0 && next < blocks.value.length; next += direction) {
+    if (blockText(blocks.value[next]).trim()) return next
+  }
+  return undefined
+}
+
+function openProofreading(block: PlayBlock, index: number, selectedText: string): void {
   if (!proofreadingMode.value || proofreadingSaving.value) return
-  const text = originalText.trim()
+  const text = selectedText.trim()
   if (!text) return
   currentIndex.value = index
   proofreadingTrigger = document.getElementById(`block-${block.id}`)
@@ -386,7 +447,7 @@ function openProofreading(block: PlayBlock, index: number, originalText: string)
     blockType: block.type,
     dialogueNumber: location.dialogueNumber,
     label: location.label,
-    originalText: text
+    text
   }
 }
 
@@ -407,14 +468,14 @@ function handleProofreadingBlockClick(block: PlayBlock, index: number, event: Mo
   selectCurrent(index)
   if (!proofreadingMode.value) return
   if (!selectedTextWithin(proofreadingSourceTarget(block, event.currentTarget))) {
-    openProofreading(block, index, blockText(block))
+    openProofreading(block, index, effectiveProofreadingText(block))
   }
 }
 
 function handleProofreadingKeyboard(block: PlayBlock, index: number): void {
   if (!proofreadingMode.value) return
   selectCurrent(index)
-  openProofreading(block, index, blockText(block))
+  openProofreading(block, index, effectiveProofreadingText(block))
 }
 
 async function clearProofreadingDraftAndRestoreFocus(): Promise<void> {
@@ -447,10 +508,27 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-async function saveProofreadingDraft(correctedText: string): Promise<void> {
+async function moveProofreadingDraft(direction: -1 | 1): Promise<void> {
+  if (!proofreadingDraft.value) return
+  const targetIndex = adjacentProofreadingIndex(proofreadingDraft.value.blockIndex - 1, direction)
+  if (targetIndex === undefined) return
+  const target = blocks.value[targetIndex]
+  await jump(targetIndex)
+  openProofreading(target, targetIndex, effectiveProofreadingText(target))
+}
+
+async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): Promise<void> {
   if (proofreadingSaving.value || !play.value || !proofreadingDraft.value) return
-  proofreadingSaving.value = true
   const draft = proofreadingDraft.value
+  const normalizedText = correctedText.trim()
+  if (!normalizedText) return
+
+  if (normalizedText === draft.text) {
+    await moveProofreadingDraft(direction)
+    return
+  }
+
+  proofreadingSaving.value = true
   const correction: ProofreadingCorrection = {
     id: makeCorrectionId(),
     playId: play.value.id,
@@ -459,8 +537,8 @@ async function saveProofreadingDraft(correctedText: string): Promise<void> {
     blockIndex: draft.blockIndex,
     blockType: draft.blockType,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
-    originalText: draft.originalText,
-    correctedText,
+    originalText: draft.text,
+    correctedText: normalizedText,
     createdAt: new Date().toISOString()
   }
 
@@ -469,15 +547,40 @@ async function saveProofreadingDraft(correctedText: string): Promise<void> {
     await saveProofreadingCorrection(correction)
     proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
       .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
-    await clearProofreadingDraftAndRestoreFocus()
 
     const copied = await clipboardPromise
     statusMessage.value = copied
       ? 'اصلاح ذخیره و در کلیپ‌بورد کپی شد.'
       : 'اصلاح ذخیره شد، اما دسترسی به کلیپ‌بورد ممکن نبود.'
+    await moveProofreadingDraft(direction)
   } finally {
     proofreadingSaving.value = false
   }
+}
+
+async function revertCurrentProofreadingBlock(): Promise<void> {
+  if (proofreadingSaving.value || !play.value || !proofreadingDraft.value) return
+  const draft = proofreadingDraft.value
+  await deleteProofreadingCorrectionsForBlock(play.value.id, draft.blockId)
+  proofreadingCorrections.value = proofreadingCorrections.value.filter((correction) => correction.blockId !== draft.blockId)
+
+  const block = blocks.value[draft.blockIndex - 1]
+  if (block) openProofreading(block, draft.blockIndex - 1, blockText(block))
+  statusMessage.value = 'تغییرات این بخش به متن اصلی برگردانده شد.'
+}
+
+async function revertAllProofreadingCorrections(): Promise<void> {
+  if (!play.value || proofreadingCorrections.value.length === 0) return
+  if (!window.confirm('همهٔ تغییرات عیب‌یابی این نمایشنامه به متن اصلی برگردانده شوند؟')) return
+
+  await clearProofreadingCorrections(play.value.id)
+  proofreadingCorrections.value = []
+
+  if (proofreadingDraft.value) {
+    const block = blocks.value[proofreadingDraft.value.blockIndex - 1]
+    if (block) openProofreading(block, proofreadingDraft.value.blockIndex - 1, blockText(block))
+  }
+  statusMessage.value = 'همهٔ تغییرات عیب‌یابی به متن اصلی برگردانده شدند.'
 }
 
 async function copyAllProofreadingCorrections(): Promise<void> {
@@ -687,7 +790,7 @@ function selectCurrent(index: number) {
     ref="readerRootRef"
     class="reader-layout"
     :class="{ 'sidebar-closed': !sidebarOpen, 'dark-theme': settings.theme === 'dark', 'proofreading-editing': Boolean(proofreadingDraft) }"
-    :style="{ '--reader-font-size': `${settings.fontSize}px`, '--reader-line-height': settings.lineHeight, '--reader-font-family': fontFamily }"
+    :style="{ '--reader-font-size': `${settings.fontSize}px`, '--reader-line-height': settings.lineHeight, '--reader-font-family': fontFamily, '--reader-header-height': `${readerHeaderHeight}px` }"
   >
     <CharacterPanel
       v-if="sidebarOpen"
@@ -711,7 +814,7 @@ function selectCurrent(index: number) {
     />
 
     <section class="reader-main">
-      <header class="reader-header card">
+      <header ref="readerHeaderRef" class="reader-header card">
         <button class="text-button reader-library-link" @click="router.push('/')">← کتابخانه</button>
         <div ref="readerTitleBlockRef" class="reader-title-block">
           <h1
@@ -801,6 +904,7 @@ function selectCurrent(index: number) {
         <div class="proofreading-status-actions">
           <button class="secondary-button" type="button" :disabled="!proofreadingCorrections.length" @click="copyAllProofreadingCorrections">کپی همه به‌صورت JSON</button>
           <button class="secondary-button" type="button" :disabled="!proofreadingCorrections.length" @click="downloadProofreadingCorrections">دانلود JSON</button>
+          <button class="secondary-button danger-button" type="button" :disabled="!proofreadingCorrections.length" @click="revertAllProofreadingCorrections">برگردان همه</button>
         </div>
       </section>
 
@@ -891,6 +995,7 @@ function selectCurrent(index: number) {
             :narrator-is-mine="narratorIsMine"
             :narrator-color="narratorColor"
             :debug-mode="proofreadingMode"
+            :proofreading-segments="proofreadingMode ? proofreadingSegmentsForBlock(entry.block) : undefined"
             @proofread="openProofreading(entry.block, entry.index, $event)"
             @click="selectCurrent(entry.index)"
           />
@@ -913,7 +1018,15 @@ function selectCurrent(index: number) {
             @keydown.space.prevent="handleProofreadingKeyboard(entry.block, entry.index)"
           >
             <span class="narrator-label">راوی</span>
+            <span v-if="proofreadingMode && proofreadingSegmentsForBlock(entry.block)" class="proofreading-block-copy">
+              <span
+                v-for="(segment, segmentIndex) in proofreadingSegmentsForBlock(entry.block)"
+                :key="segmentIndex"
+                :class="{ 'proofreading-change': segment.changed }"
+              >{{ segment.text }}</span>
+            </span>
             <RehearsalRevealText
+              v-else
               :text="entry.block.text"
               :active="mode === 'rehearsal' && narratorIsMine"
               :reveal-mode="settings.rehearsalRevealMode"
@@ -929,7 +1042,16 @@ function selectCurrent(index: number) {
             @click="handleProofreadingBlockClick(entry.block, entry.index, $event)"
             @keydown.enter.prevent="handleProofreadingKeyboard(entry.block, entry.index)"
             @keydown.space.prevent="handleProofreadingKeyboard(entry.block, entry.index)"
-          >{{ entry.block.title }}</h2>
+          >
+            <template v-if="proofreadingMode && proofreadingSegmentsForBlock(entry.block)">
+              <span
+                v-for="(segment, segmentIndex) in proofreadingSegmentsForBlock(entry.block)"
+                :key="segmentIndex"
+                :class="{ 'proofreading-change': segment.changed }"
+              >{{ segment.text }}</span>
+            </template>
+            <template v-else>{{ entry.block.title }}</template>
+          </h2>
         </template>
       </section>
     </section>
@@ -938,7 +1060,11 @@ function selectCurrent(index: number) {
       v-if="proofreadingDraft"
       :draft="proofreadingDraft"
       :saving="proofreadingSaving"
+      :can-revert="proofreadingCanRevertCurrent"
+      :can-go-previous="proofreadingCanGoPrevious"
+      :can-go-next="proofreadingCanGoNext"
       @save="saveProofreadingDraft"
+      @revert="revertCurrentProofreadingBlock"
       @cancel="cancelProofreadingDraft"
     />
 
