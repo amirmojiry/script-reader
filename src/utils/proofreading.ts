@@ -15,6 +15,7 @@ export interface ProofreadingExport {
     blockType: ProofreadingCorrection['blockType']
     dialogueNumber?: number
     originalOffset?: number
+    sourceBlockText?: string
     originalText: string
     correctedText: string
     createdAt: string
@@ -53,6 +54,7 @@ export function buildProofreadingExport(play: Play, corrections: ProofreadingCor
       blockType: correction.blockType,
       ...(correction.dialogueNumber ? { dialogueNumber: correction.dialogueNumber } : {}),
       ...(correction.originalOffset !== undefined ? { originalOffset: correction.originalOffset } : {}),
+      ...(correction.sourceBlockText !== undefined ? { sourceBlockText: correction.sourceBlockText } : {}),
       originalText: correction.originalText,
       correctedText: correction.correctedText,
       createdAt: correction.createdAt
@@ -103,9 +105,12 @@ export function applyProofreadingCorrections(
       && offset >= 0
       && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
     )
+    const sourceSnapshotUnchanged = correction.sourceBlockText !== undefined
+      && correction.sourceBlockText === sourceText
 
     if (
       correctedMatchesAtOffset
+      && !sourceSnapshotUnchanged
       && (
         exactIndex < 0
         || correction.correctedText.length > correction.originalText.length
