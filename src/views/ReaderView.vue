@@ -15,6 +15,7 @@ import {
   listBookmarks,
   listNotes,
   listProofreadingCorrections,
+  replaceProofreadingCorrectionsForBlock,
   saveNote,
   saveProofreadingCorrection,
   saveReadingState,
@@ -588,12 +589,12 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
   if (replacesFullyDeletedBlock && block) {
     proofreadingSaving.value = true
     try {
-      await deleteProofreadingCorrectionsForBlock(play.value.id, draft.blockId)
-      proofreadingCorrections.value = proofreadingCorrections.value.filter((item) => item.blockId !== draft.blockId)
-
       const sourceText = blockText(block)
+      let replacement: ProofreadingCorrection | undefined
+      let clipboardPromise: Promise<boolean> | undefined
+
       if (correctedText !== sourceText) {
-        const correction: ProofreadingCorrection = {
+        replacement = {
           id: makeCorrectionId(),
           playId: play.value.id,
           playTitle: play.value.title,
@@ -607,9 +608,14 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
           correctedText,
           createdAt: new Date().toISOString()
         }
-        const clipboardPromise = writeClipboard(correctionClipboardText(correction))
-        await saveProofreadingCorrection(correction)
-        proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
+        clipboardPromise = writeClipboard(correctionClipboardText(replacement))
+      }
+
+      await replaceProofreadingCorrectionsForBlock(play.value.id, draft.blockId, replacement)
+
+      proofreadingCorrections.value = proofreadingCorrections.value.filter((item) => item.blockId !== draft.blockId)
+      if (replacement) {
+        proofreadingCorrections.value = [...proofreadingCorrections.value, replacement]
           .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
         const copied = await clipboardPromise
         statusMessage.value = copied
