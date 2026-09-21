@@ -627,6 +627,8 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
 
       proofreadingSaving.value = false
       await moveProofreadingDraft(direction)
+    } catch {
+      statusMessage.value = 'ذخیرهٔ اصلاح ناموفق بود؛ تغییر قبلی حفظ شد.'
     } finally {
       proofreadingSaving.value = false
     }
