@@ -301,6 +301,44 @@ describe('reader roles layout', () => {
   })
 
 
+  it('stores the effective block text as the snapshot for a chained edit', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'correction-1',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-1',
+      blockIndex: 1,
+      blockType: 'dialogue',
+      dialogueNumber: 1,
+      originalOffset: 0,
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      correctedText: 'درود',
+      createdAt: '2026-09-21T08:00:00.000Z'
+    }])
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'درود', 0)
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('save', 'درود!', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-1',
+      originalOffset: 0,
+      sourceBlockText: 'درود',
+      originalText: 'درود',
+      correctedText: 'درود!'
+    }))
+  })
+
   it('persists an intentional empty replacement and then navigates', async () => {
     mockCompactViewport(false)
     Object.defineProperty(navigator, 'clipboard', {
