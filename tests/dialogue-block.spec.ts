@@ -299,6 +299,28 @@ describe('DialogueBlock proofreading mode', () => {
     expect(wrapper.emitted('proofread')?.[0]?.[0]).toBe('صبر کن و چند لحظه اینجا بمان.')
   })
 
+  it('emits intentionally empty effective text for a fully deleted dialogue', async () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true,
+        proofreadingSegments: []
+      }
+    })
+
+    await wrapper.get('.dialogue-block').trigger('click')
+    expect(wrapper.emitted('proofread')?.[0]).toEqual(['', 0])
+  })
+
   it('shows the full line during rehearsal and emits the full block text on click when no selection exists', async () => {
     const wrapper = mount(DialogueBlock, {
       props: {
