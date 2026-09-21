@@ -85,6 +85,26 @@ export function proofreadingCorrectionsForBlock(
   return sortCorrections(corrections.filter((correction) => correction.blockId === blockId))
 }
 
+function correctedSnapshotMatchesAtOffset(
+  sourceText: string,
+  correction: ProofreadingCorrection
+): boolean {
+  const snapshot = correction.sourceBlockText
+  const offset = correction.originalOffset
+  if (!snapshot || offset === undefined || offset < 0 || !correction.correctedText) return false
+
+  const suffix = snapshot.slice(offset + correction.originalText.length)
+  for (let contextLength = 0; contextLength <= suffix.length; contextLength += 1) {
+    const correctedWindow = correction.correctedText + suffix.slice(0, contextLength)
+    const unchangedWindow = snapshot.slice(offset, offset + correctedWindow.length)
+    if (correctedWindow === unchangedWindow) continue
+
+    return sourceText.slice(offset, offset + correctedWindow.length) === correctedWindow
+  }
+
+  return false
+}
+
 export function applyProofreadingCorrections(
   sourceText: string,
   corrections: ProofreadingCorrection[]
@@ -105,22 +125,13 @@ export function applyProofreadingCorrections(
       && offset >= 0
       && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
     )
-    const snapshotAlreadyMatchedCorrectedAtOffset = Boolean(
-      correction.correctedText
-      && correction.sourceBlockText !== undefined
-      && offset !== undefined
-      && offset >= 0
-      && correction.sourceBlockText.slice(offset, offset + correction.correctedText.length) === correction.correctedText
-    )
+    const snapshotCorrectionAlreadyApplied = correctedSnapshotMatchesAtOffset(text, correction)
 
     if (
       correctedMatchesAtOffset
       && (
         exactIndex < 0
-        || (
-          correction.correctedText.length > correction.originalText.length
-          && !snapshotAlreadyMatchedCorrectedAtOffset
-        )
+        || snapshotCorrectionAlreadyApplied
       )
     ) {
       continue
