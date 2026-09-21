@@ -456,6 +456,7 @@ function proofreadingDisplayCorrections(block: PlayBlock): ProofreadingCorrectio
     blockType: block.type,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
     originalOffset: draft.originalOffset,
+    sourceBlockText: blockText(block),
     originalText: draft.originalText,
     correctedText: draft.text,
     createdAt: '9999-12-31T23:59:59.999Z'
@@ -600,6 +601,7 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
           blockType: draft.blockType,
           ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
           originalOffset: 0,
+          sourceBlockText: sourceText,
           originalText: sourceText,
           correctedText,
           createdAt: new Date().toISOString()
@@ -634,6 +636,7 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
     blockType: draft.blockType,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
     originalOffset: draft.originalOffset,
+    sourceBlockText: block ? blockText(block) : undefined,
     originalText: draft.originalText,
     correctedText,
     createdAt: new Date().toISOString()
