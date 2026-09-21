@@ -3,6 +3,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ProofreadingCorrection } from '../src/types'
 import ReaderView from '../src/views/ReaderView.vue'
 
 const mocks = vi.hoisted(() => ({
@@ -12,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   saveReadingState: vi.fn(async () => undefined),
   saveProofreadingCorrection: vi.fn(async () => undefined),
-  listProofreadingCorrections: vi.fn(async () => []),
+  listProofreadingCorrections: vi.fn(async (): Promise<ProofreadingCorrection[]> => []),
   deleteProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
   clearProofreadingCorrections: vi.fn(async () => undefined),
   clipboardWrite: vi.fn(async () => undefined)
