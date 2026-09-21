@@ -85,6 +85,17 @@ describe('proofreading export', () => {
     expect(applyProofreadingCorrections('abc', [lengthen])).toBe('abbc')
   })
 
+  it('skips a prefix-lengthening correction already baked into newer source', () => {
+    const lengthen = correction({
+      originalText: 'a',
+      originalOffset: 0,
+      sourceBlockText: 'abc',
+      correctedText: 'ab'
+    })
+
+    expect(applyProofreadingCorrections('abbc', [lengthen])).toBe('abbc')
+  })
+
   it('keeps a lengthening correction after unrelated source text changes', () => {
     const lengthen = correction({
       originalText: 'a',
