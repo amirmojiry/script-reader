@@ -111,6 +111,7 @@ export interface ProofreadingCorrection {
   blockIndex: number
   blockType: ProofreadingBlockType
   dialogueNumber?: number
+  originalOffset?: number
   originalText: string
   correctedText: string
   createdAt: string
