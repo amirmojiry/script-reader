@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-09-21
+
+### Added
+- Proofreading edits now preview directly in the play text with changed content highlighted, plus save-and-next/save-and-previous navigation.
+- Per-block and whole-play revert controls for local proofreading changes, including confirmation before reverting everything.
+- The reviewed correction batch for «بانو و مرد مرده» is now part of the bundled source text.
+
+### Changed
+- The proofreading editor now uses one editable text field, and the proofreading status card stays sticky below the reader header while scrolling.
+
 ## [1.11.0] - 2026-09-21
 
 ### Changed
@@ -116,7 +126,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/amirmojiry/script-reader/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/amirmojiry/script-reader/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...v1.9.0
