@@ -88,6 +88,7 @@ const readerHeaderScrolled = ref(false)
 const readerTitleFontSize = ref(28)
 const readerTitleWrap = ref(false)
 let readerTitleResizeObserver: ResizeObserver | undefined
+let lastReaderTitleWidth = 0
 const proofreadingMode = ref(false)
 const proofreadingSaving = ref(false)
 let proofreadingTrigger: HTMLElement | null = null
@@ -293,7 +294,10 @@ async function closeRolesPanel(): Promise<void> {
 function setupReaderTitleResizeObserver(): void {
   readerTitleResizeObserver?.disconnect()
   if (typeof ResizeObserver === 'undefined' || !readerTitleBlockRef.value) return
-  readerTitleResizeObserver = new ResizeObserver(() => {
+  readerTitleResizeObserver = new ResizeObserver((entries) => {
+    const width = entries[0]?.contentRect.width ?? 0
+    if (width && Math.abs(width - lastReaderTitleWidth) < 0.5) return
+    lastReaderTitleWidth = width
     void fitReaderTitle()
   })
   readerTitleResizeObserver.observe(readerTitleBlockRef.value)
