@@ -404,13 +404,15 @@ function selectedTextWithin(target: EventTarget | null): ProofreadingSelection |
     : range.commonAncestorContainer.parentElement
   if (!node || !target.contains(node)) return undefined
 
-  const text = selection.toString()
-  if (!text.trim()) return undefined
+  const rawText = selection.toString()
+  const text = rawText.trim()
+  if (!text) return undefined
+  const leadingTrim = rawText.length - rawText.trimStart().length
 
   const prefixRange = document.createRange()
   prefixRange.selectNodeContents(target)
   prefixRange.setEnd(range.startContainer, range.startOffset)
-  return { text, offset: prefixRange.toString().length }
+  return { text, offset: prefixRange.toString().length + leadingTrim }
 }
 
 function proofreadingLocation(block: PlayBlock, index: number): { dialogueNumber?: number; label: string } {
