@@ -9,7 +9,6 @@ import RehearsalRevealText from '../components/RehearsalRevealText.vue'
 import {
   clearProofreadingCorrections,
   deleteNote,
-  deleteProofreadingCorrectionsForBlock,
   getReadingState,
   getSettings,
   listBookmarks,
@@ -670,27 +669,43 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
 
 async function revertCurrentProofreadingBlock(): Promise<void> {
   if (proofreadingSaving.value || !play.value || !proofreadingDraft.value) return
+  proofreadingSaving.value = true
   const draft = proofreadingDraft.value
-  await deleteProofreadingCorrectionsForBlock(play.value.id, draft.blockId)
-  proofreadingCorrections.value = proofreadingCorrections.value.filter((correction) => correction.blockId !== draft.blockId)
 
-  const block = blocks.value[draft.blockIndex - 1]
-  if (block) openProofreading(block, draft.blockIndex - 1, blockText(block))
-  statusMessage.value = 'تغییرات این بخش به متن اصلی برگردانده شد.'
+  try {
+    await replaceProofreadingCorrectionsForBlock(play.value.id, draft.blockId)
+    proofreadingCorrections.value = proofreadingCorrections.value
+      .filter((correction) => correction.blockId !== draft.blockId)
+
+    const block = blocks.value[draft.blockIndex - 1]
+    if (block) openProofreading(block, draft.blockIndex - 1, blockText(block))
+    statusMessage.value = 'تغییرات این بخش به متن اصلی برگردانده شد.'
+  } catch {
+    statusMessage.value = 'برگرداندن تغییرات ناموفق بود؛ تغییر قبلی حفظ شد.'
+  } finally {
+    proofreadingSaving.value = false
+  }
 }
 
 async function revertAllProofreadingCorrections(): Promise<void> {
-  if (!play.value || proofreadingCorrections.value.length === 0) return
+  if (proofreadingSaving.value || !play.value || proofreadingCorrections.value.length === 0) return
   if (!window.confirm('همهٔ تغییرات عیب‌یابی این نمایشنامه به متن اصلی برگردانده شوند؟')) return
 
-  await clearProofreadingCorrections(play.value.id)
-  proofreadingCorrections.value = []
+  proofreadingSaving.value = true
+  try {
+    await clearProofreadingCorrections(play.value.id)
+    proofreadingCorrections.value = []
 
-  if (proofreadingDraft.value) {
-    const block = blocks.value[proofreadingDraft.value.blockIndex - 1]
-    if (block) openProofreading(block, proofreadingDraft.value.blockIndex - 1, blockText(block))
+    if (proofreadingDraft.value) {
+      const block = blocks.value[proofreadingDraft.value.blockIndex - 1]
+      if (block) openProofreading(block, proofreadingDraft.value.blockIndex - 1, blockText(block))
+    }
+    statusMessage.value = 'همهٔ تغییرات عیب‌یابی به متن اصلی برگردانده شدند.'
+  } catch {
+    statusMessage.value = 'برگرداندن همهٔ تغییرات ناموفق بود؛ تغییرات قبلی حفظ شدند.'
+  } finally {
+    proofreadingSaving.value = false
   }
-  statusMessage.value = 'همهٔ تغییرات عیب‌یابی به متن اصلی برگردانده شدند.'
 }
 
 async function copyAllProofreadingCorrections(): Promise<void> {
