@@ -468,8 +468,8 @@ describe('reader roles layout', () => {
 
     let resolveRevert!: () => void
     mocks.replaceProofreadingCorrectionsForBlock.mockImplementationOnce(
-      () => new Promise<void>((resolve) => {
-        resolveRevert = resolve
+      () => new Promise<undefined>((resolve) => {
+        resolveRevert = () => resolve(undefined)
       })
     )
 
