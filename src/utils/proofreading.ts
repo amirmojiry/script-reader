@@ -91,13 +91,35 @@ export function applyProofreadingCorrections(
   for (const correction of sortCorrections(corrections)) {
     if (!correction.originalText || correction.originalText === correction.correctedText) continue
     const offset = correction.originalOffset
-    const index = offset !== undefined
+
+    if (
+      correction.correctedText
+      && offset !== undefined
+      && offset >= 0
+      && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
+    ) {
+      continue
+    }
+
+    const exactIndex = offset !== undefined
       && offset >= 0
       && text.slice(offset, offset + correction.originalText.length) === correction.originalText
       ? offset
-      : text.indexOf(correction.originalText)
-    if (index < 0) continue
-    text = `${text.slice(0, index)}${correction.correctedText}${text.slice(index + correction.originalText.length)}`
+      : -1
+    const fallbackIndex = exactIndex >= 0 ? exactIndex : text.indexOf(correction.originalText)
+
+    if (offset === undefined && correction.correctedText) {
+      const correctedIndex = text.indexOf(correction.correctedText)
+      if (correctedIndex >= 0) {
+        if (fallbackIndex < 0) continue
+        const originalInsideCorrected = fallbackIndex >= correctedIndex
+          && fallbackIndex + correction.originalText.length <= correctedIndex + correction.correctedText.length
+        if (originalInsideCorrected) continue
+      }
+    }
+
+    if (fallbackIndex < 0) continue
+    text = `${text.slice(0, fallbackIndex)}${correction.correctedText}${text.slice(fallbackIndex + correction.originalText.length)}`
   }
   return text
 }
