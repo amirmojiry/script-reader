@@ -441,6 +441,7 @@ function proofreadingDisplayCorrections(block: PlayBlock): ProofreadingCorrectio
       blockType: block.type,
       ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
       originalOffset: 0,
+      sourceBlockText: blockText(block),
       originalText: blockText(block),
       correctedText: draft.text,
       createdAt: '9999-12-31T23:59:59.999Z'
