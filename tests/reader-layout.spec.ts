@@ -212,6 +212,25 @@ describe('reader roles layout', () => {
     expect(title.element.style.fontSize).toBe('20px')
   })
 
+  it('publishes the sticky reader header height for the proofreading status offset', async () => {
+    mockCompactViewport(false)
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return this.classList?.contains('reader-header') ? 88 : 0
+      }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    expect(wrapper.get('main.reader-layout').attributes('style')).toContain('--reader-header-height: 88px')
+
+    if (descriptor) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', descriptor)
+    else delete (HTMLElement.prototype as { offsetHeight?: number }).offsetHeight
+  })
+
   it('shows play author, translator, character count, and estimated duration in the header', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)
