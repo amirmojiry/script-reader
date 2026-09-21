@@ -112,3 +112,18 @@ export async function listProofreadingCorrections(playId: string): Promise<Proof
     .filter((correction) => correction.playId === playId)
     .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
 }
+
+
+export async function deleteProofreadingCorrectionsForBlock(playId: string, blockId: string): Promise<void> {
+  const db = await dbPromise
+  const all = await db.getAll('proofreadingCorrections') as ProofreadingCorrection[]
+  const matches = all.filter((correction) => correction.playId === playId && correction.blockId === blockId)
+  await Promise.all(matches.map((correction) => db.delete('proofreadingCorrections', correction.id)))
+}
+
+export async function clearProofreadingCorrections(playId: string): Promise<void> {
+  const db = await dbPromise
+  const all = await db.getAll('proofreadingCorrections') as ProofreadingCorrection[]
+  const matches = all.filter((correction) => correction.playId === playId)
+  await Promise.all(matches.map((correction) => db.delete('proofreadingCorrections', correction.id)))
+}
