@@ -74,6 +74,17 @@ describe('proofreading export', () => {
     expect(applyProofreadingCorrections(source, [deleteSecond])).toBe('بله  بله')
   })
 
+  it('applies fresh lengthening corrections even when the replacement matches following source text', () => {
+    const lengthen = correction({
+      originalText: 'a',
+      originalOffset: 0,
+      sourceBlockText: 'abc',
+      correctedText: 'ab'
+    })
+
+    expect(applyProofreadingCorrections('abc', [lengthen])).toBe('abbc')
+  })
+
   it('applies shortening replacements when the full original still matches at the stored offset', () => {
     const shorten = correction({
       originalText: 'سلامم',
