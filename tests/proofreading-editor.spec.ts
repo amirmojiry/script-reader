@@ -9,9 +9,7 @@ describe('ProofreadingEditor', () => {
     const wrapper = mount(ProofreadingEditor, {
       props: {
         draft: { label: 'دیالوگ شماره 4', text: 'متن فعلی' },
-        canRevert: true,
-        canGoPrevious: true,
-        canGoNext: true
+        canRevert: true
       }
     })
 
