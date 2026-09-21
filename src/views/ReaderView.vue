@@ -567,6 +567,8 @@ async function moveProofreadingDraft(direction: -1 | 1): Promise<void> {
   const currentIndex = proofreadingDraft.value.blockIndex - 1
   const targetIndex = adjacentProofreadingIndex(currentIndex, direction) ?? currentIndex
   const target = blocks.value[targetIndex]
+
+  proofreadingDraft.value = null
   await jump(targetIndex)
   openProofreading(target, targetIndex, effectiveProofreadingText(target), 0)
 }
