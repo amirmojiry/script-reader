@@ -191,13 +191,6 @@ const proofreadingCanRevertCurrent = computed(() => {
   return proofreadingCorrectionsForBlock(proofreadingCorrections.value, draft.blockId).length > 0
     || draft.text !== draft.originalText
 })
-const proofreadingCanGoPrevious = computed(() =>
-  proofreadingDraft.value ? adjacentProofreadingIndex(proofreadingDraft.value.blockIndex - 1, -1) !== undefined : false
-)
-const proofreadingCanGoNext = computed(() =>
-  proofreadingDraft.value ? adjacentProofreadingIndex(proofreadingDraft.value.blockIndex - 1, 1) !== undefined : false
-)
-
 onMounted(async () => {
   updateBackToTopVisibility()
   window.addEventListener('scroll', updateBackToTopVisibility, { passive: true })
@@ -536,8 +529,8 @@ async function writeClipboard(text: string): Promise<boolean> {
 
 async function moveProofreadingDraft(direction: -1 | 1): Promise<void> {
   if (!proofreadingDraft.value) return
-  const targetIndex = adjacentProofreadingIndex(proofreadingDraft.value.blockIndex - 1, direction)
-  if (targetIndex === undefined) return
+  const currentIndex = proofreadingDraft.value.blockIndex - 1
+  const targetIndex = adjacentProofreadingIndex(currentIndex, direction) ?? currentIndex
   const target = blocks.value[targetIndex]
   await jump(targetIndex)
   openProofreading(target, targetIndex, effectiveProofreadingText(target))
@@ -1088,8 +1081,6 @@ function selectCurrent(index: number) {
       :draft="proofreadingDraft"
       :saving="proofreadingSaving"
       :can-revert="proofreadingCanRevertCurrent"
-      :can-go-previous="proofreadingCanGoPrevious"
-      :can-go-next="proofreadingCanGoNext"
       @save="saveProofreadingDraft"
       @preview="previewProofreadingDraft"
       @revert="revertCurrentProofreadingBlock"
