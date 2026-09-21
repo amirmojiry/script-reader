@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   saveReadingState: vi.fn(async () => undefined),
   saveProofreadingCorrection: vi.fn(async () => undefined),
+  listProofreadingCorrections: vi.fn(async () => []),
+  deleteProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
+  clearProofreadingCorrections: vi.fn(async () => undefined),
   clipboardWrite: vi.fn(async () => undefined)
 }))
 
@@ -45,7 +48,9 @@ vi.mock('../src/stores/plays', () => ({
 }))
 
 vi.mock('../src/services/storage', () => ({
+  clearProofreadingCorrections: mocks.clearProofreadingCorrections,
   deleteNote: vi.fn(async () => undefined),
+  deleteProofreadingCorrectionsForBlock: mocks.deleteProofreadingCorrectionsForBlock,
   getReadingState: vi.fn(async () => undefined),
   getSettings: vi.fn(async () => ({
     fontSize: 18,
@@ -59,7 +64,7 @@ vi.mock('../src/services/storage', () => ({
   })),
   listBookmarks: vi.fn(async () => []),
   listNotes: vi.fn(async () => []),
-  listProofreadingCorrections: vi.fn(async () => []),
+  listProofreadingCorrections: mocks.listProofreadingCorrections,
   saveNote: vi.fn(async () => undefined),
   saveProofreadingCorrection: mocks.saveProofreadingCorrection,
   saveReadingState: mocks.saveReadingState,
@@ -95,7 +100,12 @@ const ProofreadingRevealTextStub = defineComponent({
 
 afterEach(() => {
   document.body.innerHTML = ''
-  mocks.saveProofreadingCorrection.mockClear()
+  mocks.saveProofreadingCorrection.mockReset()
+  mocks.saveProofreadingCorrection.mockResolvedValue(undefined)
+  mocks.listProofreadingCorrections.mockReset()
+  mocks.listProofreadingCorrections.mockResolvedValue([])
+  mocks.deleteProofreadingCorrectionsForBlock.mockClear()
+  mocks.clearProofreadingCorrections.mockClear()
   mocks.clipboardWrite.mockClear()
   vi.unstubAllGlobals()
   Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
@@ -242,7 +252,7 @@ describe('reader roles layout', () => {
       originalText: 'سلام'
     })
 
-    editor.vm.$emit('save', 'درود')
+    editor.vm.$emit('save', 'درود', 1)
     await flushPromises()
 
     expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
@@ -257,7 +267,12 @@ describe('reader roles layout', () => {
     expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('دیالوگ شماره 1'))
     expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن اشتباه: سلام'))
     expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن درست: درود'))
-    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+    const nextEditor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(nextEditor.exists()).toBe(true)
+    expect(nextEditor.props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2',
+      text: 'نور کم می‌شود.'
+    })
     expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
   })
 
@@ -282,8 +297,8 @@ describe('reader roles layout', () => {
     await wrapper.vm.$nextTick()
 
     const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
-    editor.vm.$emit('save', 'درود')
-    editor.vm.$emit('save', 'درود')
+    editor.vm.$emit('save', 'درود', 1)
+    editor.vm.$emit('save', 'درود', 1)
     await wrapper.vm.$nextTick()
 
     expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
@@ -299,7 +314,9 @@ describe('reader roles layout', () => {
 
     resolveSave()
     await flushPromises()
-    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2'
+    })
   })
 
   it('captures stage-direction source text without the narrator UI label', async () => {
