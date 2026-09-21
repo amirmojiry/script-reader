@@ -111,6 +111,7 @@ const proofreadingDraft = ref<{
   blockType: PlayBlock['type']
   dialogueNumber?: number
   originalOffset: number
+  sourceBlockText: string
   label: string
   originalText: string
   text: string
@@ -457,7 +458,7 @@ function proofreadingDisplayCorrections(block: PlayBlock): ProofreadingCorrectio
     blockType: block.type,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
     originalOffset: draft.originalOffset,
-    sourceBlockText: blockText(block),
+    sourceBlockText: draft.sourceBlockText,
     originalText: draft.originalText,
     correctedText: draft.text,
     createdAt: '9999-12-31T23:59:59.999Z'
@@ -485,6 +486,7 @@ function openProofreading(block: PlayBlock, index: number, selectedText: string,
   if (!proofreadingMode.value || proofreadingSaving.value) return
   if (!selectedText.trim() && proofreadingBlockCorrections(block.id).length === 0) return
   const text = selectedText
+  const sourceBlockText = effectiveProofreadingText(block)
   currentIndex.value = index
   proofreadingTrigger = document.getElementById(`block-${block.id}`)
   const location = proofreadingLocation(block, index)
@@ -494,6 +496,7 @@ function openProofreading(block: PlayBlock, index: number, selectedText: string,
     blockType: block.type,
     dialogueNumber: location.dialogueNumber,
     originalOffset,
+    sourceBlockText,
     label: location.label,
     originalText: text,
     text
@@ -646,7 +649,7 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
     blockType: draft.blockType,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
     originalOffset: draft.originalOffset,
-    sourceBlockText: block ? blockText(block) : undefined,
+    sourceBlockText: draft.sourceBlockText,
     originalText: draft.originalText,
     correctedText,
     createdAt: new Date().toISOString()
