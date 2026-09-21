@@ -91,9 +91,15 @@ export function applyProofreadingCorrections(
   for (const correction of sortCorrections(corrections)) {
     if (!correction.originalText || correction.originalText === correction.correctedText) continue
     const offset = correction.originalOffset
+    const exactIndex = offset !== undefined
+      && offset >= 0
+      && text.slice(offset, offset + correction.originalText.length) === correction.originalText
+      ? offset
+      : -1
 
     if (
-      correction.correctedText
+      exactIndex < 0
+      && correction.correctedText
       && offset !== undefined
       && offset >= 0
       && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
@@ -101,11 +107,6 @@ export function applyProofreadingCorrections(
       continue
     }
 
-    const exactIndex = offset !== undefined
-      && offset >= 0
-      && text.slice(offset, offset + correction.originalText.length) === correction.originalText
-      ? offset
-      : -1
     const fallbackIndex = exactIndex >= 0 ? exactIndex : text.indexOf(correction.originalText)
 
     if (offset === undefined && correction.correctedText) {
