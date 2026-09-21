@@ -85,57 +85,154 @@ export function proofreadingCorrectionsForBlock(
   return sortCorrections(corrections.filter((correction) => correction.blockId === blockId))
 }
 
-function reducedSnapshotAlreadyApplied(
-  sourceText: string,
+interface SnapshotResolution {
+  status: 'apply' | 'baked'
+  index?: number
+}
+
+interface ContextCandidate {
+  index: number
+  contextScore: number
+  displacement: number
+}
+
+function commonPrefixLength(left: string, right: string): number {
+  const limit = Math.min(left.length, right.length)
+  let index = 0
+  while (index < limit && left[index] === right[index]) index += 1
+  return index
+}
+
+function commonSuffixLength(left: string, right: string): number {
+  const limit = Math.min(left.length, right.length)
+  let length = 0
+  while (
+    length < limit
+    && left[left.length - 1 - length] === right[right.length - 1 - length]
+  ) {
+    length += 1
+  }
+  return length
+}
+
+function occurrenceIndexes(text: string, needle: string): number[] {
+  if (!needle) return Array.from({ length: text.length + 1 }, (_, index) => index)
+
+  const indexes: number[] = []
+  for (let from = 0; from <= text.length - needle.length;) {
+    const index = text.indexOf(needle, from)
+    if (index < 0) break
+    indexes.push(index)
+    from = index + 1
+  }
+  return indexes
+}
+
+function contextCandidate(
+  text: string,
+  snapshot: string,
+  offset: number,
+  originalLength: number,
+  candidateLength: number,
+  index: number
+): ContextCandidate {
+  const leftContext = snapshot.slice(0, offset)
+  const rightContext = snapshot.slice(offset + originalLength)
+  return {
+    index,
+    contextScore:
+      commonSuffixLength(leftContext, text.slice(0, index))
+      + commonPrefixLength(rightContext, text.slice(index + candidateLength)),
+    displacement: Math.abs(index - offset)
+  }
+}
+
+function bestContextCandidate(
+  text: string,
+  snapshot: string,
+  offset: number,
+  originalLength: number,
+  candidateText: string
+): ContextCandidate | undefined {
+  const ranked = occurrenceIndexes(text, candidateText)
+    .map((index) => contextCandidate(
+      text,
+      snapshot,
+      offset,
+      originalLength,
+      candidateText.length,
+      index
+    ))
+    .sort((left, right) =>
+      right.contextScore - left.contextScore
+      || left.displacement - right.displacement
+      || left.index - right.index
+    )
+
+  const best = ranked[0]
+  const next = ranked[1]
+  if (
+    best
+    && next
+    && best.contextScore === next.contextScore
+    && best.displacement === next.displacement
+  ) {
+    return undefined
+  }
+  return best
+}
+
+function resolveSnapshotCorrection(
+  text: string,
   correction: ProofreadingCorrection
-): boolean {
+): SnapshotResolution | undefined {
   const snapshot = correction.sourceBlockText
   const offset = correction.originalOffset
   if (
     snapshot === undefined
     || offset === undefined
     || offset < 0
-    || correction.correctedText.length >= correction.originalText.length
     || snapshot.slice(offset, offset + correction.originalText.length) !== correction.originalText
   ) {
-    return false
+    return undefined
   }
 
-  const currentTail = sourceText.slice(offset)
-  const suffix = snapshot.slice(offset + correction.originalText.length)
+  const correctedSnapshot = `${snapshot.slice(0, offset)}${correction.correctedText}${snapshot.slice(offset + correction.originalText.length)}`
+  if (text === snapshot) return { status: 'apply', index: offset }
+  if (text === correctedSnapshot) return { status: 'baked' }
 
-  for (let contextLength = 0; contextLength <= suffix.length; contextLength += 1) {
-    const context = suffix.slice(0, contextLength)
-    const correctedWindow = correction.correctedText + context
-    const unchangedWindow = correction.originalText + context
-    const correctedMatches = currentTail.startsWith(correctedWindow)
-    const unchangedMatches = currentTail.startsWith(unchangedWindow)
+  const pending = bestContextCandidate(
+    text,
+    snapshot,
+    offset,
+    correction.originalText.length,
+    correction.originalText
+  )
+  const baked = bestContextCandidate(
+    text,
+    snapshot,
+    offset,
+    correction.originalText.length,
+    correction.correctedText
+  )
 
-    if (correctedMatches !== unchangedMatches) return correctedMatches
-    if (!correctedMatches && !unchangedMatches) return false
+  if (!pending) return baked ? { status: 'baked' } : undefined
+  if (!baked) return { status: 'apply', index: pending.index }
+
+  if (pending.contextScore !== baked.contextScore) {
+    return pending.contextScore > baked.contextScore
+      ? { status: 'apply', index: pending.index }
+      : { status: 'baked' }
   }
 
-  return false
-}
-
-function correctedSnapshotMatchesAtOffset(
-  sourceText: string,
-  correction: ProofreadingCorrection
-): boolean {
-  const snapshot = correction.sourceBlockText
-  const offset = correction.originalOffset
-  if (!snapshot || offset === undefined || offset < 0 || !correction.correctedText) return false
-
-  const suffix = snapshot.slice(offset + correction.originalText.length)
-  for (let contextLength = 0; contextLength <= suffix.length; contextLength += 1) {
-    const correctedWindow = correction.correctedText + suffix.slice(0, contextLength)
-    const unchangedWindow = snapshot.slice(offset, offset + correctedWindow.length)
-    if (correctedWindow === unchangedWindow) continue
-
-    return sourceText.slice(offset, offset + correctedWindow.length) === correctedWindow
+  if (pending.displacement !== baked.displacement) {
+    return pending.displacement < baked.displacement
+      ? { status: 'apply', index: pending.index }
+      : { status: 'baked' }
   }
 
-  return false
+  // Ambiguous local evidence should preserve the user's pending correction.
+  return { status: 'apply', index: pending.index }
 }
 
 export function applyProofreadingCorrections(
@@ -145,6 +242,16 @@ export function applyProofreadingCorrections(
   let text = sourceText
   for (const correction of sortCorrections(corrections)) {
     if (!correction.originalText || correction.originalText === correction.correctedText) continue
+
+    const snapshotResolution = resolveSnapshotCorrection(text, correction)
+    if (snapshotResolution) {
+      if (snapshotResolution.status === 'baked') continue
+      const index = snapshotResolution.index
+      if (index === undefined) continue
+      text = `${text.slice(0, index)}${correction.correctedText}${text.slice(index + correction.originalText.length)}`
+      continue
+    }
+
     const offset = correction.originalOffset
     const exactIndex = offset !== undefined
       && offset >= 0
@@ -158,13 +265,6 @@ export function applyProofreadingCorrections(
       && offset >= 0
       && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
     )
-    const snapshotCorrectionAlreadyApplied = correctedSnapshotMatchesAtOffset(text, correction)
-    const snapshotReductionAlreadyApplied = reducedSnapshotAlreadyApplied(sourceText, correction)
-
-    if (snapshotReductionAlreadyApplied) {
-      continue
-    }
-
     const legacyLengtheningLooksBaked = correction.sourceBlockText === undefined
       && correction.correctedText.length > correction.originalText.length
 
@@ -172,16 +272,9 @@ export function applyProofreadingCorrections(
       correctedMatchesAtOffset
       && (
         exactIndex < 0
-        || snapshotCorrectionAlreadyApplied
         || legacyLengtheningLooksBaked
       )
     ) {
-      continue
-    }
-
-    const sourceSnapshotChanged = correction.sourceBlockText !== undefined
-      && correction.sourceBlockText !== sourceText
-    if (sourceSnapshotChanged && offset !== undefined && exactIndex < 0) {
       continue
     }
 
