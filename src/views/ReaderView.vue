@@ -111,6 +111,7 @@ const proofreadingDraft = ref<{
   blockType: PlayBlock['type']
   dialogueNumber?: number
   label: string
+  originalText: string
   text: string
 } | null>(null)
 
@@ -184,12 +185,12 @@ const dialogueNumbers = computed(() => {
   }
   return numbers
 })
-const proofreadingCanRevertCurrent = computed(() =>
-  Boolean(proofreadingDraft.value && proofreadingCorrectionsForBlock(
-    proofreadingCorrections.value,
-    proofreadingDraft.value.blockId
-  ).length)
-)
+const proofreadingCanRevertCurrent = computed(() => {
+  const draft = proofreadingDraft.value
+  if (!draft) return false
+  return proofreadingCorrectionsForBlock(proofreadingCorrections.value, draft.blockId).length > 0
+    || draft.text !== draft.originalText
+})
 const proofreadingCanGoPrevious = computed(() =>
   proofreadingDraft.value ? adjacentProofreadingIndex(proofreadingDraft.value.blockIndex - 1, -1) !== undefined : false
 )
@@ -417,12 +418,31 @@ function proofreadingBlockCorrections(blockId: string): ProofreadingCorrection[]
   return proofreadingCorrectionsForBlock(proofreadingCorrections.value, blockId)
 }
 
+function proofreadingDisplayCorrections(block: PlayBlock): ProofreadingCorrection[] {
+  const corrections = proofreadingBlockCorrections(block.id)
+  const draft = proofreadingDraft.value
+  if (!draft || draft.blockId !== block.id || draft.text === draft.originalText) return corrections
+
+  return [...corrections, {
+    id: 'preview',
+    playId: play.value?.id ?? '',
+    playTitle: play.value?.title ?? '',
+    blockId: block.id,
+    blockIndex: draft.blockIndex,
+    blockType: block.type,
+    ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
+    originalText: draft.originalText,
+    correctedText: draft.text,
+    createdAt: '9999-12-31T23:59:59.999Z'
+  }]
+}
+
 function effectiveProofreadingText(block: PlayBlock): string {
-  return applyProofreadingCorrections(blockText(block), proofreadingBlockCorrections(block.id))
+  return applyProofreadingCorrections(blockText(block), proofreadingDisplayCorrections(block))
 }
 
 function proofreadingSegmentsForBlock(block: PlayBlock) {
-  const corrections = proofreadingBlockCorrections(block.id)
+  const corrections = proofreadingDisplayCorrections(block)
   if (corrections.length === 0) return undefined
   return proofreadingDisplaySegments(blockText(block), corrections)
 }
@@ -447,6 +467,7 @@ function openProofreading(block: PlayBlock, index: number, selectedText: string)
     blockType: block.type,
     dialogueNumber: location.dialogueNumber,
     label: location.label,
+    originalText: text,
     text
   }
 }
@@ -486,6 +507,11 @@ async function clearProofreadingDraftAndRestoreFocus(): Promise<void> {
   trigger?.focus()
 }
 
+function previewProofreadingDraft(text: string): void {
+  if (!proofreadingDraft.value || proofreadingSaving.value) return
+  proofreadingDraft.value = { ...proofreadingDraft.value, text }
+}
+
 async function cancelProofreadingDraft(): Promise<void> {
   if (proofreadingSaving.value) return
   await clearProofreadingDraftAndRestoreFocus()
@@ -523,7 +549,7 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
   const normalizedText = correctedText.trim()
   if (!normalizedText) return
 
-  if (normalizedText === draft.text) {
+  if (normalizedText === draft.originalText) {
     await moveProofreadingDraft(direction)
     return
   }
@@ -537,7 +563,7 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
     blockIndex: draft.blockIndex,
     blockType: draft.blockType,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
-    originalText: draft.text,
+    originalText: draft.originalText,
     correctedText: normalizedText,
     createdAt: new Date().toISOString()
   }
@@ -1065,6 +1091,7 @@ function selectCurrent(index: number) {
       :can-go-previous="proofreadingCanGoPrevious"
       :can-go-next="proofreadingCanGoNext"
       @save="saveProofreadingDraft"
+      @preview="previewProofreadingDraft"
       @revert="revertCurrentProofreadingBlock"
       @cancel="cancelProofreadingDraft"
     />
