@@ -14,6 +14,7 @@ export interface ProofreadingExport {
     blockIndex: number
     blockType: ProofreadingCorrection['blockType']
     dialogueNumber?: number
+    originalOffset?: number
     originalText: string
     correctedText: string
     createdAt: string
@@ -51,6 +52,7 @@ export function buildProofreadingExport(play: Play, corrections: ProofreadingCor
       blockIndex: correction.blockIndex,
       blockType: correction.blockType,
       ...(correction.dialogueNumber ? { dialogueNumber: correction.dialogueNumber } : {}),
+      ...(correction.originalOffset !== undefined ? { originalOffset: correction.originalOffset } : {}),
       originalText: correction.originalText,
       correctedText: correction.correctedText,
       createdAt: correction.createdAt
@@ -88,7 +90,12 @@ export function applyProofreadingCorrections(
   let text = sourceText
   for (const correction of sortCorrections(corrections)) {
     if (!correction.originalText || correction.originalText === correction.correctedText) continue
-    const index = text.indexOf(correction.originalText)
+    const offset = correction.originalOffset
+    const index = offset !== undefined
+      && offset >= 0
+      && text.slice(offset, offset + correction.originalText.length) === correction.originalText
+      ? offset
+      : text.indexOf(correction.originalText)
     if (index < 0) continue
     text = `${text.slice(0, index)}${correction.correctedText}${text.slice(index + correction.originalText.length)}`
   }
