@@ -89,6 +89,7 @@ const readerTitleFontSize = ref(28)
 const readerTitleWrap = ref(false)
 let readerTitleResizeObserver: ResizeObserver | undefined
 let lastReaderTitleWidth = 0
+let readerFontsReady = false
 const proofreadingMode = ref(false)
 const proofreadingSaving = ref(false)
 let proofreadingTrigger: HTMLElement | null = null
@@ -206,6 +207,7 @@ onMounted(async () => {
   await nextTick()
   setupReaderTitleResizeObserver()
   await fitReaderTitle()
+  void refitReaderTitleAfterFontsReady()
   if (mode.value === 'rehearsal' && narratorIsMine.value && !narratorOwnedIndexes.value.includes(currentIndex.value)) {
     jumpToNearestOwnRolePart()
   }
@@ -289,6 +291,17 @@ async function closeRolesPanel(): Promise<void> {
   sidebarOpen.value = false
   await nextTick()
   rolesOpenButtonRef.value?.focus()
+}
+
+async function refitReaderTitleAfterFontsReady(): Promise<void> {
+  if (readerFontsReady || typeof document === 'undefined' || !('fonts' in document)) return
+  readerFontsReady = true
+  try {
+    await document.fonts.ready
+    await fitReaderTitle()
+  } catch {
+    // Font loading support is optional; the initial/resize fits remain in place.
+  }
 }
 
 function setupReaderTitleResizeObserver(): void {
