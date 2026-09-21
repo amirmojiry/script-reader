@@ -123,9 +123,13 @@ export async function deleteProofreadingCorrectionsForBlock(playId: string, bloc
 
 export async function clearProofreadingCorrections(playId: string): Promise<void> {
   const db = await dbPromise
-  const all = await db.getAll('proofreadingCorrections') as ProofreadingCorrection[]
+  const transaction = db.transaction('proofreadingCorrections', 'readwrite')
+  const store = transaction.objectStore('proofreadingCorrections')
+  const all = await store.getAll() as ProofreadingCorrection[]
   const matches = all.filter((correction) => correction.playId === playId)
-  await Promise.all(matches.map((correction) => db.delete('proofreadingCorrections', correction.id)))
+
+  await Promise.all(matches.map((correction) => store.delete(correction.id)))
+  await transaction.done
 }
 
 
