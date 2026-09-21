@@ -97,12 +97,19 @@ export function applyProofreadingCorrections(
       ? offset
       : -1
 
-    if (
-      exactIndex < 0
-      && correction.correctedText
+    const correctedMatchesAtOffset = Boolean(
+      correction.correctedText
       && offset !== undefined
       && offset >= 0
       && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
+    )
+
+    if (
+      correctedMatchesAtOffset
+      && (
+        exactIndex < 0
+        || correction.correctedText.length > correction.originalText.length
+      )
     ) {
       continue
     }
