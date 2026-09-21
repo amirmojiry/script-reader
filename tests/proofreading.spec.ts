@@ -56,6 +56,37 @@ describe('proofreading export', () => {
   })
 
 
+  it('applies chained edits against each edit\'s effective snapshot', () => {
+    const first = correction({
+      originalOffset: 0,
+      sourceBlockText: 'ac',
+      originalText: 'a',
+      correctedText: 'b',
+      createdAt: '2026-09-20T10:00:00.000Z'
+    })
+    const second = correction({
+      id: 'c-2',
+      originalOffset: 0,
+      sourceBlockText: 'bc',
+      originalText: 'b',
+      correctedText: 'bc',
+      createdAt: '2026-09-20T10:01:00.000Z'
+    })
+
+    expect(applyProofreadingCorrections('ac', [first, second])).toBe('bcc')
+  })
+
+  it('rebases a pending correction after source text is inserted before its saved offset', () => {
+    const moved = correction({
+      originalOffset: 6,
+      sourceBlockText: 'hello bad',
+      originalText: 'bad',
+      correctedText: 'good'
+    })
+
+    expect(applyProofreadingCorrections('X hello bad', [moved])).toBe('X hello good')
+  })
+
   it('applies a correction to the selected repeated occurrence and supports deletion', () => {
     const source = 'بله بله بله'
     const replaceSecond = correction({
