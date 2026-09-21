@@ -145,6 +145,12 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toMatch(/سسوی|دررا|ومی‌گویید|موادغذایی|بااحتیاط|دونفر/)
     expect(dialogueTexts + stageTexts).not.toMatch(/ابداء|بازیکر|شماء|کلا‌بردار|این‌پا و آنپا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/عاقبست|ماچه|ماهم|(?:^|\s)مارا(?:\s|$)|شمارا|آن‌هارا|نله|زیرفیمت|نقمش|خودش را نقمش/m)
+    expect(dialogueTexts).not.toMatch(/(?:از|به|با|برای|که|و|یا|اگر|اما|ولی|تا)\s+\([^()]*\)(?:\n|$)/mu)
+    expect(dialogueTexts + stageTexts).not.toMatch(/[!؟]\s*:\s*|»\s*:/u)
+    expect(dialogueTexts).toContain('ببین که واحدهای مستقل چقدر از هم جدا هستند...')
+    expect(dialogueTexts).not.toContain('واحدهای مستقل چقدر از (')
+    expect(dialogueTexts).toContain('کلاه‌بردارند!» و تو آن‌همه ترسیدی...')
+    expect(dialogueTexts).not.toContain('به پرستارها اعتماد کرد؟»')
     const nonParenthesizedStageTexts = blocks.flatMap((block) =>
       block.type === 'stage-direction' && !block.text.trim().startsWith('(') ? [block.text] : []
     )
