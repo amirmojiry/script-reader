@@ -85,6 +85,50 @@ export function proofreadingCorrectionsForBlock(
   return sortCorrections(corrections.filter((correction) => correction.blockId === blockId))
 }
 
+function stringEditDistance(left: string, right: string): number {
+  if (left === right) return 0
+  if (!left.length) return right.length
+  if (!right.length) return left.length
+
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index)
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex]
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const substitutionCost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + substitutionCost
+      )
+    }
+    previous = current
+  }
+  return previous[right.length]
+}
+
+function reducedSnapshotAlreadyApplied(
+  sourceText: string,
+  correction: ProofreadingCorrection
+): boolean {
+  const snapshot = correction.sourceBlockText
+  const offset = correction.originalOffset
+  if (
+    snapshot === undefined
+    || offset === undefined
+    || offset < 0
+    || correction.correctedText.length >= correction.originalText.length
+    || snapshot.slice(offset, offset + correction.originalText.length) !== correction.originalText
+  ) {
+    return false
+  }
+
+  const correctedSnapshot = `${snapshot.slice(0, offset)}${correction.correctedText}${snapshot.slice(offset + correction.originalText.length)}`
+  if (sourceText === correctedSnapshot) return true
+  if (sourceText === snapshot) return false
+
+  return stringEditDistance(sourceText, correctedSnapshot) < stringEditDistance(sourceText, snapshot)
+}
+
 function correctedSnapshotMatchesAtOffset(
   sourceText: string,
   correction: ProofreadingCorrection
@@ -126,6 +170,11 @@ export function applyProofreadingCorrections(
       && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
     )
     const snapshotCorrectionAlreadyApplied = correctedSnapshotMatchesAtOffset(text, correction)
+    const snapshotReductionAlreadyApplied = reducedSnapshotAlreadyApplied(sourceText, correction)
+
+    if (snapshotReductionAlreadyApplied) {
+      continue
+    }
 
     const legacyLengtheningLooksBaked = correction.sourceBlockText === undefined
       && correction.correctedText.length > correction.originalText.length
