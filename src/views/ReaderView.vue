@@ -454,7 +454,7 @@ function openProofreading(block: PlayBlock, index: number, selectedText: string)
 function proofreadingSourceTarget(block: PlayBlock, eventTarget: EventTarget | null): HTMLElement | null {
   if (!(eventTarget instanceof HTMLElement)) return null
   if (block.type === 'stage-direction') {
-    return eventTarget.querySelector<HTMLElement>('.narrator-rehearsal-text')
+    return eventTarget.querySelector<HTMLElement>('.proofreading-block-copy, .narrator-rehearsal-text')
   }
   return eventTarget
 }
@@ -552,6 +552,7 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
     statusMessage.value = copied
       ? 'اصلاح ذخیره و در کلیپ‌بورد کپی شد.'
       : 'اصلاح ذخیره شد، اما دسترسی به کلیپ‌بورد ممکن نبود.'
+    proofreadingSaving.value = false
     await moveProofreadingDraft(direction)
   } finally {
     proofreadingSaving.value = false
