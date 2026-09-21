@@ -85,7 +85,9 @@ function proofreadFallback(): void {
   if (!props.debugMode) return
   const selected = selectedTextInBlock()
   if (!selected) {
-    const effectiveText = props.proofreadingSegments?.map((segment) => segment.text).join('') || blockText(props.block)
+    const effectiveText = props.proofreadingSegments !== undefined
+      ? props.proofreadingSegments.map((segment) => segment.text).join('')
+      : blockText(props.block)
     emit('proofread', effectiveText, 0)
   }
 }
