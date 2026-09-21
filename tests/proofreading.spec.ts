@@ -113,6 +113,17 @@ describe('proofreading export', () => {
       .toBe('سلام. کسی این جا نیست؟')
   })
 
+  it('does not relocate a baked-in deletion to another occurrence after source changes', () => {
+    const deletion = correction({
+      originalText: 'bad',
+      originalOffset: 0,
+      sourceBlockText: 'bad good bad',
+      correctedText: ''
+    })
+
+    expect(applyProofreadingCorrections(' good bad', [deletion])).toBe(' good bad')
+  })
+
   it('formats a single correction for clipboard handoff', () => {
     expect(correctionClipboardText(correction({}))).toBe(
       'نمایشنامه: نمایش تست\nدیالوگ شماره 1\nمتن اشتباه: غلط\nمتن درست: درست'
