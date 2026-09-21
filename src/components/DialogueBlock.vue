@@ -40,6 +40,9 @@ const displayName = computed(() => displayCharacters.value.map((character) => ch
 const resolvedHighlightColor = computed(() => props.highlightColor || displayCharacters.value[0]?.color || '#e0e7ff')
 const spokenText = computed(() => characterDialogueText(props.block))
 const renderSegments = computed(() => dialogueRenderSegments(props.block))
+const proofreadingRenderSegments = computed<ProofreadingDisplaySegment[]>(() =>
+  props.proofreadingSegments ?? [{ text: blockText(props.block), changed: false }]
+)
 const narratorSegments = computed(() => renderSegments.value.filter((segment) => segment.type === 'narration'))
 const hasNarration = computed(() => narratorSegments.value.length > 0)
 const narratorOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.narratorIsMine && !props.debugMode)
@@ -141,9 +144,9 @@ function revealNext(): void {
     </template>
 
     <p v-else ref="dialogueCopyRef" class="dialogue-copy">
-      <template v-if="debugMode && proofreadingSegments">
+      <template v-if="debugMode">
         <span
-          v-for="(segment, index) in proofreadingSegments"
+          v-for="(segment, index) in proofreadingRenderSegments"
           :key="`proofreading-${index}`"
           :class="{ 'proofreading-change': segment.changed }"
         >{{ segment.text }}</span>
