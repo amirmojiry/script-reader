@@ -651,13 +651,16 @@ describe('reader roles layout', () => {
     await wrapper.get('.reader-proofreading-button').trigger('click')
 
     const section = wrapper.get<HTMLHeadingElement>('#block-block-3')
-    const textNode = section.element.firstChild
+    const walker = document.createTreeWalker(section.element, NodeFilter.SHOW_TEXT)
+    let textNode: Node | null = walker.nextNode()
+    while (textNode && !textNode.textContent?.includes('بخش')) textNode = walker.nextNode()
     expect(textNode).not.toBeNull()
-    if (!textNode) throw new Error('Section text missing')
+    if (!textNode?.textContent) throw new Error('Section text missing')
+    const start = textNode.textContent.indexOf('بخش')
 
     const range = document.createRange()
-    range.setStart(textNode, 0)
-    range.setEnd(textNode, 3)
+    range.setStart(textNode, start)
+    range.setEnd(textNode, start + 3)
     const selection = window.getSelection()
     expect(selection).not.toBeNull()
     if (!selection) throw new Error('Selection API unavailable')
