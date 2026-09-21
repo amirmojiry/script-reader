@@ -508,16 +508,35 @@
   position: sticky;
   top: 0;
   z-index: 35;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 14px;
+  align-items: start;
   backdrop-filter: blur(16px);
   background: rgba(255, 255, 255, .94);
 }
+.reader-library-link {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin-top: 3px;
+}
 .reader-title-block {
+  grid-column: 2;
   min-width: 0;
+  width: 100%;
 }
 .reader-title-block h1 {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
+  line-height: 1.25;
+}
+.reader-title-block h1.reader-title-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .reader-play-metadata {
   display: flex;
@@ -533,8 +552,12 @@
   overflow-wrap: anywhere;
 }
 .reader-primary-actions {
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .reader-action-button {
@@ -578,12 +601,18 @@
     grid-template-columns: 1fr;
   }
   .reader-header {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .reader-library-link,
+  .reader-title-block,
+  .reader-primary-actions {
+    grid-column: 1;
+    grid-row: auto;
   }
   .reader-library-link {
-    grid-column: 1 / -1;
     justify-self: start;
+    margin-top: 0;
   }
   .reader-primary-actions {
     gap: 5px;
@@ -603,7 +632,7 @@
     padding: 12px;
   }
   .reader-title-block h1 {
-    font-size: 1.15rem;
+    line-height: 1.2;
   }
   .reader-play-metadata {
     gap: 3px 9px;
