@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   saveProofreadingCorrection: vi.fn(async () => undefined),
   listProofreadingCorrections: vi.fn(async (): Promise<ProofreadingCorrection[]> => []),
   deleteProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
+  replaceProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
   clearProofreadingCorrections: vi.fn(async () => undefined),
   clipboardWrite: vi.fn(async () => undefined)
 }))
@@ -66,6 +67,7 @@ vi.mock('../src/services/storage', () => ({
   listBookmarks: vi.fn(async () => []),
   listNotes: vi.fn(async () => []),
   listProofreadingCorrections: mocks.listProofreadingCorrections,
+  replaceProofreadingCorrectionsForBlock: mocks.replaceProofreadingCorrectionsForBlock,
   saveNote: vi.fn(async () => undefined),
   saveProofreadingCorrection: mocks.saveProofreadingCorrection,
   saveReadingState: mocks.saveReadingState,
@@ -106,6 +108,8 @@ afterEach(() => {
   mocks.listProofreadingCorrections.mockReset()
   mocks.listProofreadingCorrections.mockResolvedValue([])
   mocks.deleteProofreadingCorrectionsForBlock.mockClear()
+  mocks.replaceProofreadingCorrectionsForBlock.mockReset()
+  mocks.replaceProofreadingCorrectionsForBlock.mockResolvedValue(undefined)
   mocks.clearProofreadingCorrections.mockClear()
   mocks.clipboardWrite.mockClear()
   vi.unstubAllGlobals()
@@ -366,13 +370,51 @@ describe('reader roles layout', () => {
     wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('save', 'نور دوباره روشن می‌شود.', 1)
     await flushPromises()
 
-    expect(mocks.deleteProofreadingCorrectionsForBlock).toHaveBeenCalledWith('test-play', 'block-2')
-    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledWith(
+      'test-play',
+      'block-2',
+      expect.objectContaining({
+        blockId: 'block-2',
+        originalOffset: 0,
+        originalText: 'نور کم می‌شود.',
+        correctedText: 'نور دوباره روشن می‌شود.'
+      })
+    )
+    expect(mocks.deleteProofreadingCorrectionsForBlock).not.toHaveBeenCalled()
+    expect(mocks.saveProofreadingCorrection).not.toHaveBeenCalled()
+  })
+
+  it('keeps the existing deletion when atomic replacement persistence fails', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'delete-stage',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
       blockId: 'block-2',
+      blockIndex: 2,
+      blockType: 'stage-direction',
       originalOffset: 0,
+      sourceBlockText: 'نور کم می‌شود.',
       originalText: 'نور کم می‌شود.',
-      correctedText: 'نور دوباره روشن می‌شود.'
-    }))
+      correctedText: '',
+      createdAt: '2026-09-21T08:00:00.000Z'
+    }])
+    mocks.replaceProofreadingCorrectionsForBlock.mockRejectedValueOnce(new Error('quota'))
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const stage = wrapper.get('#block-block-2')
+    await stage.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('save', 'نور دوباره روشن می‌شود.', 1)
+    await flushPromises()
+
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
+    expect(wrapper.get('#block-block-2').text()).not.toContain('نور دوباره روشن می‌شود.')
   })
 
   it('previews edited text in the play and can revert the current block to source', async () => {
