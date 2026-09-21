@@ -138,7 +138,7 @@ describe('reader roles layout', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.get('.reader-title-block h1').text()).toBe('نمایش تست')
-    expect(wrapper.get('.reader-primary-actions').exists()).toBe(true)
+    expect(wrapper.find('.reader-primary-actions').exists()).toBe(true)
     expect(wrapper.get('.reader-play-metadata').attributes('style')).toContain('display: none')
   })
 
