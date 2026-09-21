@@ -4,13 +4,23 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
-## [1.10.0] - 2026-09-20
+## [1.11.0] - 2026-09-21
 
 ### Added
 - Complete user-supplied Persian «حساب پرداخت نمی‌شه!» by داریو فو, translated by حامد جهانشاهی, as a bundled two-act library play with metadata and regression coverage.
 
 ### Changed
-- Proofread the bundled Dario Fo text against the supplied scan, restoring page-boundary truncations and correcting OCR, spacing, punctuation, speaker ownership, and multi-speaker artifacts.
+- Proofread the bundled Dario Fo text against the supplied source, restoring page-boundary truncations and correcting OCR, spacing, punctuation, speaker ownership, and multi-speaker artifacts.
+- Corrected remaining OCR-corrupted wording reported during review and added regression guards for those malformed forms.
+
+## [1.10.0] - 2026-09-20
+
+### Added
+- Opt-in proofreading/debug mode for play text with text selection or whole-block fallback, a sticky bottom correction editor, and dialogue numbering.
+- Local IndexedDB persistence for proofreading corrections plus per-correction clipboard summaries and full JSON copy/download export.
+
+### Changed
+- Proofreading mode reveals the full document for review without mutating the bundled or imported play source.
 
 ## [1.9.0] - 2026-09-20
 
@@ -109,7 +119,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/amirmojiry/script-reader/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...v1.8.0

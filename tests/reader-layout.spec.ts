@@ -10,7 +10,9 @@ const mocks = vi.hoisted(() => ({
   updateCharacterColor: vi.fn(async () => undefined),
   push: vi.fn(),
   replace: vi.fn(),
-  saveReadingState: vi.fn(async () => undefined)
+  saveReadingState: vi.fn(async () => undefined),
+  saveProofreadingCorrection: vi.fn(async () => undefined),
+  clipboardWrite: vi.fn(async () => undefined)
 }))
 
 vi.mock('vue-router', () => ({
@@ -32,7 +34,11 @@ vi.mock('../src/stores/plays', () => ({
       acts: [{ id: 'act-1', title: 'پرده', scenes: [{
         id: 'scene-1',
         title: 'صحنه',
-        blocks: [{ id: 'block-1', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'سلام' }] }]
+        blocks: [
+          { id: 'block-1', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'سلام' }] },
+          { id: 'block-2', type: 'stage-direction', text: 'نور کم می‌شود.' },
+          { id: 'block-3', type: 'section', title: 'بخش دوم' }
+        ]
       }] }]
     } : undefined
   })
@@ -53,7 +59,9 @@ vi.mock('../src/services/storage', () => ({
   })),
   listBookmarks: vi.fn(async () => []),
   listNotes: vi.fn(async () => []),
+  listProofreadingCorrections: vi.fn(async () => []),
   saveNote: vi.fn(async () => undefined),
+  saveProofreadingCorrection: mocks.saveProofreadingCorrection,
   saveReadingState: mocks.saveReadingState,
   saveSettings: vi.fn(async () => undefined),
   toggleBookmark: vi.fn(async () => undefined)
@@ -77,8 +85,18 @@ const FocusableCharacterPanelStub = defineComponent({
   template: '<aside><button class="panel-close-button" type="button" @click="$emit(\'close\')">بستن</button></aside>'
 })
 
+const ProofreadingRevealTextStub = defineComponent({
+  name: 'RehearsalRevealText',
+  props: {
+    text: { type: String, required: true }
+  },
+  template: '<span class="narrator-rehearsal-text">{{ text }}</span>'
+})
+
 afterEach(() => {
   document.body.innerHTML = ''
+  mocks.saveProofreadingCorrection.mockClear()
+  mocks.clipboardWrite.mockClear()
 })
 
 function mockCompactViewport(matches: boolean): void {
@@ -111,6 +129,193 @@ describe('reader roles layout', () => {
     expect(metadata).toContain('حدود 1 دقیقه')
   })
 
+
+  it('records a proofreading correction locally and copies its dialogue summary', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: mocks.clipboardWrite }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    const debugButton = wrapper.get('.reader-proofreading-button')
+    await debugButton.trigger('click')
+    expect(debugButton.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.proofreading-status').text()).toContain('0 عیب ثبت‌شده')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    expect(dialogue.props('debugMode')).toBe(true)
+    dialogue.vm.$emit('proofread', 'سلام')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.exists()).toBe(true)
+    expect(editor.props('draft')).toMatchObject({
+      label: 'دیالوگ شماره 1',
+      originalText: 'سلام'
+    })
+
+    editor.vm.$emit('save', 'درود')
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      playId: 'test-play',
+      blockId: 'block-1',
+      blockIndex: 1,
+      dialogueNumber: 1,
+      originalText: 'سلام',
+      correctedText: 'درود'
+    }))
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('دیالوگ شماره 1'))
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن اشتباه: سلام'))
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن درست: درود'))
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+    expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
+  })
+
+
+  it('ignores duplicate proofreading submissions while persistence is pending and starts clipboard copy immediately', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: mocks.clipboardWrite }
+    })
+    let resolveSave!: () => void
+    mocks.saveProofreadingCorrection.mockImplementationOnce(() => new Promise<undefined>((resolve) => {
+      resolveSave = () => resolve(undefined)
+    }))
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('save', 'درود')
+    editor.vm.$emit('save', 'درود')
+    await wrapper.vm.$nextTick()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
+    expect(mocks.clipboardWrite).toHaveBeenCalledTimes(1)
+    expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن درست: درود'))
+    expect(editor.props('saving')).toBe(true)
+
+    dialogue.vm.$emit('proofread', 'متن دوم')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      originalText: 'سلام'
+    })
+
+    resolveSave()
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+  })
+
+  it('captures stage-direction source text without the narrator UI label', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          RehearsalRevealText: ProofreadingRevealTextStub
+        }
+      }
+    })
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const stage = wrapper.get('#block-block-2')
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+
+    const labelText = stage.get('.narrator-label').element.firstChild
+    expect(labelText).not.toBeNull()
+    if (!labelText) throw new Error('Narrator label missing')
+    const labelRange = document.createRange()
+    labelRange.selectNodeContents(labelText)
+    selection.removeAllRanges()
+    selection.addRange(labelRange)
+    await stage.trigger('mouseup')
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+
+    const sourceText = stage.get('.narrator-rehearsal-text').element.firstChild
+    expect(sourceText).not.toBeNull()
+    if (!sourceText) throw new Error('Stage source text missing')
+    const sourceRange = document.createRange()
+    sourceRange.selectNodeContents(sourceText)
+    selection.removeAllRanges()
+    selection.addRange(sourceRange)
+    await stage.trigger('mouseup')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      originalText: 'نور کم می‌شود.'
+    })
+
+    selection.removeAllRanges()
+    wrapper.unmount()
+  })
+
+  it('restores focus to the proofreading trigger after canceling the editor', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView, { attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const section = wrapper.get<HTMLHeadingElement>('#block-block-3')
+    section.element.focus()
+    await section.trigger('keydown', { key: 'Enter' })
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.exists()).toBe(true)
+    editor.vm.$emit('cancel')
+    await flushPromises()
+
+    expect(document.activeElement).toBe(section.element)
+    wrapper.unmount()
+  })
+
+  it('turns proofreading off before entering table-read mode', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+    expect(wrapper.get('.reader-proofreading-button').attributes('aria-pressed')).toBe('true')
+
+    const toolbar = wrapper.findComponent({ name: 'ReaderToolbar' })
+    toolbar.vm.$emit('setMode', 'table-read')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('.reader-proofreading-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('.proofreading-status').exists()).toBe(false)
+    expect(wrapper.find('.table-read').exists()).toBe(true)
+  })
+
+  it('turns proofreading off before entering rehearsal mode', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+    expect(wrapper.get('.reader-proofreading-button').attributes('aria-pressed')).toBe('true')
+
+    const toolbar = wrapper.findComponent({ name: 'ReaderToolbar' })
+    toolbar.vm.$emit('setMode', 'rehearsal')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('.reader-proofreading-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('.proofreading-status').exists()).toBe(false)
+    expect(wrapper.find('.rehearsal-controls').exists()).toBe(true)
+  })
 
   it('keeps roles open by default on desktop and expands fully when closed', async () => {
     mockCompactViewport(false)
