@@ -56,6 +56,24 @@ describe('proofreading export', () => {
   })
 
 
+  it('applies a correction to the selected repeated occurrence and supports deletion', () => {
+    const source = 'بله بله بله'
+    const replaceSecond = correction({
+      originalText: 'بله',
+      originalOffset: 4,
+      correctedText: 'خیر'
+    })
+    expect(applyProofreadingCorrections(source, [replaceSecond])).toBe('بله خیر بله')
+
+    const deleteSecond = correction({
+      id: 'c-delete',
+      originalText: 'بله',
+      originalOffset: 4,
+      correctedText: ''
+    })
+    expect(applyProofreadingCorrections(source, [deleteSecond])).toBe('بله  بله')
+  })
+
   it('formats a single correction for clipboard handoff', () => {
     expect(correctionClipboardText(correction({}))).toBe(
       'نمایشنامه: نمایش تست\nدیالوگ شماره 1\nمتن اشتباه: غلط\nمتن درست: درست'
