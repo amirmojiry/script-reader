@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import RehearsalRevealText from './RehearsalRevealText.vue'
 import type { Character, DialogueBlock, ReaderMode, RehearsalRevealMode } from '../types'
 import { blockText, characterDialogueText, dialogueRenderSegments } from '../utils/play'
+import type { ProofreadingDisplaySegment } from '../utils/proofreading'
 
 const props = defineProps<{
   block: DialogueBlock
@@ -18,6 +19,7 @@ const props = defineProps<{
   narratorIsMine: boolean
   narratorColor: string
   debugMode?: boolean
+  proofreadingSegments?: ProofreadingDisplaySegment[]
 }>()
 
 const emit = defineEmits<{
@@ -68,7 +70,10 @@ function proofreadSelection(): void {
 function proofreadFallback(): void {
   if (!props.debugMode) return
   const selected = selectedTextInBlock()
-  if (!selected) emit('proofread', blockText(props.block))
+  if (!selected) {
+    const effectiveText = props.proofreadingSegments?.map((segment) => segment.text).join('') || blockText(props.block)
+    emit('proofread', effectiveText)
+  }
 }
 
 function revealNext(): void {
@@ -120,17 +125,26 @@ function revealNext(): void {
     </template>
 
     <p v-else ref="dialogueCopyRef" class="dialogue-copy">
-      <template v-for="(segment, index) in renderSegments" :key="index">
-        <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
-        <RehearsalRevealText
-          v-else
-          :text="segment.text"
-          :active="narratorOwnRehearsal"
-          :reveal-mode="revealMode"
-          class="inline-direction narrator-segment"
-          :class="{ 'narrator-highlighted': narratorHighlighted, 'narrator-mine': narratorIsMine }"
-          :style="narratorHighlighted || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
-        />
+      <template v-if="debugMode && proofreadingSegments">
+        <span
+          v-for="(segment, index) in proofreadingSegments"
+          :key="`proofreading-${index}`"
+          :class="{ 'proofreading-change': segment.changed }"
+        >{{ segment.text }}</span>
+      </template>
+      <template v-else>
+        <template v-for="(segment, index) in renderSegments" :key="index">
+          <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
+          <RehearsalRevealText
+            v-else
+            :text="segment.text"
+            :active="narratorOwnRehearsal"
+            :reveal-mode="revealMode"
+            class="inline-direction narrator-segment"
+            :class="{ 'narrator-highlighted': narratorHighlighted, 'narrator-mine': narratorIsMine }"
+            :style="narratorHighlighted || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
+          />
+        </template>
       </template>
     </p>
   </article>
