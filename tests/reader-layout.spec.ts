@@ -327,6 +327,54 @@ describe('reader roles layout', () => {
     })
   })
 
+  it('reopens and edits a fully deleted block', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'delete-stage',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-2',
+      blockIndex: 2,
+      blockType: 'stage-direction',
+      originalOffset: 0,
+      originalText: 'نور کم می‌شود.',
+      correctedText: '',
+      createdAt: '2026-09-21T08:00:00.000Z'
+    }])
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const stage = wrapper.get('#block-block-2')
+    await stage.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.exists()).toBe(true)
+    expect(editor.props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2',
+      originalText: '',
+      text: ''
+    })
+    expect(editor.props('canRevert')).toBe(true)
+
+    editor.vm.$emit('preview', 'نور دوباره روشن می‌شود.')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('#block-block-2').text()).toContain('نور دوباره روشن می‌شود.')
+
+    wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('save', 'نور دوباره روشن می‌شود.', 1)
+    await flushPromises()
+
+    expect(mocks.deleteProofreadingCorrectionsForBlock).toHaveBeenCalledWith('test-play', 'block-2')
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-2',
+      originalOffset: 0,
+      originalText: 'نور کم می‌شود.',
+      correctedText: 'نور دوباره روشن می‌شود.'
+    }))
+  })
+
   it('previews edited text in the play and can revert the current block to source', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)
