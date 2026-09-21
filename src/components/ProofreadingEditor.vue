@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   save: [text: string, direction: -1 | 1]
+  preview: [text: string]
   cancel: []
   revert: []
 }>()
@@ -44,7 +45,7 @@ function submit(direction: -1 | 1): void {
 
     <label class="proofreading-editor-text">
       <span>متن</span>
-      <textarea v-model="text" rows="4" :disabled="saving" autofocus />
+      <textarea v-model="text" rows="4" :disabled="saving" autofocus @input="emit('preview', text)" />
     </label>
 
     <div class="proofreading-editor-actions">
