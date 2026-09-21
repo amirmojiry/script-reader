@@ -127,11 +127,15 @@ export function applyProofreadingCorrections(
     )
     const snapshotCorrectionAlreadyApplied = correctedSnapshotMatchesAtOffset(text, correction)
 
+    const legacyLengtheningLooksBaked = correction.sourceBlockText === undefined
+      && correction.correctedText.length > correction.originalText.length
+
     if (
       correctedMatchesAtOffset
       && (
         exactIndex < 0
         || snapshotCorrectionAlreadyApplied
+        || legacyLengtheningLooksBaked
       )
     ) {
       continue
