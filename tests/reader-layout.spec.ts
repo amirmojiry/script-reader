@@ -42,7 +42,7 @@ vi.mock('../src/stores/plays', () => ({
         blocks: [
           { id: 'block-1', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'سلام' }] },
           { id: 'block-2', type: 'stage-direction', text: 'نور کم می‌شود.' },
-          { id: 'block-3', type: 'section', title: 'بخش دوم' }
+          { id: 'block-3', type: 'section', title: 'بخش بخش' }
         ]
       }] }]
     } : undefined
@@ -641,6 +641,53 @@ describe('reader roles layout', () => {
     await flushPromises()
 
     expect(document.activeElement).toBe(section.element)
+    wrapper.unmount()
+  })
+
+  it('reopens a boundary block from persisted text without reapplying the completed preview', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView, { attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const section = wrapper.get<HTMLHeadingElement>('#block-block-3')
+    const textNode = section.element.firstChild
+    expect(textNode).not.toBeNull()
+    if (!textNode) throw new Error('Section text missing')
+
+    const range = document.createRange()
+    range.setStart(textNode, 0)
+    range.setEnd(textNode, 3)
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    await section.trigger('mouseup')
+    await wrapper.vm.$nextTick()
+    selection.removeAllRanges()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.props('draft')).toMatchObject({
+      originalText: 'بخش',
+      text: 'بخش'
+    })
+
+    editor.vm.$emit('save', 'قسمت', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-3',
+      originalOffset: 0,
+      originalText: 'بخش',
+      correctedText: 'قسمت'
+    }))
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      originalText: 'قسمت بخش',
+      text: 'قسمت بخش'
+    })
+
     wrapper.unmount()
   })
 
