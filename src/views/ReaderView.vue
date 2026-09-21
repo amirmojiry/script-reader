@@ -676,6 +676,7 @@ async function revertCurrentProofreadingBlock(): Promise<void> {
     await replaceProofreadingCorrectionsForBlock(play.value.id, draft.blockId)
     proofreadingCorrections.value = proofreadingCorrections.value
       .filter((correction) => correction.blockId !== draft.blockId)
+    proofreadingSaving.value = false
 
     const block = blocks.value[draft.blockIndex - 1]
     if (block) openProofreading(block, draft.blockIndex - 1, blockText(block))
@@ -695,6 +696,7 @@ async function revertAllProofreadingCorrections(): Promise<void> {
   try {
     await clearProofreadingCorrections(play.value.id)
     proofreadingCorrections.value = []
+    proofreadingSaving.value = false
 
     if (proofreadingDraft.value) {
       const block = blocks.value[proofreadingDraft.value.blockIndex - 1]
