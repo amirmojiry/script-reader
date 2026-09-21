@@ -226,6 +226,58 @@ describe('DialogueBlock proofreading mode', () => {
     wrapper.unmount()
   })
 
+  it('reports offsets against canonical block text when rendered parts contain boundary whitespace', async () => {
+    const spacedBlock = {
+      id: 'spaced-line',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      parts: [
+        { type: 'speech' as const, text: 'x ' },
+        { type: 'direction' as const, text: 'd' },
+        { type: 'speech' as const, text: 'x' }
+      ]
+    }
+    const wrapper = mount(DialogueBlock, {
+      attachTo: document.body,
+      props: {
+        block: spacedBlock,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true
+      }
+    })
+
+    const copy = wrapper.get('.dialogue-copy')
+    expect(copy.text()).toBe('x  (d) x')
+    const textNode = copy.get('span').element.firstChild
+    expect(textNode?.textContent).toBe('x  (d) x')
+    if (!textNode?.textContent) throw new Error('Canonical dialogue text missing')
+
+    const secondX = textNode.textContent.lastIndexOf('x')
+    const range = document.createRange()
+    range.setStart(textNode, secondX)
+    range.setEnd(textNode, secondX + 1)
+
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    await wrapper.get('.dialogue-block').trigger('mouseup')
+    expect(wrapper.emitted('proofread')?.[0]).toEqual(['x', 7])
+
+    selection.removeAllRanges()
+    wrapper.unmount()
+  })
+
   it('reports the selected occurrence offset for repeated text', async () => {
     const repeatedBlock = {
       id: 'repeat',
