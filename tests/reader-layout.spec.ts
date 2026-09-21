@@ -97,6 +97,8 @@ afterEach(() => {
   document.body.innerHTML = ''
   mocks.saveProofreadingCorrection.mockClear()
   mocks.clipboardWrite.mockClear()
+  vi.unstubAllGlobals()
+  Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
 })
 
 function mockCompactViewport(matches: boolean): void {
@@ -117,6 +119,89 @@ function mockCompactViewport(matches: boolean): void {
 }
 
 describe('reader roles layout', () => {
+  it('keeps the full title and actions visible while hiding metadata after scrolling', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    const header = wrapper.get('.reader-header')
+    const children = Array.from(header.element.children)
+    const titleBlockIndex = children.findIndex((element) => element.classList.contains('reader-title-block'))
+    const actionsIndex = children.findIndex((element) => element.classList.contains('reader-primary-actions'))
+    expect(actionsIndex).toBeGreaterThan(titleBlockIndex)
+    expect(wrapper.get('.reader-title-block h1').text()).toBe('نمایش تست')
+    expect(wrapper.get('.reader-play-metadata').attributes('style') ?? '').not.toContain('display: none')
+
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 32, writable: true })
+    window.dispatchEvent(new Event('scroll'))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.get('.reader-title-block h1').text()).toBe('نمایش تست')
+    expect(wrapper.find('.reader-primary-actions').exists()).toBe(true)
+    expect(wrapper.get('.reader-play-metadata').attributes('style')).toContain('display: none')
+  })
+
+  it('shrinks a long title to fit before falling back to wrapping', async () => {
+    mockCompactViewport(false)
+    let resizeCallback: ResizeObserverCallback | undefined
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallback = callback
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    const title = wrapper.get<HTMLHeadingElement>('.reader-title-block h1')
+    Object.defineProperty(title.element, 'clientWidth', { configurable: true, get: () => 160 })
+    Object.defineProperty(title.element, 'scrollWidth', {
+      configurable: true,
+      get: () => 200 * (Number.parseFloat(title.element.style.fontSize || '28') / 28)
+    })
+
+    resizeCallback?.([], {} as ResizeObserver)
+    await flushPromises()
+
+    expect(title.element.style.fontSize).toBe('22px')
+    expect(title.classes()).not.toContain('reader-title-wrap')
+  })
+
+  it('refits the title after web fonts finish loading', async () => {
+    mockCompactViewport(false)
+
+    let resolveFonts!: () => void
+    const fontsReady = new Promise<void>((resolve) => {
+      resolveFonts = resolve
+    })
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: { ready: fontsReady }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    const title = wrapper.get<HTMLHeadingElement>('.reader-title-block h1')
+    let requiredWidth = 150
+    Object.defineProperty(title.element, 'clientWidth', { configurable: true, get: () => 150 })
+    Object.defineProperty(title.element, 'scrollWidth', {
+      configurable: true,
+      get: () => requiredWidth * (Number.parseFloat(title.element.style.fontSize || '28') / 28)
+    })
+
+    expect(title.element.style.fontSize).toBe('28px')
+    requiredWidth = 210
+    resolveFonts()
+    await flushPromises()
+
+    expect(title.element.style.fontSize).toBe('20px')
+  })
+
   it('shows play author, translator, character count, and estimated duration in the header', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)

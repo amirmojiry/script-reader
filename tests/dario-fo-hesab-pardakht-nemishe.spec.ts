@@ -139,10 +139,25 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
           ? block.text
           : block.title
       expect((text.match(/«/g) ?? []).length).toBe((text.match(/»/g) ?? []).length)
+      expect((text.match(/\(/g) ?? []).length).toBe((text.match(/\)/g) ?? []).length)
+      expect(text).not.toMatch(/([\u0621-\u06FF])\1{2,}/u)
     }
     expect(dialogueTexts + stageTexts).not.toMatch(/سسوی|دررا|ومی‌گویید|موادغذایی|بااحتیاط|دونفر/)
     expect(dialogueTexts + stageTexts).not.toMatch(/ابداء|بازیکر|شماء|کلا‌بردار|این‌پا و آنپا/)
     expect(dialogueTexts + stageTexts).not.toMatch(/عاقبست|ماچه|ماهم|(?:^|\s)مارا(?:\s|$)|شمارا|آن‌هارا|نله|زیرفیمت|نقمش|خودش را نقمش/m)
+    const nonParenthesizedStageTexts = blocks.flatMap((block) =>
+      block.type === 'stage-direction' && !block.text.trim().startsWith('(') ? [block.text] : []
+    )
+    expect(nonParenthesizedStageTexts).toHaveLength(1)
+    expect(nonParenthesizedStageTexts[0]).toMatch(/^خانه‌ی یک خانواده‌ی کارگری/)
+    expect(dialogueTexts + stageTexts).not.toMatch(/تمام مردم وقتی مرا می‌بینند\. چنین می‌کند|ژاندارم را مثل عروسک جابه‌جا می‌کند|در کمد را باز می‌کند و متوجه ژاندارم|هندی‌ها وقتی غذایی برای خوردن ندارند\.\.\. از روی شوق یوگا کار می‌کند|آن‌ها به یک تلقین بسنده می‌کند|خانه‌ها را تخلیه می‌کند|چند نفری هم که پرداخت می‌کند/)
+    expect(dialogueTexts).toContain('تمام مردم وقتی مرا می‌بینند. چنین می‌کنند')
+    expect(dialogueTexts).toContain('ژاندارم را مثل عروسک جابه‌جا می‌کنند')
+    expect(dialogueTexts).toContain('در کمد را باز می‌کنند و متوجه ژاندارم نمی‌شوند')
+    expect(dialogueTexts).toContain('هندی‌ها وقتی غذایی برای خوردن ندارند... از روی شوق یوگا کار می‌کنند')
+    expect(dialogueTexts).toContain('آن‌ها به یک تلقین بسنده می‌کنند؟')
+    expect(dialogueTexts).toContain('آن‌ها تقریبا همه‌ی خانه‌ها را تخلیه می‌کنند')
+    expect(dialogueTexts).toContain('آن چند نفری هم که پرداخت می‌کنند')
     expect(dialogueTexts).toContain('حالا می‌بینی آخر و عاقبت ما چه می‌شود.')
     expect(dialogueTexts).toContain('بله همان که مسئول خدمت بود.')
     expect(dialogueTexts).toContain('جنسی را زیر قیمت بخری')
