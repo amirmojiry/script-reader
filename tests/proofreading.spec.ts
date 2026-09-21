@@ -74,6 +74,24 @@ describe('proofreading export', () => {
     expect(applyProofreadingCorrections(source, [deleteSecond])).toBe('بله  بله')
   })
 
+  it('does not replay a local correction that is already present in updated source', () => {
+    const bakedWithOffset = correction({
+      originalText: 'سلام',
+      originalOffset: 0,
+      correctedText: 'سلام.'
+    })
+    expect(applyProofreadingCorrections('سلام. کسی این جا نیست؟', [bakedWithOffset]))
+      .toBe('سلام. کسی این جا نیست؟')
+
+    const legacyWithoutOffset = correction({
+      id: 'legacy',
+      originalText: 'سلام',
+      correctedText: 'سلام.'
+    })
+    expect(applyProofreadingCorrections('سلام. کسی این جا نیست؟', [legacyWithoutOffset]))
+      .toBe('سلام. کسی این جا نیست؟')
+  })
+
   it('formats a single correction for clipboard handoff', () => {
     expect(correctionClipboardText(correction({}))).toBe(
       'نمایشنامه: نمایش تست\nدیالوگ شماره 1\nمتن اشتباه: غلط\nمتن درست: درست'
