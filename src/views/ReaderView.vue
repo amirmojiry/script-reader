@@ -110,6 +110,7 @@ const proofreadingDraft = ref<{
   blockIndex: number
   blockType: PlayBlock['type']
   dialogueNumber?: number
+  originalOffset: number
   label: string
   originalText: string
   text: string
@@ -388,16 +389,28 @@ function toggleProofreadingMode(): void {
   }
 }
 
-function selectedTextWithin(target: EventTarget | null): string {
-  if (!proofreadingMode.value || !(target instanceof HTMLElement) || typeof window === 'undefined') return ''
+interface ProofreadingSelection {
+  text: string
+  offset: number
+}
+
+function selectedTextWithin(target: EventTarget | null): ProofreadingSelection | undefined {
+  if (!proofreadingMode.value || !(target instanceof HTMLElement) || typeof window === 'undefined') return undefined
   const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return ''
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return undefined
   const range = selection.getRangeAt(0)
   const node = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
     ? range.commonAncestorContainer as Element
     : range.commonAncestorContainer.parentElement
-  if (!node || !target.contains(node)) return ''
-  return selection.toString().trim()
+  if (!node || !target.contains(node)) return undefined
+
+  const text = selection.toString()
+  if (!text.trim()) return undefined
+
+  const prefixRange = document.createRange()
+  prefixRange.selectNodeContents(target)
+  prefixRange.setEnd(range.startContainer, range.startOffset)
+  return { text, offset: prefixRange.toString().length }
 }
 
 function proofreadingLocation(block: PlayBlock, index: number): { dialogueNumber?: number; label: string } {
@@ -424,6 +437,7 @@ function proofreadingDisplayCorrections(block: PlayBlock): ProofreadingCorrectio
     blockIndex: draft.blockIndex,
     blockType: block.type,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
+    originalOffset: draft.originalOffset,
     originalText: draft.originalText,
     correctedText: draft.text,
     createdAt: '9999-12-31T23:59:59.999Z'
@@ -447,10 +461,10 @@ function adjacentProofreadingIndex(index: number, direction: -1 | 1): number | u
   return undefined
 }
 
-function openProofreading(block: PlayBlock, index: number, selectedText: string): void {
+function openProofreading(block: PlayBlock, index: number, selectedText: string, originalOffset = 0): void {
   if (!proofreadingMode.value || proofreadingSaving.value) return
-  const text = selectedText.trim()
-  if (!text) return
+  if (!selectedText.trim()) return
+  const text = selectedText
   currentIndex.value = index
   proofreadingTrigger = document.getElementById(`block-${block.id}`)
   const location = proofreadingLocation(block, index)
@@ -459,6 +473,7 @@ function openProofreading(block: PlayBlock, index: number, selectedText: string)
     blockIndex: index + 1,
     blockType: block.type,
     dialogueNumber: location.dialogueNumber,
+    originalOffset,
     label: location.label,
     originalText: text,
     text
@@ -475,21 +490,21 @@ function proofreadingSourceTarget(block: PlayBlock, eventTarget: EventTarget | n
 
 function captureProofreadingSelection(block: PlayBlock, index: number, event: MouseEvent): void {
   const selected = selectedTextWithin(proofreadingSourceTarget(block, event.currentTarget))
-  if (selected) openProofreading(block, index, selected)
+  if (selected) openProofreading(block, index, selected.text, selected.offset)
 }
 
 function handleProofreadingBlockClick(block: PlayBlock, index: number, event: MouseEvent): void {
   selectCurrent(index)
   if (!proofreadingMode.value) return
   if (!selectedTextWithin(proofreadingSourceTarget(block, event.currentTarget))) {
-    openProofreading(block, index, effectiveProofreadingText(block))
+    openProofreading(block, index, effectiveProofreadingText(block), 0)
   }
 }
 
 function handleProofreadingKeyboard(block: PlayBlock, index: number): void {
   if (!proofreadingMode.value) return
   selectCurrent(index)
-  openProofreading(block, index, effectiveProofreadingText(block))
+  openProofreading(block, index, effectiveProofreadingText(block), 0)
 }
 
 async function clearProofreadingDraftAndRestoreFocus(): Promise<void> {
@@ -533,16 +548,14 @@ async function moveProofreadingDraft(direction: -1 | 1): Promise<void> {
   const targetIndex = adjacentProofreadingIndex(currentIndex, direction) ?? currentIndex
   const target = blocks.value[targetIndex]
   await jump(targetIndex)
-  openProofreading(target, targetIndex, effectiveProofreadingText(target))
+  openProofreading(target, targetIndex, effectiveProofreadingText(target), 0)
 }
 
 async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): Promise<void> {
   if (proofreadingSaving.value || !play.value || !proofreadingDraft.value) return
   const draft = proofreadingDraft.value
-  const normalizedText = correctedText.trim()
-  if (!normalizedText) return
 
-  if (normalizedText === draft.originalText) {
+  if (correctedText === draft.originalText) {
     await moveProofreadingDraft(direction)
     return
   }
@@ -556,8 +569,9 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
     blockIndex: draft.blockIndex,
     blockType: draft.blockType,
     ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
+    originalOffset: draft.originalOffset,
     originalText: draft.originalText,
-    correctedText: normalizedText,
+    correctedText,
     createdAt: new Date().toISOString()
   }
 
@@ -1016,7 +1030,7 @@ function selectCurrent(index: number) {
             :narrator-color="narratorColor"
             :debug-mode="proofreadingMode"
             :proofreading-segments="proofreadingMode ? proofreadingSegmentsForBlock(entry.block) : undefined"
-            @proofread="openProofreading(entry.block, entry.index, $event)"
+            @proofread="(text, offset) => openProofreading(entry.block, entry.index, text, offset)"
             @click="selectCurrent(entry.index)"
           />
           <div
