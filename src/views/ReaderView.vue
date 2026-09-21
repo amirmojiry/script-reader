@@ -74,6 +74,8 @@ const mode = ref<ReaderMode>('read')
 const currentIndex = ref(0)
 const sidebarOpen = ref(defaultSidebarOpen())
 const readerRootRef = ref<HTMLElement | null>(null)
+const readerTitleBlockRef = ref<HTMLElement | null>(null)
+const readerTitleRef = ref<HTMLHeadingElement | null>(null)
 const rolesOpenButtonRef = ref<HTMLButtonElement | null>(null)
 const settings = ref<ReaderSettings>({ ...defaultSettings })
 const searchQuery = ref('')
@@ -82,6 +84,12 @@ const noteText = ref('')
 const bookmarkIds = ref<Set<string>>(new Set())
 const statusMessage = ref('')
 const showBackToTop = ref(false)
+const readerHeaderScrolled = ref(false)
+const readerTitleFontSize = ref(28)
+const readerTitleWrap = ref(false)
+let readerTitleResizeObserver: ResizeObserver | undefined
+let lastReaderTitleWidth = 0
+let readerFontsReady = false
 const proofreadingMode = ref(false)
 const proofreadingSaving = ref(false)
 let proofreadingTrigger: HTMLElement | null = null
@@ -196,6 +204,10 @@ onMounted(async () => {
   bookmarkIds.value = new Set(await listBookmarks(play.value.id))
   proofreadingCorrections.value = await listProofreadingCorrections(play.value.id)
   syncNoteText()
+  await nextTick()
+  setupReaderTitleResizeObserver()
+  await fitReaderTitle()
+  void refitReaderTitleAfterFontsReady()
   if (mode.value === 'rehearsal' && narratorIsMine.value && !narratorOwnedIndexes.value.includes(currentIndex.value)) {
     jumpToNearestOwnRolePart()
   }
@@ -205,6 +217,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateBackToTopVisibility)
+  readerTitleResizeObserver?.disconnect()
   stopSpeaking()
   void releaseWakeLock()
 })
@@ -224,6 +237,8 @@ watch([selected, myCharacterId, narratorSelected, narratorIsMine, narratorColor,
 }, { deep: true })
 
 watch(() => currentBlock.value?.id, () => syncNoteText())
+watch(() => play.value?.title, () => { void fitReaderTitle() })
+watch(sidebarOpen, () => { void fitReaderTitle() })
 
 function syncNoteText(): void {
   const blockId = currentBlock.value?.id
@@ -278,8 +293,50 @@ async function closeRolesPanel(): Promise<void> {
   rolesOpenButtonRef.value?.focus()
 }
 
+async function refitReaderTitleAfterFontsReady(): Promise<void> {
+  if (readerFontsReady || typeof document === 'undefined' || !('fonts' in document)) return
+  readerFontsReady = true
+  try {
+    await document.fonts.ready
+    await fitReaderTitle()
+  } catch {
+    // Font loading support is optional; the initial/resize fits remain in place.
+  }
+}
+
+function setupReaderTitleResizeObserver(): void {
+  readerTitleResizeObserver?.disconnect()
+  if (typeof ResizeObserver === 'undefined' || !readerTitleBlockRef.value) return
+  readerTitleResizeObserver = new ResizeObserver((entries) => {
+    const width = entries[0]?.contentRect.width ?? 0
+    if (width && Math.abs(width - lastReaderTitleWidth) < 0.5) return
+    lastReaderTitleWidth = width
+    void fitReaderTitle()
+  })
+  readerTitleResizeObserver.observe(readerTitleBlockRef.value)
+}
+
+async function fitReaderTitle(): Promise<void> {
+  const title = readerTitleRef.value
+  if (!title) return
+
+  readerTitleWrap.value = false
+  readerTitleFontSize.value = 28
+  await nextTick()
+
+  const available = title.clientWidth
+  const required = title.scrollWidth
+  if (!available || !required || required <= available) return
+
+  const fitted = Math.max(16, Math.floor(28 * available / required))
+  readerTitleFontSize.value = fitted
+  await nextTick()
+  readerTitleWrap.value = title.scrollWidth > title.clientWidth + 1
+}
+
 function updateBackToTopVisibility(): void {
   showBackToTop.value = window.scrollY > 480
+  readerHeaderScrolled.value = window.scrollY > 8
 }
 
 function scrollToTop(): void {
@@ -656,9 +713,13 @@ function selectCurrent(index: number) {
     <section class="reader-main">
       <header class="reader-header card">
         <button class="text-button reader-library-link" @click="router.push('/')">← کتابخانه</button>
-        <div class="reader-title-block">
-          <h1>{{ play.title }}</h1>
-          <div class="reader-play-metadata" aria-label="مشخصات نمایشنامه">
+        <div ref="readerTitleBlockRef" class="reader-title-block">
+          <h1
+            ref="readerTitleRef"
+            :class="{ 'reader-title-wrap': readerTitleWrap }"
+            :style="{ fontSize: `${readerTitleFontSize}px` }"
+          >{{ play.title }}</h1>
+          <div v-show="!readerHeaderScrolled" class="reader-play-metadata" aria-label="مشخصات نمایشنامه">
             <span>نویسنده: {{ play.author || 'نامشخص' }}</span>
             <span v-if="play.translator">مترجم: {{ play.translator }}</span>
             <span>{{ playMetrics?.characterCount ?? play.characters.length }} شخصیت</span>

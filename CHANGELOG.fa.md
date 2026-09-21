@@ -4,6 +4,12 @@
 
 ## [منتشرنشده]
 
+## [1.11.0] - 2026-09-21
+
+### تغییرکرده
+- سربرگ خوانش اکنون عنوان کامل نمایش را نگه می‌دارد، عنوان‌های بلند را تا حد خوانا کوچک می‌کند و دکمه‌های خوانش را زیر عنوان قرار می‌دهد.
+- مشخصات نمایش در ابتدای صفحه دیده می‌شوند اما پس از اسکرول جمع می‌شوند و عنوان و دکمه‌های چسبان همچنان در دسترس می‌مانند.
+
 ## [1.10.0] - 2026-09-20
 
 ### افزوده‌شده
@@ -110,7 +116,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/amirmojiry/script-reader/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...v1.8.0
