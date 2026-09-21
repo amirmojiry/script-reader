@@ -147,6 +147,8 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts + stageTexts).not.toMatch(/عاقبست|ماچه|ماهم|(?:^|\s)مارا(?:\s|$)|شمارا|آن‌هارا|نله|زیرفیمت|نقمش|خودش را نقمش/m)
     expect(dialogueTexts + stageTexts).not.toMatch(/تو جی\?|بادیدن|برسود|(?:^|\s)هنه[,،.]|ماک‌ارونی|لعیم|گردشی تفریحی به کلی بیمارستان/m)
     expect(dialogueTexts + stageTexts).not.toMatch(/رابرایش|آنیکی‌ها|برق وگاز|کله‌موکتی‌ها|اعتصاب کنندگان/m)
+    expect(dialogueTexts).not.toContain('فک خودم را پیاده کنم')
+    expect(dialogueTexts).toContain('می‌توانستم فکر خودم را پیاده کنم!')
     expect(dialogueTexts).toContain('با این کله‌پوک‌ها و تن‌لش‌ها همراه شوی؟ اعتصاب‌کنندگان رذل!')
     expect(dialogueTexts).toContain('اعتصاب‌کنندگان رذل؟ اوهو!')
     expect(dialogueTexts).toContain('توی آن یکی‌ها آرد سیاه')
