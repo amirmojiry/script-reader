@@ -171,6 +171,37 @@ describe('reader roles layout', () => {
     expect(title.classes()).not.toContain('reader-title-wrap')
   })
 
+  it('refits the title after web fonts finish loading', async () => {
+    mockCompactViewport(false)
+
+    let resolveFonts!: () => void
+    const fontsReady = new Promise<void>((resolve) => {
+      resolveFonts = resolve
+    })
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: { ready: fontsReady }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    const title = wrapper.get<HTMLHeadingElement>('.reader-title-block h1')
+    let requiredWidth = 150
+    Object.defineProperty(title.element, 'clientWidth', { configurable: true, get: () => 150 })
+    Object.defineProperty(title.element, 'scrollWidth', {
+      configurable: true,
+      get: () => requiredWidth * (Number.parseFloat(title.element.style.fontSize || '28') / 28)
+    })
+
+    expect(title.element.style.fontSize).toBe('28px')
+    requiredWidth = 210
+    resolveFonts()
+    await flushPromises()
+
+    expect(title.element.style.fontSize).toBe('20px')
+  })
+
   it('shows play author, translator, character count, and estimated duration in the header', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)
