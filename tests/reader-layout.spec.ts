@@ -297,6 +297,36 @@ describe('reader roles layout', () => {
   })
 
 
+  it('persists an intentional empty replacement and then navigates', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: mocks.clipboardWrite }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام', 0)
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('save', '', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-1',
+      originalOffset: 0,
+      originalText: 'سلام',
+      correctedText: ''
+    }))
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2'
+    })
+  })
+
   it('previews edited text in the play and can revert the current block to source', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)
