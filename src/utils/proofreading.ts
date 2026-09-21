@@ -105,15 +105,22 @@ export function applyProofreadingCorrections(
       && offset >= 0
       && text.slice(offset, offset + correction.correctedText.length) === correction.correctedText
     )
-    const sourceSnapshotUnchanged = correction.sourceBlockText !== undefined
-      && correction.sourceBlockText === sourceText
+    const snapshotAlreadyMatchedCorrectedAtOffset = Boolean(
+      correction.correctedText
+      && correction.sourceBlockText !== undefined
+      && offset !== undefined
+      && offset >= 0
+      && correction.sourceBlockText.slice(offset, offset + correction.correctedText.length) === correction.correctedText
+    )
 
     if (
       correctedMatchesAtOffset
-      && !sourceSnapshotUnchanged
       && (
         exactIndex < 0
-        || correction.correctedText.length > correction.originalText.length
+        || (
+          correction.correctedText.length > correction.originalText.length
+          && !snapshotAlreadyMatchedCorrectedAtOffset
+        )
       )
     ) {
       continue
