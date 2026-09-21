@@ -155,10 +155,10 @@ describe('reader roles layout', () => {
 
   it('shrinks a long title to fit before falling back to wrapping', async () => {
     mockCompactViewport(false)
-    let resizeCallback: ResizeObserverCallback | undefined
+    const resizeCallbacks: ResizeObserverCallback[] = []
     vi.stubGlobal('ResizeObserver', class {
       constructor(callback: ResizeObserverCallback) {
-        resizeCallback = callback
+        resizeCallbacks.push(callback)
       }
       observe() {}
       unobserve() {}
@@ -175,7 +175,7 @@ describe('reader roles layout', () => {
       get: () => 200 * (Number.parseFloat(title.element.style.fontSize || '28') / 28)
     })
 
-    resizeCallback?.([], {} as ResizeObserver)
+    for (const callback of resizeCallbacks) callback([], {} as ResizeObserver)
     await flushPromises()
 
     expect(title.element.style.fontSize).toBe('22px')
