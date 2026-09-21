@@ -226,6 +226,50 @@ describe('DialogueBlock proofreading mode', () => {
     wrapper.unmount()
   })
 
+  it('reports the selected occurrence offset for repeated text', async () => {
+    const repeatedBlock = {
+      id: 'repeat',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      parts: [{ type: 'speech' as const, text: 'بله بله بله' }]
+    }
+    const wrapper = mount(DialogueBlock, {
+      attachTo: document.body,
+      props: {
+        block: repeatedBlock,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true
+      }
+    })
+
+    const textNode = wrapper.get('.dialogue-copy span').element.firstChild
+    expect(textNode).not.toBeNull()
+    if (!textNode) throw new Error('Dialogue text missing')
+
+    const range = document.createRange()
+    range.setStart(textNode, 4)
+    range.setEnd(textNode, 7)
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    await wrapper.get('.dialogue-block').trigger('mouseup')
+    expect(wrapper.emitted('proofread')?.[0]).toEqual(['بله', 4])
+
+    selection.removeAllRanges()
+    wrapper.unmount()
+  })
+
   it('renders effective proofreading text with changed fragments highlighted', async () => {
     const wrapper = mount(DialogueBlock, {
       props: {
