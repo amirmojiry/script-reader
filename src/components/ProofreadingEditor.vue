@@ -10,8 +10,6 @@ const props = defineProps<{
   draft: ProofreadingDraft
   saving?: boolean
   canRevert?: boolean
-  canGoPrevious?: boolean
-  canGoNext?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -61,7 +59,7 @@ function submit(direction: -1 | 1): void {
         <button
           class="secondary-button"
           type="button"
-          :disabled="saving || !canGoPrevious"
+          :disabled="saving"
           @click="submit(-1)"
         >
           ثبت و قبلی
@@ -69,7 +67,7 @@ function submit(direction: -1 | 1): void {
         <button
           class="primary-button"
           type="button"
-          :disabled="saving || !canGoNext"
+          :disabled="saving"
           @click="submit(1)"
         >
           {{ saving ? 'در حال ثبت…' : 'ثبت و بعدی' }}
