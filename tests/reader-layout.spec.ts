@@ -277,6 +277,70 @@ describe('reader roles layout', () => {
   })
 
 
+  it('previews edited text in the play and can revert the current block to source', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('preview', 'درود')
+    await wrapper.vm.$nextTick()
+
+    const previewedDialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    const previewSegments = previewedDialogue.props('proofreadingSegments') as Array<{ text: string; changed: boolean }>
+    expect(previewSegments.map((segment) => segment.text).join('')).toBe('درود')
+    expect(previewSegments.some((segment) => segment.changed)).toBe(true)
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('canRevert')).toBe(true)
+
+    wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('revert')
+    await flushPromises()
+
+    expect(mocks.deleteProofreadingCorrectionsForBlock).toHaveBeenCalledWith('test-play', 'block-1')
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('proofreadingSegments')).toBeUndefined()
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      text: 'سلام',
+      originalText: 'سلام'
+    })
+  })
+
+  it('confirms and clears every local proofreading correction for the play', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'correction-1',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-1',
+      blockIndex: 1,
+      blockType: 'dialogue',
+      dialogueNumber: 1,
+      originalText: 'سلام',
+      correctedText: 'درود',
+      createdAt: '2026-09-21T06:00:00.000Z'
+    }])
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('proofreadingSegments')).toBeTruthy()
+
+    await wrapper.get('.proofreading-status .danger-button').trigger('click')
+    await flushPromises()
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(mocks.clearProofreadingCorrections).toHaveBeenCalledWith('test-play')
+    expect(wrapper.get('.proofreading-status').text()).toContain('0 عیب ثبت‌شده')
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('proofreadingSegments')).toBeUndefined()
+    confirmSpy.mockRestore()
+  })
+
   it('ignores duplicate proofreading submissions while persistence is pending and starts clipboard copy immediately', async () => {
     mockCompactViewport(false)
     Object.defineProperty(navigator, 'clipboard', {
