@@ -226,6 +226,35 @@ describe('DialogueBlock proofreading mode', () => {
     wrapper.unmount()
   })
 
+  it('renders effective proofreading text with changed fragments highlighted', async () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true,
+        proofreadingSegments: [
+          { text: 'صبر کن و چند لحظه ', changed: false },
+          { text: 'اینجا', changed: true },
+          { text: ' بمان.', changed: false }
+        ]
+      }
+    })
+
+    expect(wrapper.get('.dialogue-copy').text()).toBe('صبر کن و چند لحظه اینجا بمان.')
+    expect(wrapper.get('.proofreading-change').text()).toBe('اینجا')
+
+    await wrapper.get('.dialogue-block').trigger('click')
+    expect(wrapper.emitted('proofread')?.[0]?.[0]).toBe('صبر کن و چند لحظه اینجا بمان.')
+  })
+
   it('shows the full line during rehearsal and emits the full block text on click when no selection exists', async () => {
     const wrapper = mount(DialogueBlock, {
       props: {
