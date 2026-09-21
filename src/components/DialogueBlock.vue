@@ -23,7 +23,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  proofread: [originalText: string]
+  proofread: [originalText: string, originalOffset: number]
 }>()
 
 const revealAll = ref(false)
@@ -48,23 +48,35 @@ const progressiveText = computed(() => spokenText.value.split(/\s+/u).slice(0, p
 const isOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.isMine && !revealAll.value && !props.debugMode)
 const hasMoreProgressive = computed(() => progressiveWordCount.value < spokenText.value.split(/\s+/u).length)
 
-function selectedTextInBlock(): string {
-  if (typeof window === 'undefined') return ''
+interface ProofreadingSelection {
+  text: string
+  offset: number
+}
+
+function selectedTextInBlock(): ProofreadingSelection | undefined {
+  if (typeof window === 'undefined') return undefined
   const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return ''
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return undefined
   const range = selection.getRangeAt(0)
   const root = dialogueCopyRef.value
   const node = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
     ? range.commonAncestorContainer as Element
     : range.commonAncestorContainer.parentElement
-  if (!root || !node || !root.contains(node)) return ''
-  return selection.toString().trim()
+  if (!root || !node || !root.contains(node)) return undefined
+
+  const text = selection.toString()
+  if (!text.trim()) return undefined
+
+  const prefixRange = document.createRange()
+  prefixRange.selectNodeContents(root)
+  prefixRange.setEnd(range.startContainer, range.startOffset)
+  return { text, offset: prefixRange.toString().length }
 }
 
 function proofreadSelection(): void {
   if (!props.debugMode) return
   const selected = selectedTextInBlock()
-  if (selected) emit('proofread', selected)
+  if (selected) emit('proofread', selected.text, selected.offset)
 }
 
 function proofreadFallback(): void {
@@ -72,7 +84,7 @@ function proofreadFallback(): void {
   const selected = selectedTextInBlock()
   if (!selected) {
     const effectiveText = props.proofreadingSegments?.map((segment) => segment.text).join('') || blockText(props.block)
-    emit('proofread', effectiveText)
+    emit('proofread', effectiveText, 0)
   }
 }
 
