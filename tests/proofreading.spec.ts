@@ -74,6 +74,16 @@ describe('proofreading export', () => {
     expect(applyProofreadingCorrections(source, [deleteSecond])).toBe('بله  بله')
   })
 
+  it('applies shortening replacements when the full original still matches at the stored offset', () => {
+    const shorten = correction({
+      originalText: 'سلامم',
+      originalOffset: 0,
+      correctedText: 'سلام'
+    })
+
+    expect(applyProofreadingCorrections('سلامم دنیا', [shorten])).toBe('سلام دنیا')
+  })
+
   it('does not replay a local correction that is already present in updated source', () => {
     const bakedWithOffset = correction({
       originalText: 'سلام',
