@@ -651,6 +651,10 @@ describe('reader roles layout', () => {
     await wrapper.get('.reader-proofreading-button').trigger('click')
 
     const section = wrapper.get<HTMLHeadingElement>('#block-block-3')
+    Object.defineProperty(section.element, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn()
+    })
     const walker = document.createTreeWalker(section.element, NodeFilter.SHOW_TEXT)
     let textNode: Node | null = walker.nextNode()
     while (textNode && !textNode.textContent?.includes('بخش')) textNode = walker.nextNode()
