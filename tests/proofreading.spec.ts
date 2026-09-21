@@ -135,6 +135,28 @@ describe('proofreading export', () => {
       .toBe('سلام. کسی این جا نیست؟')
   })
 
+  it('skips baked reductions even when identical text remains at the recorded offset', () => {
+    const adjacentDeletion = correction({
+      originalText: 'bad',
+      originalOffset: 0,
+      sourceBlockText: 'badbad',
+      correctedText: ''
+    })
+    expect(applyProofreadingCorrections('bad', [adjacentDeletion])).toBe('bad')
+
+    const shortening = correction({
+      id: 'shorten-baked',
+      originalText: 'aaa',
+      originalOffset: 0,
+      sourceBlockText: 'aaa',
+      correctedText: 'aa'
+    })
+    expect(applyProofreadingCorrections('aa', [shortening])).toBe('aa')
+
+    expect(applyProofreadingCorrections('badbad', [adjacentDeletion])).toBe('bad')
+    expect(applyProofreadingCorrections('aaa', [shortening])).toBe('aa')
+  })
+
   it('does not relocate a baked-in deletion to another occurrence after source changes', () => {
     const deletion = correction({
       originalText: 'bad',
