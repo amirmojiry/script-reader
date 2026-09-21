@@ -440,8 +440,63 @@ describe('reader roles layout', () => {
     wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('revert')
     await flushPromises()
 
-    expect(mocks.deleteProofreadingCorrectionsForBlock).toHaveBeenCalledWith('test-play', 'block-1')
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledWith('test-play', 'block-1')
+    expect(mocks.deleteProofreadingCorrectionsForBlock).not.toHaveBeenCalled()
     expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('proofreadingSegments')).toBeUndefined()
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      text: 'سلام',
+      originalText: 'سلام'
+    })
+  })
+
+  it('guards a block revert against concurrent saves while persistence is pending', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'correction-1',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-1',
+      blockIndex: 1,
+      blockType: 'dialogue',
+      dialogueNumber: 1,
+      originalOffset: 0,
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      correctedText: 'درود',
+      createdAt: '2026-09-21T09:00:00.000Z'
+    }])
+
+    let resolveRevert!: () => void
+    mocks.replaceProofreadingCorrectionsForBlock.mockImplementationOnce(
+      () => new Promise<void>((resolve) => {
+        resolveRevert = resolve
+      })
+    )
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'درود', 0)
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('revert')
+    await wrapper.vm.$nextTick()
+
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledTimes(1)
+    expect(editor.props('saving')).toBe(true)
+
+    editor.vm.$emit('save', 'متن تازه', 1)
+    await wrapper.vm.$nextTick()
+    expect(mocks.saveProofreadingCorrection).not.toHaveBeenCalled()
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledTimes(1)
+
+    resolveRevert()
+    await flushPromises()
+
+    expect(wrapper.get('.proofreading-status').text()).toContain('0 عیب ثبت‌شده')
     expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
       text: 'سلام',
       originalText: 'سلام'
