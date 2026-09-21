@@ -157,6 +157,17 @@ describe('proofreading export', () => {
     expect(applyProofreadingCorrections('aaa', [shortening])).toBe('aa')
   })
 
+  it('applies a pending reduction when unrelated source text was removed elsewhere', () => {
+    const deletion = correction({
+      originalText: 'abc',
+      originalOffset: 0,
+      sourceBlockText: 'abcXabc',
+      correctedText: ''
+    })
+
+    expect(applyProofreadingCorrections('abcX', [deletion])).toBe('X')
+  })
+
   it('does not relocate a baked-in deletion to another occurrence after source changes', () => {
     const deletion = correction({
       originalText: 'bad',
