@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-09-21
+
+### Changed
+- Reader headers now keep the complete play title visible, shrink long titles to fit when possible, and place reader actions below the title.
+- Play metadata remains visible at the top of the reader but collapses after scrolling while the sticky title and actions stay available.
+
 ## [1.10.0] - 2026-09-20
 
 ### Added
@@ -110,7 +116,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/amirmojiry/script-reader/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/amirmojiry/script-reader/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/amirmojiry/script-reader/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/amirmojiry/script-reader/compare/v1.6.0...v1.8.0
