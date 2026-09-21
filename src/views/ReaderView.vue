@@ -431,6 +431,22 @@ function proofreadingDisplayCorrections(block: PlayBlock): ProofreadingCorrectio
   const draft = proofreadingDraft.value
   if (!draft || draft.blockId !== block.id || draft.text === draft.originalText) return corrections
 
+  if (!draft.originalText && corrections.length > 0) {
+    return [{
+      id: 'preview',
+      playId: play.value?.id ?? '',
+      playTitle: play.value?.title ?? '',
+      blockId: block.id,
+      blockIndex: draft.blockIndex,
+      blockType: block.type,
+      ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
+      originalOffset: 0,
+      originalText: blockText(block),
+      correctedText: draft.text,
+      createdAt: '9999-12-31T23:59:59.999Z'
+    }]
+  }
+
   return [...corrections, {
     id: 'preview',
     playId: play.value?.id ?? '',
@@ -465,7 +481,7 @@ function adjacentProofreadingIndex(index: number, direction: -1 | 1): number | u
 
 function openProofreading(block: PlayBlock, index: number, selectedText: string, originalOffset = 0): void {
   if (!proofreadingMode.value || proofreadingSaving.value) return
-  if (!selectedText.trim()) return
+  if (!selectedText.trim() && proofreadingBlockCorrections(block.id).length === 0) return
   const text = selectedText
   currentIndex.value = index
   proofreadingTrigger = document.getElementById(`block-${block.id}`)
@@ -559,6 +575,52 @@ async function saveProofreadingDraft(correctedText: string, direction: -1 | 1): 
 
   if (correctedText === draft.originalText) {
     await moveProofreadingDraft(direction)
+    return
+  }
+
+  const block = blocks.value[draft.blockIndex - 1]
+  const replacesFullyDeletedBlock = !draft.originalText
+    && Boolean(block)
+    && proofreadingBlockCorrections(draft.blockId).length > 0
+
+  if (replacesFullyDeletedBlock && block) {
+    proofreadingSaving.value = true
+    try {
+      await deleteProofreadingCorrectionsForBlock(play.value.id, draft.blockId)
+      proofreadingCorrections.value = proofreadingCorrections.value.filter((item) => item.blockId !== draft.blockId)
+
+      const sourceText = blockText(block)
+      if (correctedText !== sourceText) {
+        const correction: ProofreadingCorrection = {
+          id: makeCorrectionId(),
+          playId: play.value.id,
+          playTitle: play.value.title,
+          blockId: draft.blockId,
+          blockIndex: draft.blockIndex,
+          blockType: draft.blockType,
+          ...(draft.dialogueNumber ? { dialogueNumber: draft.dialogueNumber } : {}),
+          originalOffset: 0,
+          originalText: sourceText,
+          correctedText,
+          createdAt: new Date().toISOString()
+        }
+        const clipboardPromise = writeClipboard(correctionClipboardText(correction))
+        await saveProofreadingCorrection(correction)
+        proofreadingCorrections.value = [...proofreadingCorrections.value, correction]
+          .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+        const copied = await clipboardPromise
+        statusMessage.value = copied
+          ? 'اصلاح ذخیره و در کلیپ‌بورد کپی شد.'
+          : 'اصلاح ذخیره شد، اما دسترسی به کلیپ‌بورد ممکن نبود.'
+      } else {
+        statusMessage.value = 'تغییرات این بخش به متن اصلی برگردانده شد.'
+      }
+
+      proofreadingSaving.value = false
+      await moveProofreadingDraft(direction)
+    } finally {
+      proofreadingSaving.value = false
+    }
     return
   }
 
