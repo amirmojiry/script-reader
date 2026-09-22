@@ -225,13 +225,9 @@ function resolveSnapshotCorrection(
       : { status: 'baked' }
   }
 
-  if (pending.displacement !== baked.displacement) {
-    return pending.displacement < baked.displacement
-      ? { status: 'apply', index: pending.index }
-      : { status: 'baked' }
-  }
-
-  // Ambiguous local evidence should preserve the user's pending correction.
+  // Equal context evidence is ambiguous even when one candidate is closer to the
+  // old absolute offset. Source insertions can move the real pending occurrence,
+  // so preserve the user's edit whenever the original text still matches equally well.
   return { status: 'apply', index: pending.index }
 }
 
