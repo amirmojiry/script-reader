@@ -100,6 +100,17 @@ describe('proofreading export', () => {
     expect(applyProofreadingCorrections('a', [second, first])).toBe('c')
   })
 
+  it('preserves a pending edit when inserted text equals the replacement', () => {
+    const moved = correction({
+      originalOffset: 1,
+      sourceBlockText: 'ab',
+      originalText: 'b',
+      correctedText: 'a'
+    })
+
+    expect(applyProofreadingCorrections('aab', [moved])).toBe('aaa')
+  })
+
   it('rebases a pending correction after source text is inserted before its saved offset', () => {
     const moved = correction({
       originalOffset: 6,
