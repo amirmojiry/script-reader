@@ -74,7 +74,7 @@ export interface ProofreadingDisplaySegment {
 
 function sortCorrections(corrections: ProofreadingCorrection[]): ProofreadingCorrection[] {
   return [...corrections].sort((a, b) =>
-    a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
+    a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
   )
 }
 
