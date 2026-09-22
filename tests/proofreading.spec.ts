@@ -76,6 +76,30 @@ describe('proofreading export', () => {
     expect(applyProofreadingCorrections('ac', [first, second])).toBe('bcc')
   })
 
+  it('preserves chained correction chronology when a block moves to an earlier index', () => {
+    const first = correction({
+      blockId: 'stable-block',
+      blockIndex: 8,
+      originalOffset: 0,
+      sourceBlockText: 'a',
+      originalText: 'a',
+      correctedText: 'b',
+      createdAt: '2026-09-20T10:00:00.000Z'
+    })
+    const second = correction({
+      id: 'c-2',
+      blockId: 'stable-block',
+      blockIndex: 2,
+      originalOffset: 0,
+      sourceBlockText: 'b',
+      originalText: 'b',
+      correctedText: 'c',
+      createdAt: '2026-09-20T10:01:00.000Z'
+    })
+
+    expect(applyProofreadingCorrections('a', [second, first])).toBe('c')
+  })
+
   it('rebases a pending correction after source text is inserted before its saved offset', () => {
     const moved = correction({
       originalOffset: 6,
