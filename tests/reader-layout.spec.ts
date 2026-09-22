@@ -301,6 +301,42 @@ describe('reader roles layout', () => {
   })
 
 
+  it('does not replace a dirty draft with its uncommitted live preview', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام', 0)
+    await wrapper.vm.$nextTick()
+
+    let editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('preview', 'درود')
+    await wrapper.vm.$nextTick()
+
+    wrapper.findComponent({ name: 'DialogueBlockView' }).vm.$emit('proofread', 'درود', 0)
+    await wrapper.vm.$nextTick()
+
+    editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.props('draft')).toMatchObject({
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      text: 'درود'
+    })
+
+    editor.vm.$emit('save', 'سلام تازه', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-1',
+      originalOffset: 0,
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      correctedText: 'سلام تازه'
+    }))
+  })
+
   it('stores the effective block text as the snapshot for a chained edit', async () => {
     mockCompactViewport(false)
     mocks.listProofreadingCorrections.mockResolvedValueOnce([{
