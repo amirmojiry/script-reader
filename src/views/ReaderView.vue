@@ -683,6 +683,7 @@ async function revertCurrentProofreadingBlock(): Promise<void> {
     await replaceProofreadingCorrectionsForBlock(play.value.id, draft.blockId)
     proofreadingCorrections.value = proofreadingCorrections.value
       .filter((correction) => correction.blockId !== draft.blockId)
+    proofreadingDraft.value = null
     proofreadingSaving.value = false
 
     const block = blocks.value[draft.blockIndex - 1]
@@ -703,11 +704,13 @@ async function revertAllProofreadingCorrections(): Promise<void> {
   try {
     await clearProofreadingCorrections(play.value.id)
     proofreadingCorrections.value = []
+    const draft = proofreadingDraft.value
+    proofreadingDraft.value = null
     proofreadingSaving.value = false
 
-    if (proofreadingDraft.value) {
-      const block = blocks.value[proofreadingDraft.value.blockIndex - 1]
-      if (block) openProofreading(block, proofreadingDraft.value.blockIndex - 1, blockText(block))
+    if (draft) {
+      const block = blocks.value[draft.blockIndex - 1]
+      if (block) openProofreading(block, draft.blockIndex - 1, blockText(block))
     }
     statusMessage.value = 'همهٔ تغییرات عیب‌یابی به متن اصلی برگردانده شدند.'
   } catch {
