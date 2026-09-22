@@ -52,7 +52,8 @@ const legacyBundledTextMigrations: Record<string, Record<string, LegacyTextMigra
   }
 }
 
-function blockPlainText(block: PlayBlock): string | undefined {
+function blockPlainText(block: PlayBlock | undefined): string | undefined {
+  if (!block) return undefined
   if (block.type === 'stage-direction') return block.text
   if (block.type === 'dialogue' && block.parts.length === 1 && block.parts[0].type === 'speech') {
     return block.parts[0].text
@@ -75,7 +76,7 @@ function normalizeKnownLegacyBundledCopy(candidate: Play, bundled: Play): Play |
   const blocks = candidate.acts.flatMap((act) => act.scenes.flatMap((scene) => scene.blocks))
   const blocksById = new Map(blocks.map((block) => [block.id, block]))
   const isExactLegacyRevision = Object.entries(migrations).every(([blockId, migration]) =>
-    blockPlainText(blocksById.get(blockId) as PlayBlock) === migration.from
+    blockPlainText(blocksById.get(blockId)) === migration.from
   )
   if (!isExactLegacyRevision) return undefined
 
