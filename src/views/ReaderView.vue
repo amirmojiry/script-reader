@@ -484,6 +484,8 @@ function adjacentProofreadingIndex(index: number, direction: -1 | 1): number | u
 
 function openProofreading(block: PlayBlock, index: number, selectedText: string, originalOffset = 0): void {
   if (!proofreadingMode.value || proofreadingSaving.value) return
+  const currentDraft = proofreadingDraft.value
+  if (currentDraft && currentDraft.text !== currentDraft.originalText) return
   if (!selectedText.trim() && proofreadingBlockCorrections(block.id).length === 0) return
   const text = selectedText
   const sourceBlockText = effectiveProofreadingText(block)
