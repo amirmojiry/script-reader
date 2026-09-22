@@ -3,7 +3,7 @@ import { bundledPlay } from '../src/data/bundledPlay'
 import { bundledPlays, mergeBundledPlay } from '../src/data/bundledPlays'
 import { yasrebiAuthor, yasrebiBundledPlays, yasrebiSources } from '../src/data/yasrebi'
 import type { DialogueBlock, Play } from '../src/types'
-import { dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
+import { blockText, dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
 const expectedCounts = [456, 254, 589]
 
@@ -39,6 +39,29 @@ describe('Yasrebi bundled plays', () => {
         expect(dialogueText(dialogue)).toBe(record[2])
       })
     })
+  })
+
+  it('includes the reviewed Banoo proofreading corrections in bundled source text', () => {
+    const banoo = yasrebiBundledPlays[0]
+    const blocks = new Map(flattenBlocks(banoo).map((block) => [block.id, block]))
+    const expected = new Map([
+      ['block-0002', 'سلام. کسی این جا نیست؟'],
+      ['block-0004', 'ببخشید. کسی نیست جواب بده؟'],
+      ['block-0005', 'مرد جوان با خنده‌ی خُل‌خلی وارد میشود.'],
+      ['block-0006', 'سلام. ببخشید، ماشین من یک کیلومتر پایین‌تر خراب شده. با بدبختی خودمو رسوندم اینجا.'],
+      ['block-0007', 'مرد جوان با قیافه‌ی وحشت‌زده رم می‌کند و می‌رود.'],
+      ['block-0008', 'آقا، ببخشید؟... (با خودش) اینجا دیگه کجاست؟ (روی میز می‌زند) کسی تو این هتل نیست جواب آدمو بده؟'],
+      ['block-0009', 'دختر جوانی با یک کیسه‌ی سیاه بزرگ در دستش وارد می‌شود. آواز «آسمان چشم او آیینه‌ی کیست؟» را می‌خواند. با دیدن زن لحظه‌ای جا می‌خورد؛ اما زود بر خودش مسلط می‌شود و لبخند می‌زند.'],
+      ['block-0010', 'سلام. خوش اومدین.'],
+      ['block-0011', 'سلام خانم... دیگه کم کم داشتم ناامید می‌شدم.'],
+      ['block-0012', 'خدا نکنه. برای چی؟']
+    ])
+
+    for (const [blockId, text] of expected) {
+      const block = blocks.get(blockId)
+      expect(block, blockId).toBeDefined()
+      expect(block && blockText(block)).toBe(text)
+    }
   })
 
   it('keeps the original bundled play and exposes all three Yasrebi plays', () => {

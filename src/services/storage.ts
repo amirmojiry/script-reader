@@ -18,6 +18,25 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
   }
 })
 
+
+const BUNDLED_OWNERSHIP_KEY = 'bundled-play-ownership'
+
+export async function getBundledPlayOwnership(): Promise<Record<string, string>> {
+  const db = await dbPromise
+  const value = await db.get('settings', BUNDLED_OWNERSHIP_KEY) as unknown
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+  )
+}
+
+export async function saveBundledPlayOwnership(ownership: Record<string, string>): Promise<void> {
+  const db = await dbPromise
+  await db.put('settings', ownership, BUNDLED_OWNERSHIP_KEY)
+}
+
 export async function savePlay(play: Play): Promise<void> {
   const db = await dbPromise
   await db.put('plays', play)
@@ -111,4 +130,40 @@ export async function listProofreadingCorrections(playId: string): Promise<Proof
   return all
     .filter((correction) => correction.playId === playId)
     .sort((a, b) => a.blockIndex - b.blockIndex || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+}
+
+
+export async function deleteProofreadingCorrectionsForBlock(playId: string, blockId: string): Promise<void> {
+  const db = await dbPromise
+  const all = await db.getAll('proofreadingCorrections') as ProofreadingCorrection[]
+  const matches = all.filter((correction) => correction.playId === playId && correction.blockId === blockId)
+  await Promise.all(matches.map((correction) => db.delete('proofreadingCorrections', correction.id)))
+}
+
+export async function clearProofreadingCorrections(playId: string): Promise<void> {
+  const db = await dbPromise
+  const transaction = db.transaction('proofreadingCorrections', 'readwrite')
+  const store = transaction.objectStore('proofreadingCorrections')
+  const all = await store.getAll() as ProofreadingCorrection[]
+  const matches = all.filter((correction) => correction.playId === playId)
+
+  await Promise.all(matches.map((correction) => store.delete(correction.id)))
+  await transaction.done
+}
+
+
+export async function replaceProofreadingCorrectionsForBlock(
+  playId: string,
+  blockId: string,
+  correction?: ProofreadingCorrection
+): Promise<void> {
+  const db = await dbPromise
+  const transaction = db.transaction('proofreadingCorrections', 'readwrite')
+  const store = transaction.objectStore('proofreadingCorrections')
+  const all = await store.getAll() as ProofreadingCorrection[]
+  const matches = all.filter((item) => item.playId === playId && item.blockId === blockId)
+
+  await Promise.all(matches.map((item) => store.delete(item.id)))
+  if (correction) await store.put(correction)
+  await transaction.done
 }

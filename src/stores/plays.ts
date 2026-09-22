@@ -5,7 +5,13 @@ import {
   isReservedBundledId,
   resolveBundledPlayForStorage
 } from '../data/bundledPlays'
-import { deletePlay, listPlays, savePlay } from '../services/storage'
+import {
+  deletePlay,
+  getBundledPlayOwnership,
+  listPlays,
+  saveBundledPlayOwnership,
+  savePlay
+} from '../services/storage'
 import type { Play } from '../types'
 import { validatePlay } from '../utils/play'
 
@@ -17,19 +23,31 @@ export const usePlaysStore = defineStore('plays', () => {
 
   async function initialize(): Promise<void> {
     if (loaded.value) return
-    const stored = await listPlays()
+    const [stored, bundledOwnership] = await Promise.all([
+      listPlays(),
+      getBundledPlayOwnership()
+    ])
     const usedIds = new Set([...stored.map((play) => play.id), ...bundledPlays.map((play) => play.id)])
     const resolvedBundled = bundledPlays.map((play) => {
-      const resolved = resolveBundledPlayForStorage(play, stored, usedIds)
+      const resolved = resolveBundledPlayForStorage(
+        play,
+        stored,
+        usedIds,
+        bundledOwnership[play.id]
+      )
       usedIds.add(resolved.play.id)
-      return resolved
+      return { bundledId: play.id, ...resolved }
     })
     const ownedStoredIds = new Set(
       resolvedBundled.flatMap((resolved) => resolved.ownedStoredId ? [resolved.ownedStoredId] : [])
     )
     const currentBundled = resolvedBundled.map((resolved) => resolved.play)
+    const nextBundledOwnership = Object.fromEntries(
+      resolvedBundled.map((resolved) => [resolved.bundledId, resolved.play.id])
+    )
 
     for (const play of currentBundled) await savePlay(play)
+    await saveBundledPlayOwnership(nextBundledOwnership)
     plays.value = [...currentBundled, ...stored.filter((play) => !ownedStoredIds.has(play.id))]
     loaded.value = true
   }

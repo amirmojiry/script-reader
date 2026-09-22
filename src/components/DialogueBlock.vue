@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import RehearsalRevealText from './RehearsalRevealText.vue'
 import type { Character, DialogueBlock, ReaderMode, RehearsalRevealMode } from '../types'
 import { blockText, characterDialogueText, dialogueRenderSegments } from '../utils/play'
+import type { ProofreadingDisplaySegment } from '../utils/proofreading'
 
 const props = defineProps<{
   block: DialogueBlock
@@ -18,10 +19,11 @@ const props = defineProps<{
   narratorIsMine: boolean
   narratorColor: string
   debugMode?: boolean
+  proofreadingSegments?: ProofreadingDisplaySegment[]
 }>()
 
 const emit = defineEmits<{
-  proofread: [originalText: string]
+  proofread: [originalText: string, originalOffset: number]
 }>()
 
 const revealAll = ref(false)
@@ -38,6 +40,9 @@ const displayName = computed(() => displayCharacters.value.map((character) => ch
 const resolvedHighlightColor = computed(() => props.highlightColor || displayCharacters.value[0]?.color || '#e0e7ff')
 const spokenText = computed(() => characterDialogueText(props.block))
 const renderSegments = computed(() => dialogueRenderSegments(props.block))
+const proofreadingRenderSegments = computed<ProofreadingDisplaySegment[]>(() =>
+  props.proofreadingSegments ?? [{ text: blockText(props.block), changed: false }]
+)
 const narratorSegments = computed(() => renderSegments.value.filter((segment) => segment.type === 'narration'))
 const hasNarration = computed(() => narratorSegments.value.length > 0)
 const narratorOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.narratorIsMine && !props.debugMode)
@@ -46,29 +51,48 @@ const progressiveText = computed(() => spokenText.value.split(/\s+/u).slice(0, p
 const isOwnRehearsal = computed(() => props.mode === 'rehearsal' && props.isMine && !revealAll.value && !props.debugMode)
 const hasMoreProgressive = computed(() => progressiveWordCount.value < spokenText.value.split(/\s+/u).length)
 
-function selectedTextInBlock(): string {
-  if (typeof window === 'undefined') return ''
+interface ProofreadingSelection {
+  text: string
+  offset: number
+}
+
+function selectedTextInBlock(): ProofreadingSelection | undefined {
+  if (typeof window === 'undefined') return undefined
   const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return ''
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return undefined
   const range = selection.getRangeAt(0)
   const root = dialogueCopyRef.value
   const node = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
     ? range.commonAncestorContainer as Element
     : range.commonAncestorContainer.parentElement
-  if (!root || !node || !root.contains(node)) return ''
-  return selection.toString().trim()
+  if (!root || !node || !root.contains(node)) return undefined
+
+  const rawText = selection.toString()
+  const text = rawText.trim()
+  if (!text) return undefined
+  const leadingTrim = rawText.length - rawText.trimStart().length
+
+  const prefixRange = document.createRange()
+  prefixRange.selectNodeContents(root)
+  prefixRange.setEnd(range.startContainer, range.startOffset)
+  return { text, offset: prefixRange.toString().length + leadingTrim }
 }
 
 function proofreadSelection(): void {
   if (!props.debugMode) return
   const selected = selectedTextInBlock()
-  if (selected) emit('proofread', selected)
+  if (selected) emit('proofread', selected.text, selected.offset)
 }
 
 function proofreadFallback(): void {
   if (!props.debugMode) return
   const selected = selectedTextInBlock()
-  if (!selected) emit('proofread', blockText(props.block))
+  if (!selected) {
+    const effectiveText = props.proofreadingSegments !== undefined
+      ? props.proofreadingSegments.map((segment) => segment.text).join('')
+      : blockText(props.block)
+    emit('proofread', effectiveText, 0)
+  }
 }
 
 function revealNext(): void {
@@ -120,17 +144,26 @@ function revealNext(): void {
     </template>
 
     <p v-else ref="dialogueCopyRef" class="dialogue-copy">
-      <template v-for="(segment, index) in renderSegments" :key="index">
-        <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
-        <RehearsalRevealText
-          v-else
-          :text="segment.text"
-          :active="narratorOwnRehearsal"
-          :reveal-mode="revealMode"
-          class="inline-direction narrator-segment"
-          :class="{ 'narrator-highlighted': narratorHighlighted, 'narrator-mine': narratorIsMine }"
-          :style="narratorHighlighted || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
-        />
+      <template v-if="debugMode">
+        <span
+          v-for="(segment, index) in proofreadingRenderSegments"
+          :key="`proofreading-${index}`"
+          :class="{ 'proofreading-change': segment.changed }"
+        >{{ segment.text }}</span>
+      </template>
+      <template v-else>
+        <template v-for="(segment, index) in renderSegments" :key="index">
+          <span v-if="segment.type === 'speech'">{{ segment.text }}</span>
+          <RehearsalRevealText
+            v-else
+            :text="segment.text"
+            :active="narratorOwnRehearsal"
+            :reveal-mode="revealMode"
+            class="inline-direction narrator-segment"
+            :class="{ 'narrator-highlighted': narratorHighlighted, 'narrator-mine': narratorIsMine }"
+            :style="narratorHighlighted || narratorIsMine ? { '--narrator-highlight': narratorColor } : undefined"
+          />
+        </template>
       </template>
     </p>
   </article>

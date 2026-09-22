@@ -3,6 +3,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ProofreadingCorrection } from '../src/types'
 import ReaderView from '../src/views/ReaderView.vue'
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +13,10 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   saveReadingState: vi.fn(async () => undefined),
   saveProofreadingCorrection: vi.fn(async () => undefined),
+  listProofreadingCorrections: vi.fn(async (): Promise<ProofreadingCorrection[]> => []),
+  deleteProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
+  replaceProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
+  clearProofreadingCorrections: vi.fn(async () => undefined),
   clipboardWrite: vi.fn(async () => undefined)
 }))
 
@@ -37,7 +42,7 @@ vi.mock('../src/stores/plays', () => ({
         blocks: [
           { id: 'block-1', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'سلام' }] },
           { id: 'block-2', type: 'stage-direction', text: 'نور کم می‌شود.' },
-          { id: 'block-3', type: 'section', title: 'بخش دوم' }
+          { id: 'block-3', type: 'section', title: 'بخش بخش' }
         ]
       }] }]
     } : undefined
@@ -45,7 +50,9 @@ vi.mock('../src/stores/plays', () => ({
 }))
 
 vi.mock('../src/services/storage', () => ({
+  clearProofreadingCorrections: mocks.clearProofreadingCorrections,
   deleteNote: vi.fn(async () => undefined),
+  deleteProofreadingCorrectionsForBlock: mocks.deleteProofreadingCorrectionsForBlock,
   getReadingState: vi.fn(async () => undefined),
   getSettings: vi.fn(async () => ({
     fontSize: 18,
@@ -59,7 +66,8 @@ vi.mock('../src/services/storage', () => ({
   })),
   listBookmarks: vi.fn(async () => []),
   listNotes: vi.fn(async () => []),
-  listProofreadingCorrections: vi.fn(async () => []),
+  listProofreadingCorrections: mocks.listProofreadingCorrections,
+  replaceProofreadingCorrectionsForBlock: mocks.replaceProofreadingCorrectionsForBlock,
   saveNote: vi.fn(async () => undefined),
   saveProofreadingCorrection: mocks.saveProofreadingCorrection,
   saveReadingState: mocks.saveReadingState,
@@ -95,7 +103,14 @@ const ProofreadingRevealTextStub = defineComponent({
 
 afterEach(() => {
   document.body.innerHTML = ''
-  mocks.saveProofreadingCorrection.mockClear()
+  mocks.saveProofreadingCorrection.mockReset()
+  mocks.saveProofreadingCorrection.mockResolvedValue(undefined)
+  mocks.listProofreadingCorrections.mockReset()
+  mocks.listProofreadingCorrections.mockResolvedValue([])
+  mocks.deleteProofreadingCorrectionsForBlock.mockClear()
+  mocks.replaceProofreadingCorrectionsForBlock.mockReset()
+  mocks.replaceProofreadingCorrectionsForBlock.mockResolvedValue(undefined)
+  mocks.clearProofreadingCorrections.mockClear()
   mocks.clipboardWrite.mockClear()
   vi.unstubAllGlobals()
   Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
@@ -144,10 +159,10 @@ describe('reader roles layout', () => {
 
   it('shrinks a long title to fit before falling back to wrapping', async () => {
     mockCompactViewport(false)
-    let resizeCallback: ResizeObserverCallback | undefined
+    const resizeCallbacks: ResizeObserverCallback[] = []
     vi.stubGlobal('ResizeObserver', class {
       constructor(callback: ResizeObserverCallback) {
-        resizeCallback = callback
+        resizeCallbacks.push(callback)
       }
       observe() {}
       unobserve() {}
@@ -164,7 +179,7 @@ describe('reader roles layout', () => {
       get: () => 200 * (Number.parseFloat(title.element.style.fontSize || '28') / 28)
     })
 
-    resizeCallback?.([], {} as ResizeObserver)
+    for (const callback of resizeCallbacks) callback([], {} as ResizeObserver)
     await flushPromises()
 
     expect(title.element.style.fontSize).toBe('22px')
@@ -200,6 +215,25 @@ describe('reader roles layout', () => {
     await flushPromises()
 
     expect(title.element.style.fontSize).toBe('20px')
+  })
+
+  it('publishes the sticky reader header height for the proofreading status offset', async () => {
+    mockCompactViewport(false)
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return this.classList?.contains('reader-header') ? 88 : 0
+      }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    expect(wrapper.get('main.reader-layout').attributes('style')).toContain('--reader-header-height: 88px')
+
+    if (descriptor) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', descriptor)
+    else delete (HTMLElement.prototype as { offsetHeight?: number }).offsetHeight
   })
 
   it('shows play author, translator, character count, and estimated duration in the header', async () => {
@@ -242,7 +276,7 @@ describe('reader roles layout', () => {
       originalText: 'سلام'
     })
 
-    editor.vm.$emit('save', 'درود')
+    editor.vm.$emit('save', 'درود', 1)
     await flushPromises()
 
     expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
@@ -257,10 +291,324 @@ describe('reader roles layout', () => {
     expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('دیالوگ شماره 1'))
     expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن اشتباه: سلام'))
     expect(mocks.clipboardWrite).toHaveBeenCalledWith(expect.stringContaining('متن درست: درود'))
-    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+    const nextEditor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(nextEditor.exists()).toBe(true)
+    expect(nextEditor.props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2',
+      text: 'نور کم می‌شود.'
+    })
     expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
   })
 
+
+  it('does not replace a dirty draft with its uncommitted live preview', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام', 0)
+    await wrapper.vm.$nextTick()
+
+    let editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('preview', 'درود')
+    await wrapper.vm.$nextTick()
+
+    wrapper.findComponent({ name: 'DialogueBlockView' }).vm.$emit('proofread', 'درود', 0)
+    await wrapper.vm.$nextTick()
+
+    editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.props('draft')).toMatchObject({
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      text: 'درود'
+    })
+
+    editor.vm.$emit('save', 'سلام تازه', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-1',
+      originalOffset: 0,
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      correctedText: 'سلام تازه'
+    }))
+  })
+
+  it('stores the effective block text as the snapshot for a chained edit', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'correction-1',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-1',
+      blockIndex: 1,
+      blockType: 'dialogue',
+      dialogueNumber: 1,
+      originalOffset: 0,
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      correctedText: 'درود',
+      createdAt: '2026-09-21T08:00:00.000Z'
+    }])
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'درود', 0)
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('save', 'درود!', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-1',
+      originalOffset: 0,
+      sourceBlockText: 'درود',
+      originalText: 'درود',
+      correctedText: 'درود!'
+    }))
+  })
+
+  it('persists an intentional empty replacement and then navigates', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: mocks.clipboardWrite }
+    })
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام', 0)
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('save', '', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-1',
+      originalOffset: 0,
+      originalText: 'سلام',
+      correctedText: ''
+    }))
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2'
+    })
+  })
+
+  it('reopens and edits a fully deleted block', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'delete-stage',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-2',
+      blockIndex: 2,
+      blockType: 'stage-direction',
+      originalOffset: 0,
+      originalText: 'نور کم می‌شود.',
+      correctedText: '',
+      createdAt: '2026-09-21T08:00:00.000Z'
+    }])
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const stage = wrapper.get('#block-block-2')
+    await stage.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.exists()).toBe(true)
+    expect(editor.props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2',
+      originalText: '',
+      text: ''
+    })
+    expect(editor.props('canRevert')).toBe(true)
+
+    editor.vm.$emit('preview', 'نور دوباره روشن می‌شود.')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('#block-block-2').text()).toContain('نور دوباره روشن می‌شود.')
+
+    wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('save', 'نور دوباره روشن می‌شود.', 1)
+    await flushPromises()
+
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledWith(
+      'test-play',
+      'block-2',
+      expect.objectContaining({
+        blockId: 'block-2',
+        originalOffset: 0,
+        originalText: 'نور کم می‌شود.',
+        correctedText: 'نور دوباره روشن می‌شود.'
+      })
+    )
+    expect(mocks.deleteProofreadingCorrectionsForBlock).not.toHaveBeenCalled()
+    expect(mocks.saveProofreadingCorrection).not.toHaveBeenCalled()
+  })
+
+  it('keeps the existing deletion when atomic replacement persistence fails', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'delete-stage',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-2',
+      blockIndex: 2,
+      blockType: 'stage-direction',
+      originalOffset: 0,
+      sourceBlockText: 'نور کم می‌شود.',
+      originalText: 'نور کم می‌شود.',
+      correctedText: '',
+      createdAt: '2026-09-21T08:00:00.000Z'
+    }])
+    mocks.replaceProofreadingCorrectionsForBlock.mockRejectedValueOnce(new Error('quota'))
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const stage = wrapper.get('#block-block-2')
+    await stage.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('save', 'نور دوباره روشن می‌شود.', 1)
+    await flushPromises()
+
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
+    expect(wrapper.get('#block-block-2').text()).not.toContain('نور دوباره روشن می‌شود.')
+  })
+
+  it('previews edited text in the play and can revert the current block to source', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'سلام')
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('preview', 'درود')
+    await wrapper.vm.$nextTick()
+
+    const previewedDialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    const previewSegments = previewedDialogue.props('proofreadingSegments') as Array<{ text: string; changed: boolean }>
+    expect(previewSegments.map((segment) => segment.text).join('')).toBe('درود')
+    expect(previewSegments.some((segment) => segment.changed)).toBe(true)
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('canRevert')).toBe(true)
+
+    wrapper.findComponent({ name: 'ProofreadingEditor' }).vm.$emit('revert')
+    await flushPromises()
+
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledWith('test-play', 'block-1')
+    expect(mocks.deleteProofreadingCorrectionsForBlock).not.toHaveBeenCalled()
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('proofreadingSegments')).toBeUndefined()
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      text: 'سلام',
+      originalText: 'سلام'
+    })
+  })
+
+  it('guards a block revert against concurrent saves while persistence is pending', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'correction-1',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-1',
+      blockIndex: 1,
+      blockType: 'dialogue',
+      dialogueNumber: 1,
+      originalOffset: 0,
+      sourceBlockText: 'سلام',
+      originalText: 'سلام',
+      correctedText: 'درود',
+      createdAt: '2026-09-21T09:00:00.000Z'
+    }])
+
+    let resolveRevert!: () => void
+    mocks.replaceProofreadingCorrectionsForBlock.mockImplementationOnce(
+      () => new Promise<undefined>((resolve) => {
+        resolveRevert = () => resolve(undefined)
+      })
+    )
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const dialogue = wrapper.findComponent({ name: 'DialogueBlockView' })
+    dialogue.vm.$emit('proofread', 'درود', 0)
+    await wrapper.vm.$nextTick()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    editor.vm.$emit('revert')
+    await wrapper.vm.$nextTick()
+
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledTimes(1)
+    expect(editor.props('saving')).toBe(true)
+
+    editor.vm.$emit('save', 'متن تازه', 1)
+    await wrapper.vm.$nextTick()
+    expect(mocks.saveProofreadingCorrection).not.toHaveBeenCalled()
+    expect(mocks.replaceProofreadingCorrectionsForBlock).toHaveBeenCalledTimes(1)
+
+    resolveRevert()
+    await flushPromises()
+
+    expect(wrapper.get('.proofreading-status').text()).toContain('0 عیب ثبت‌شده')
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      text: 'سلام',
+      originalText: 'سلام'
+    })
+  })
+
+  it('confirms and clears every local proofreading correction for the play', async () => {
+    mockCompactViewport(false)
+    mocks.listProofreadingCorrections.mockResolvedValueOnce([{
+      id: 'correction-1',
+      playId: 'test-play',
+      playTitle: 'نمایش تست',
+      blockId: 'block-1',
+      blockIndex: 1,
+      blockType: 'dialogue',
+      dialogueNumber: 1,
+      originalText: 'سلام',
+      correctedText: 'درود',
+      createdAt: '2026-09-21T06:00:00.000Z'
+    }])
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    expect(wrapper.get('.proofreading-status').text()).toContain('1 عیب ثبت‌شده')
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('proofreadingSegments')).toBeTruthy()
+
+    await wrapper.get('.proofreading-status .danger-button').trigger('click')
+    await flushPromises()
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(mocks.clearProofreadingCorrections).toHaveBeenCalledWith('test-play')
+    expect(wrapper.get('.proofreading-status').text()).toContain('0 عیب ثبت‌شده')
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('proofreadingSegments')).toBeUndefined()
+    confirmSpy.mockRestore()
+  })
 
   it('ignores duplicate proofreading submissions while persistence is pending and starts clipboard copy immediately', async () => {
     mockCompactViewport(false)
@@ -282,8 +630,8 @@ describe('reader roles layout', () => {
     await wrapper.vm.$nextTick()
 
     const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
-    editor.vm.$emit('save', 'درود')
-    editor.vm.$emit('save', 'درود')
+    editor.vm.$emit('save', 'درود', 1)
+    editor.vm.$emit('save', 'درود', 1)
     await wrapper.vm.$nextTick()
 
     expect(mocks.saveProofreadingCorrection).toHaveBeenCalledTimes(1)
@@ -299,7 +647,9 @@ describe('reader roles layout', () => {
 
     resolveSave()
     await flushPromises()
-    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      label: 'توضیح صحنه، بخش 2'
+    })
   })
 
   it('captures stage-direction source text without the narrator UI label', async () => {
@@ -365,6 +715,60 @@ describe('reader roles layout', () => {
     await flushPromises()
 
     expect(document.activeElement).toBe(section.element)
+    wrapper.unmount()
+  })
+
+  it('reopens a boundary block from persisted text without reapplying the completed preview', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView, { attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('.reader-proofreading-button').trigger('click')
+
+    const section = wrapper.get<HTMLHeadingElement>('#block-block-3')
+    Object.defineProperty(section.element, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn()
+    })
+    const walker = document.createTreeWalker(section.element, NodeFilter.SHOW_TEXT)
+    let textNode: Node | null = walker.nextNode()
+    while (textNode && !textNode.textContent?.includes('بخش')) textNode = walker.nextNode()
+    expect(textNode).not.toBeNull()
+    if (!textNode?.textContent) throw new Error('Section text missing')
+    const start = textNode.textContent.indexOf('بخش')
+
+    const range = document.createRange()
+    range.setStart(textNode, start)
+    range.setEnd(textNode, start + 3)
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    await section.trigger('mouseup')
+    await wrapper.vm.$nextTick()
+    selection.removeAllRanges()
+
+    const editor = wrapper.findComponent({ name: 'ProofreadingEditor' })
+    expect(editor.props('draft')).toMatchObject({
+      originalText: 'بخش',
+      text: 'بخش'
+    })
+
+    editor.vm.$emit('save', 'قسمت', 1)
+    await flushPromises()
+
+    expect(mocks.saveProofreadingCorrection).toHaveBeenCalledWith(expect.objectContaining({
+      blockId: 'block-3',
+      originalOffset: 0,
+      originalText: 'بخش',
+      correctedText: 'قسمت'
+    }))
+    expect(wrapper.findComponent({ name: 'ProofreadingEditor' }).props('draft')).toMatchObject({
+      originalText: 'قسمت بخش',
+      text: 'قسمت بخش'
+    })
+
     wrapper.unmount()
   })
 

@@ -226,6 +226,153 @@ describe('DialogueBlock proofreading mode', () => {
     wrapper.unmount()
   })
 
+  it('reports offsets against canonical block text when rendered parts contain boundary whitespace', async () => {
+    const spacedBlock = {
+      id: 'spaced-line',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      parts: [
+        { type: 'speech' as const, text: 'x ' },
+        { type: 'direction' as const, text: 'd' },
+        { type: 'speech' as const, text: 'x' }
+      ]
+    }
+    const wrapper = mount(DialogueBlock, {
+      attachTo: document.body,
+      props: {
+        block: spacedBlock,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true
+      }
+    })
+
+    const copy = wrapper.get('.dialogue-copy')
+    expect(copy.text()).toBe('x  (d) x')
+    const textNode = copy.get('span').element.firstChild
+    expect(textNode?.textContent).toBe('x  (d) x')
+    if (!textNode?.textContent) throw new Error('Canonical dialogue text missing')
+
+    const secondX = textNode.textContent.lastIndexOf('x')
+    const range = document.createRange()
+    range.setStart(textNode, secondX)
+    range.setEnd(textNode, secondX + 1)
+
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    await wrapper.get('.dialogue-block').trigger('mouseup')
+    expect(wrapper.emitted('proofread')?.[0]).toEqual(['x', 7])
+
+    selection.removeAllRanges()
+    wrapper.unmount()
+  })
+
+  it('reports the selected occurrence offset for repeated text', async () => {
+    const repeatedBlock = {
+      id: 'repeat',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      parts: [{ type: 'speech' as const, text: 'بله بله بله' }]
+    }
+    const wrapper = mount(DialogueBlock, {
+      attachTo: document.body,
+      props: {
+        block: repeatedBlock,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true
+      }
+    })
+
+    const textNode = wrapper.get('.dialogue-copy span').element.firstChild
+    expect(textNode).not.toBeNull()
+    if (!textNode) throw new Error('Dialogue text missing')
+
+    const range = document.createRange()
+    range.setStart(textNode, 4)
+    range.setEnd(textNode, 7)
+    const selection = window.getSelection()
+    expect(selection).not.toBeNull()
+    if (!selection) throw new Error('Selection API unavailable')
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    await wrapper.get('.dialogue-block').trigger('mouseup')
+    expect(wrapper.emitted('proofread')?.[0]).toEqual(['بله', 4])
+
+    selection.removeAllRanges()
+    wrapper.unmount()
+  })
+
+  it('renders effective proofreading text with changed fragments highlighted', async () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true,
+        proofreadingSegments: [
+          { text: 'صبر کن و چند لحظه ', changed: false },
+          { text: 'اینجا', changed: true },
+          { text: ' بمان.', changed: false }
+        ]
+      }
+    })
+
+    expect(wrapper.get('.dialogue-copy').text()).toBe('صبر کن و چند لحظه اینجا بمان.')
+    expect(wrapper.get('.proofreading-change').text()).toBe('اینجا')
+
+    await wrapper.get('.dialogue-block').trigger('click')
+    expect(wrapper.emitted('proofread')?.[0]?.[0]).toBe('صبر کن و چند لحظه اینجا بمان.')
+  })
+
+  it('emits intentionally empty effective text for a fully deleted dialogue', async () => {
+    const wrapper = mount(DialogueBlock, {
+      props: {
+        block,
+        character: { id: 'mother', name: 'مادر' },
+        mode: 'read',
+        isMine: true,
+        highlighted: false,
+        current: false,
+        revealMode: 'hidden',
+        narratorHighlighted: false,
+        narratorIsMine: false,
+        narratorColor: '#ddd6fe',
+        debugMode: true,
+        proofreadingSegments: []
+      }
+    })
+
+    await wrapper.get('.dialogue-block').trigger('click')
+    expect(wrapper.emitted('proofread')?.[0]).toEqual(['', 0])
+  })
+
   it('shows the full line during rehearsal and emits the full block text on click when no selection exists', async () => {
     const wrapper = mount(DialogueBlock, {
       props: {

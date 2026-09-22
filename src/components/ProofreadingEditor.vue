@@ -3,28 +3,31 @@ import { ref, watch } from 'vue'
 
 interface ProofreadingDraft {
   label: string
-  originalText: string
+  text: string
 }
 
 const props = defineProps<{
   draft: ProofreadingDraft
   saving?: boolean
+  canRevert?: boolean
 }>()
 
 const emit = defineEmits<{
-  save: [correctedText: string]
+  save: [text: string, direction: -1 | 1]
+  preview: [text: string]
   cancel: []
+  revert: []
 }>()
 
-const correctedText = ref(props.draft.originalText)
+const text = ref(props.draft.text)
 
 watch(() => props.draft, (draft) => {
-  correctedText.value = draft.originalText
+  text.value = draft.text
 }, { deep: true })
 
-function submit(): void {
-  if (props.saving || correctedText.value === props.draft.originalText) return
-  emit('save', correctedText.value)
+function submit(direction: -1 | 1): void {
+  if (props.saving) return
+  emit('save', text.value, direction)
 }
 </script>
 
@@ -37,21 +40,39 @@ function submit(): void {
       </div>
       <button class="text-button" type="button" :disabled="saving" @click="emit('cancel')">بستن</button>
     </div>
-    <div class="proofreading-editor-grid">
-      <label>
-        <span>متن اشتباه</span>
-        <textarea :value="draft.originalText" rows="3" readonly />
-      </label>
-      <label>
-        <span>متن درست</span>
-        <textarea v-model="correctedText" rows="3" :disabled="saving" autofocus />
-      </label>
-    </div>
+
+    <label class="proofreading-editor-text">
+      <span>متن</span>
+      <textarea v-model="text" rows="4" :disabled="saving" autofocus @input="emit('preview', text)" />
+    </label>
+
     <div class="proofreading-editor-actions">
-      <button class="primary-button" type="button" :disabled="saving || correctedText === draft.originalText" @click="submit">
-        {{ saving ? 'در حال ثبت…' : 'ثبت و کپی' }}
+      <button
+        class="secondary-button proofreading-revert-button"
+        type="button"
+        :disabled="saving || !canRevert"
+        @click="emit('revert')"
+      >
+        برگردان
       </button>
-      <span class="muted">متن نمایشنامه تغییر نمی‌کند؛ اصلاح فقط در گزارش محلی ذخیره می‌شود.</span>
+      <div class="proofreading-navigation-actions">
+        <button
+          class="secondary-button"
+          type="button"
+          :disabled="saving"
+          @click="submit(-1)"
+        >
+          ثبت و قبلی
+        </button>
+        <button
+          class="primary-button"
+          type="button"
+          :disabled="saving"
+          @click="submit(1)"
+        >
+          {{ saving ? 'در حال ثبت…' : 'ثبت و بعدی' }}
+        </button>
+      </div>
     </div>
   </aside>
 </template>
