@@ -37,6 +37,7 @@ import {
   flattenBlocks
 } from '../utils/play'
 import {
+  automaticReadingText,
   isBlockVisible,
   isCharacterSpeechBlock,
   rehearsalCueIndexes,
@@ -796,11 +797,14 @@ async function speakOtherRoles() {
 
   for (let i = start; i < blocks.value.length; i += 1) {
     const block = blocks.value[i]
-    if (block.type !== 'dialogue') continue
-    const text = characterDialogueText(block)
-    if (!text) continue
+    if (block.type === 'section') continue
+    if (block.type === 'stage-direction' && settings.value.hideStageDirections) continue
+
     currentIndex.value = i
-    if (isCharacterSpeechBlock(block, myCharacterId.value)) break
+    if (block.type === 'dialogue' && isCharacterSpeechBlock(block, myCharacterId.value)) break
+
+    const text = automaticReadingText(block)
+    if (!text) continue
     await speak(text)
   }
 }

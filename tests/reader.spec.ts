@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { demoPlay } from '../src/data/demo'
 import { flattenBlocks } from '../src/utils/play'
-import { isCharacterSpeechBlock, rehearsalCueIndexes, rehearsalCueIndexesForOwnIndexes, searchBlockIndexes, visibleBlockIndexes, visibleOwnedIndexes } from '../src/utils/reader'
+import { automaticReadingText, isCharacterSpeechBlock, rehearsalCueIndexes, rehearsalCueIndexesForOwnIndexes, searchBlockIndexes, visibleBlockIndexes, visibleOwnedIndexes } from '../src/utils/reader'
 
 describe('reader filtering utilities', () => {
   const blocks = flattenBlocks(demoPlay)
@@ -70,6 +70,21 @@ describe('reader filtering utilities', () => {
     const indexes = visibleOwnedIndexes(blocks, [stageIndex, dialogueIndex], true)
     expect(indexes).not.toContain(stageIndex)
     expect(indexes).toContain(dialogueIndex)
+  })
+
+  it('keeps narrator-owned content in automatic reading text', () => {
+    const dialogue = {
+      id: 'mixed',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      parts: [{ type: 'speech' as const, text: '(در را می‌بندد) بگو ببینم. (می‌نشیند).' }]
+    }
+    const stage = { id: 'stage', type: 'stage-direction' as const, text: '(در زده می‌شود.)' }
+    const section = { id: 'section', type: 'section' as const, title: 'پرده اول' }
+
+    expect(automaticReadingText(dialogue)).toBe('(در را می‌بندد) بگو ببینم. (می‌نشیند).')
+    expect(automaticReadingText(stage)).toBe('(در زده می‌شود.)')
+    expect(automaticReadingText(section)).toBe('')
   })
 
   it('removes stage directions from table-read navigation when hidden', () => {

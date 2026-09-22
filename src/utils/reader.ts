@@ -38,6 +38,11 @@ export function rehearsalCueIndexesForOwnIndexes(
   return all.filter(({ index }) => indexes.has(index)).map(({ index }) => index)
 }
 
+export function automaticReadingText(block: PlayBlock): string {
+  if (block.type === 'section') return ''
+  return blockText(block).trim()
+}
+
 export function isCharacterSpeechBlock(block: PlayBlock, characterId: string | undefined): boolean {
   return characterId !== undefined
     && block.type === 'dialogue'
