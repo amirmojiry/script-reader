@@ -18,6 +18,25 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
   }
 })
 
+
+const BUNDLED_OWNERSHIP_KEY = 'bundled-play-ownership'
+
+export async function getBundledPlayOwnership(): Promise<Record<string, string>> {
+  const db = await dbPromise
+  const value = await db.get('settings', BUNDLED_OWNERSHIP_KEY) as unknown
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+  )
+}
+
+export async function saveBundledPlayOwnership(ownership: Record<string, string>): Promise<void> {
+  const db = await dbPromise
+  await db.put('settings', ownership, BUNDLED_OWNERSHIP_KEY)
+}
+
 export async function savePlay(play: Play): Promise<void> {
   const db = await dbPromise
   await db.put('plays', play)
