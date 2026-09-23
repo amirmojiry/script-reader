@@ -37,6 +37,7 @@ import {
 } from '../utils/play'
 import {
   automaticReadingSegments,
+  automaticReadingStartIndex,
   isBlockVisible,
   isCharacterSpeechBlock,
   rehearsalCueIndexes,
@@ -806,7 +807,14 @@ async function speakOtherRoles() {
     automaticReadingResume = undefined
   }
 
-  for (let i = currentIndex.value; i < blocks.value.length; i += 1) {
+  const startIndex = automaticReadingStartIndex(
+    blocks.value,
+    currentIndex.value,
+    myCharacterId.value,
+    Boolean(resume)
+  )
+
+  for (let i = startIndex; i < blocks.value.length; i += 1) {
     const block = blocks.value[i]
     if (block.type === 'section') continue
     if (block.type === 'stage-direction' && settings.value.hideStageDirections) continue

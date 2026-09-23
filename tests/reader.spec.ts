@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { demoPlay } from '../src/data/demo'
 import { flattenBlocks } from '../src/utils/play'
-import { automaticReadingSegments, isCharacterSpeechBlock, rehearsalCueIndexes, rehearsalCueIndexesForOwnIndexes, searchBlockIndexes, visibleBlockIndexes, visibleOwnedIndexes } from '../src/utils/reader'
+import { automaticReadingSegments, automaticReadingStartIndex, isCharacterSpeechBlock, rehearsalCueIndexes, rehearsalCueIndexesForOwnIndexes, searchBlockIndexes, visibleBlockIndexes, visibleOwnedIndexes } from '../src/utils/reader'
 
 describe('reader filtering utilities', () => {
   const blocks = flattenBlocks(demoPlay)
@@ -94,6 +94,26 @@ describe('reader filtering utilities', () => {
       { action: 'speak', text: '(در زده می‌شود.)' }
     ])
     expect(automaticReadingSegments(section, 'mother')).toEqual([])
+  })
+
+  it('skips a fresh current actor line but resumes a previously paused mixed line', () => {
+    const own = {
+      id: 'own',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      parts: [{ type: 'speech' as const, text: 'نوبت من.' }]
+    }
+    const other = {
+      id: 'other',
+      type: 'dialogue' as const,
+      characterId: 'messenger',
+      parts: [{ type: 'speech' as const, text: 'نوبت دیگری.' }]
+    }
+    const customBlocks = [own, other]
+
+    expect(automaticReadingStartIndex(customBlocks, 0, 'mother', false)).toBe(1)
+    expect(automaticReadingStartIndex(customBlocks, 0, 'mother', true)).toBe(0)
+    expect(automaticReadingStartIndex(customBlocks, 1, 'mother', false)).toBe(1)
   })
 
   it('keeps explicit directions ordered between multiple selected-actor speech parts', () => {

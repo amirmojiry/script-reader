@@ -43,6 +43,17 @@ export interface AutomaticReadingSegment {
   text: string
 }
 
+export function automaticReadingStartIndex(
+  blocks: PlayBlock[],
+  currentIndex: number,
+  characterId: string | undefined,
+  hasResumeCursor: boolean
+): number {
+  if (hasResumeCursor) return currentIndex
+  const current = blocks[currentIndex]
+  return current && isCharacterSpeechBlock(current, characterId) ? currentIndex + 1 : currentIndex
+}
+
 function hasSpokenContent(text: string): boolean {
   return /[\p{L}\p{N}]/u.test(text)
 }
