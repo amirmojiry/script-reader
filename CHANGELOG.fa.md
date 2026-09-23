@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.13.2] - 2026-09-23
+
+### تغییرکرده
+- شاخص‌های کارت نمایش در کتابخانه اکنون فقط عدد و آیکون نقش، دیالوگ و مدت را نشان می‌دهند؛ برچسب توضیحی هنگام نگه‌داشتن نشانگر باقی مانده و مدت با علامت آپاستروف به‌معنای دقیقه نمایش داده می‌شود.
+
 ## [1.13.1] - 2026-09-22
 
 ### اصلاح‌شده
@@ -141,7 +146,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.13.1...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.13.2...HEAD
+[1.13.2]: https://github.com/amirmojiry/script-reader/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/amirmojiry/script-reader/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/amirmojiry/script-reader/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/amirmojiry/script-reader/compare/v1.11.0...v1.12.0

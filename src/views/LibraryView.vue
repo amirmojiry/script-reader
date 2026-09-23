@@ -362,9 +362,36 @@ async function importFile(event: Event) {
           </p>
         </div>
         <div class="play-card-control-grid" aria-label="مشخصات نمایشنامه">
-          <span class="play-card-control play-card-metric">{{ item.metrics.characterCount }} نقش</span>
-          <span class="play-card-control play-card-metric">{{ item.metrics.dialogueCount }} دیالوگ</span>
-          <span class="play-card-control play-card-metric">حدود {{ item.metrics.estimatedMinutes }} دقیقه</span>
+          <span
+            class="play-card-control play-card-metric"
+            title="نقش"
+            :aria-label="`${item.metrics.characterCount} نقش`"
+          >
+            <span class="play-card-metric-value">{{ item.metrics.characterCount }}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </span>
+          <span
+            class="play-card-control play-card-metric"
+            title="دیالوگ"
+            :aria-label="`${item.metrics.dialogueCount} دیالوگ`"
+          >
+            <span class="play-card-metric-value">{{ item.metrics.dialogueCount }}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8z" />
+            </svg>
+          </span>
+          <span
+            class="play-card-control play-card-metric"
+            title="مدت به دقیقه"
+            :aria-label="`${item.metrics.estimatedMinutes} دقیقه`"
+          >
+            <span class="play-card-metric-value">{{ item.metrics.estimatedMinutes }}'</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 8v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+            </svg>
+          </span>
         </div>
       </article>
     </section>
