@@ -94,7 +94,15 @@ describe('LibraryView play cards and discovery controls', () => {
 
     const card = wrapper.findAll('.play-card')[0]
     expect(card.findAll('.play-card-control')).toHaveLength(3)
-    expect(card.findAll('.play-card-metric')).toHaveLength(3)
+    const metrics = card.findAll('.play-card-metric')
+    expect(metrics).toHaveLength(3)
+    expect(metrics.map((metric) => metric.get('.play-card-metric-value').text())).toEqual(['3', '1', "3'"])
+    expect(metrics.map((metric) => metric.attributes('title'))).toEqual(['نقش', 'دیالوگ', 'مدت به دقیقه'])
+    expect(metrics.map((metric) => metric.get('.visually-hidden').text())).toEqual(['3 نقش', '1 دیالوگ', '3 دقیقه'])
+    expect(metrics.every((metric) => metric.get('.play-card-metric-value').attributes('aria-hidden') === 'true')).toBe(true)
+    expect(metrics.every((metric) => metric.find('svg').exists())).toBe(true)
+    expect(metrics.every((metric) => metric.find('svg').attributes('aria-hidden') === 'true')).toBe(true)
+    expect(metrics[2].get('.play-card-duration-value').attributes('dir')).toBe('ltr')
     expect(card.find('.play-card-open').exists()).toBe(false)
     expect(card.get('.play-title-link').text()).toBe('آ نمایش')
     expect(wrapper.find('.import-help').exists()).toBe(false)

@@ -870,3 +870,41 @@
     flex: 1 1 auto;
   }
 }
+
+.play-card-metric {
+  gap: 7px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.play-card-metric-value {
+  line-height: 1;
+}
+
+.play-card-metric svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.play-card-duration-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
