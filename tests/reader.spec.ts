@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { demoPlay } from '../src/data/demo'
 import { flattenBlocks } from '../src/utils/play'
-import { automaticReadingText, isCharacterSpeechBlock, rehearsalCueIndexes, rehearsalCueIndexesForOwnIndexes, searchBlockIndexes, visibleBlockIndexes, visibleOwnedIndexes } from '../src/utils/reader'
+import { automaticReadingSegments, isCharacterSpeechBlock, rehearsalCueIndexes, rehearsalCueIndexesForOwnIndexes, searchBlockIndexes, visibleBlockIndexes, visibleOwnedIndexes } from '../src/utils/reader'
 
 describe('reader filtering utilities', () => {
   const blocks = flattenBlocks(demoPlay)
@@ -72,7 +72,7 @@ describe('reader filtering utilities', () => {
     expect(indexes).toContain(dialogueIndex)
   })
 
-  it('keeps narrator-owned content in automatic reading text', () => {
+  it('sequences narrator segments around the selected actor speech', () => {
     const dialogue = {
       id: 'mixed',
       type: 'dialogue' as const,
@@ -82,9 +82,37 @@ describe('reader filtering utilities', () => {
     const stage = { id: 'stage', type: 'stage-direction' as const, text: '(در زده می‌شود.)' }
     const section = { id: 'section', type: 'section' as const, title: 'پرده اول' }
 
-    expect(automaticReadingText(dialogue)).toBe('(در را می‌بندد) بگو ببینم. (می‌نشیند).')
-    expect(automaticReadingText(stage)).toBe('(در زده می‌شود.)')
-    expect(automaticReadingText(section)).toBe('')
+    expect(automaticReadingSegments(dialogue, 'mother')).toEqual([
+      { action: 'speak', text: '(در را می‌بندد)' },
+      { action: 'pause-for-character', text: 'بگو ببینم.' },
+      { action: 'speak', text: '(می‌نشیند).' }
+    ])
+    expect(automaticReadingSegments(dialogue, 'messenger')).toEqual([
+      { action: 'speak', text: '(در را می‌بندد) بگو ببینم. (می‌نشیند).' }
+    ])
+    expect(automaticReadingSegments(stage, 'mother')).toEqual([
+      { action: 'speak', text: '(در زده می‌شود.)' }
+    ])
+    expect(automaticReadingSegments(section, 'mother')).toEqual([])
+  })
+
+  it('keeps explicit directions ordered between multiple selected-actor speech parts', () => {
+    const dialogue = {
+      id: 'parts',
+      type: 'dialogue' as const,
+      characterId: 'mother',
+      parts: [
+        { type: 'speech' as const, text: 'اول.' },
+        { type: 'direction' as const, text: 'مکث' },
+        { type: 'speech' as const, text: 'دوم.' }
+      ]
+    }
+
+    expect(automaticReadingSegments(dialogue, 'mother')).toEqual([
+      { action: 'pause-for-character', text: 'اول.' },
+      { action: 'speak', text: '(مکث)' },
+      { action: 'pause-for-character', text: 'دوم.' }
+    ])
   })
 
   it('removes stage directions from table-read navigation when hidden', () => {

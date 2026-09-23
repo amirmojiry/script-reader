@@ -1,5 +1,5 @@
 import type { PlayBlock } from '../types'
-import { blockText, characterDialogueText, dialogueCharacterIds } from './play'
+import { blockText, characterDialogueText, dialogueCharacterIds, dialogueRenderSegments } from './play'
 
 export function isBlockVisible(block: PlayBlock, hideStageDirections: boolean): boolean {
   return !(hideStageDirections && block.type === 'stage-direction')
@@ -38,9 +38,50 @@ export function rehearsalCueIndexesForOwnIndexes(
   return all.filter(({ index }) => indexes.has(index)).map(({ index }) => index)
 }
 
-export function automaticReadingText(block: PlayBlock): string {
-  if (block.type === 'section') return ''
-  return blockText(block).trim()
+export interface AutomaticReadingSegment {
+  action: 'speak' | 'pause-for-character'
+  text: string
+}
+
+function hasSpokenContent(text: string): boolean {
+  return /[\p{L}\p{N}]/u.test(text)
+}
+
+export function automaticReadingSegments(
+  block: PlayBlock,
+  characterId: string | undefined
+): AutomaticReadingSegment[] {
+  if (block.type === 'section') return []
+  if (block.type === 'stage-direction') {
+    const text = block.text.trim()
+    return text ? [{ action: 'speak', text }] : []
+  }
+
+  if (!isCharacterSpeechBlock(block, characterId)) {
+    const text = blockText(block).trim()
+    return text ? [{ action: 'speak', text }] : []
+  }
+
+  const result: AutomaticReadingSegment[] = []
+  for (const segment of dialogueRenderSegments(block)) {
+    const text = segment.text.trim()
+    if (!text) continue
+
+    if (segment.type === 'speech' && hasSpokenContent(text)) {
+      result.push({ action: 'pause-for-character', text })
+      continue
+    }
+
+    const previous = result.at(-1)
+    if (segment.type === 'speech' && previous?.action === 'speak') {
+      previous.text += text
+      continue
+    }
+
+    result.push({ action: 'speak', text })
+  }
+
+  return result
 }
 
 export function isCharacterSpeechBlock(block: PlayBlock, characterId: string | undefined): boolean {

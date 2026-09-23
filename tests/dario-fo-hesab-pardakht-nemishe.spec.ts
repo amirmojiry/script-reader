@@ -7,7 +7,7 @@ import {
 } from '../src/data/darioFo'
 import type { DialogueBlock } from '../src/types'
 import { dialogueCharacterIds, dialogueText, flattenBlocks, narrationTextFromDialogue, validatePlay } from '../src/utils/play'
-import { automaticReadingText } from '../src/utils/reader'
+import { automaticReadingSegments } from '../src/utils/reader'
 
 describe('حساب پرداخت نمی‌شه! bundled play', () => {
   it('preserves the supplied two-act source in canonical order', () => {
@@ -230,7 +230,11 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     if (!block || block.type !== 'dialogue') throw new Error('Expected Dario Fo parenthetical dialogue fixture')
 
     expect(narrationTextFromDialogue(block)).toBe('(در را می‌بندد) (می‌نشیند)')
-    expect(automaticReadingText(block)).toBe('(در را می‌بندد) بگو ببینم. (می‌نشیند).')
+    expect(automaticReadingSegments(block, 'margherita')).toEqual([
+      { action: 'speak', text: '(در را می‌بندد)' },
+      { action: 'pause-for-character', text: 'بگو ببینم.' },
+      { action: 'speak', text: '(می‌نشیند).' }
+    ])
     expect(block.parts).toEqual([{ type: 'speech', text: '(در را می‌بندد) بگو ببینم. (می‌نشیند).' }])
   })
 
