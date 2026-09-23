@@ -31,12 +31,13 @@ import {
   analyzeNarrator,
   analyzePlay,
   blockText,
-  characterDialogueText,
   dialogueCharacterIds,
   dialogueRenderSegments,
   flattenBlocks
 } from '../utils/play'
 import {
+  automaticReadingSegments,
+  automaticReadingStartIndex,
   isBlockVisible,
   isCharacterSpeechBlock,
   rehearsalCueIndexes,
@@ -296,6 +297,7 @@ function toggleCharacter(id: string) {
 }
 
 function chooseMine(id: string) {
+  resetAutomaticReadingResume()
   const next = myCharacterId.value === id ? undefined : id
   myCharacterId.value = next
   if (next) narratorIsMine.value = false
@@ -743,6 +745,7 @@ function toggleNarrator(): void {
 }
 
 function chooseNarratorMine(): void {
+  resetAutomaticReadingResume()
   narratorIsMine.value = !narratorIsMine.value
   if (narratorIsMine.value) {
     myCharacterId.value = undefined
@@ -762,6 +765,7 @@ async function changeCharacterColor(characterId: string, color: string): Promise
 
 async function jump(index: number) {
   if (blocks.value.length === 0 || index < 0) return
+  resetAutomaticReadingResume()
   currentIndex.value = Math.max(0, Math.min(index, blocks.value.length - 1))
   await nextTick()
   document.getElementById(`block-${blocks.value[currentIndex.value]?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -787,21 +791,48 @@ function moveOwnRolePart(direction: -1 | 1) {
   if (target !== undefined) void jump(target)
 }
 
+let automaticReadingResume: { blockId: string; segmentIndex: number } | undefined
+
+function resetAutomaticReadingResume(): void {
+  automaticReadingResume = undefined
+}
+
 async function speakOtherRoles() {
   if (!myCharacterId.value || narratorIsMine.value || !canSpeak()) return
   stopSpeaking()
-  let start = currentIndex.value
-  const first = blocks.value[start]
-  if (first && isCharacterSpeechBlock(first, myCharacterId.value)) start += 1
 
-  for (let i = start; i < blocks.value.length; i += 1) {
+  let resume = automaticReadingResume
+  if (resume && blocks.value[currentIndex.value]?.id !== resume.blockId) {
+    resume = undefined
+    automaticReadingResume = undefined
+  }
+
+  const startIndex = automaticReadingStartIndex(
+    blocks.value,
+    currentIndex.value,
+    myCharacterId.value,
+    Boolean(resume)
+  )
+
+  for (let i = startIndex; i < blocks.value.length; i += 1) {
     const block = blocks.value[i]
-    if (block.type !== 'dialogue') continue
-    const text = characterDialogueText(block)
-    if (!text) continue
+    if (block.type === 'section') continue
+    if (block.type === 'stage-direction' && settings.value.hideStageDirections) continue
+
     currentIndex.value = i
-    if (isCharacterSpeechBlock(block, myCharacterId.value)) break
-    await speak(text)
+    const segments = automaticReadingSegments(block, myCharacterId.value)
+    const startSegment = resume?.blockId === block.id ? resume.segmentIndex : 0
+    resume = undefined
+    automaticReadingResume = undefined
+
+    for (let segmentIndex = startSegment; segmentIndex < segments.length; segmentIndex += 1) {
+      const segment = segments[segmentIndex]
+      if (segment.action === 'pause-for-character') {
+        automaticReadingResume = { blockId: block.id, segmentIndex: segmentIndex + 1 }
+        return
+      }
+      await speak(segment.text)
+    }
   }
 }
 
@@ -917,6 +948,7 @@ function isCurrent(index: number) {
 }
 
 function selectCurrent(index: number) {
+  resetAutomaticReadingResume()
   currentIndex.value = index
 }
 </script>

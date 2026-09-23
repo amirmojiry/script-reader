@@ -6,7 +6,8 @@ import {
   hesabPardakhtNemisheSource
 } from '../src/data/darioFo'
 import type { DialogueBlock } from '../src/types'
-import { dialogueCharacterIds, dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
+import { dialogueCharacterIds, dialogueText, flattenBlocks, narrationTextFromDialogue, validatePlay } from '../src/utils/play'
+import { automaticReadingSegments } from '../src/utils/reader'
 
 describe('حساب پرداخت نمی‌شه! bundled play', () => {
   it('preserves the supplied two-act source in canonical order', () => {
@@ -217,6 +218,24 @@ describe('حساب پرداخت نمی‌شه! bundled play', () => {
     expect(dialogueTexts).toContain('به آن پشت، پشت سر نگاه کن!')
     expect(dialogueTexts).toContain('حتی می‌تواند حالت تزئینی خوبی داشته باشد. البته اگر بخواهید...')
     expect((dialogueTexts + stageTexts).split('مارگریتا مایحتاج گوناگون را زیر پیراهنش جا می‌دهد').length - 1).toBe(1)
+  })
+
+  it('assigns inline parentheticals to the narrator and keeps them in automatic reading', () => {
+    const block = flattenBlocks(hesabPardakhtNemishePlay).find((candidate) =>
+      candidate.type === 'dialogue'
+      && dialogueText(candidate) === '(در را می‌بندد) بگو ببینم. (می‌نشیند).'
+    )
+
+    expect(block?.type).toBe('dialogue')
+    if (!block || block.type !== 'dialogue') throw new Error('Expected Dario Fo parenthetical dialogue fixture')
+
+    expect(narrationTextFromDialogue(block)).toBe('(در را می‌بندد) (می‌نشیند)')
+    expect(automaticReadingSegments(block, 'margherita')).toEqual([
+      { action: 'speak', text: '(در را می‌بندد)' },
+      { action: 'pause-for-character', text: 'بگو ببینم.' },
+      { action: 'speak', text: '(می‌نشیند).' }
+    ])
+    expect(block.parts).toEqual([{ type: 'speech', text: '(در را می‌بندد) بگو ببینم. (می‌نشیند).' }])
   })
 
   it('is exposed with reserved id and complete discovery metadata', () => {
