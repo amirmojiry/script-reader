@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { demoPlay } from '../src/data/demo'
+import type { Play } from '../src/types'
 import {
   analyzeNarrator,
   analyzePlay,
@@ -135,7 +136,7 @@ describe('play utilities', () => {
   })
 
   it('supports separate contributor arrays and normalizes Persian spacing variants for discovery', () => {
-    const play = structuredClone(demoPlay)
+    const play: Play = structuredClone(demoPlay)
     play.authors = ['نویسنده یک', 'نویسنده دو']
     delete play.author
     play.translators = ['تینوش نظم جو', 'تینوش نظم‌جو', 'نگار جواهریان']
@@ -149,7 +150,7 @@ describe('play utilities', () => {
   })
 
   it('keeps slash-separated legacy contributors discoverable as individuals', () => {
-    const play = structuredClone(demoPlay)
+    const play: Play = structuredClone(demoPlay)
     play.translator = 'نگار جواهریان / تینوش نظم‌جو'
     delete play.translators
     expect(playTranslators(play)).toEqual(['نگار جواهریان', 'تینوش نظم‌جو'])
