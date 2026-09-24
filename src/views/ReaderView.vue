@@ -87,7 +87,9 @@ const sidebarOpen = ref(defaultSidebarOpen())
 const sceneNavOpen = ref(defaultSidebarOpen())
 const sceneNavManuallyToggled = ref(false)
 const lineToolsOpen = ref(true)
+const lineToolsManuallyToggled = ref(false)
 const toolbarOpen = ref(true)
+const toolbarManuallyToggled = ref(false)
 const readerRootRef = ref<HTMLElement | null>(null)
 const readerHeaderRef = ref<HTMLElement | null>(null)
 const readerTitleBlockRef = ref<HTMLElement | null>(null)
@@ -397,25 +399,41 @@ async function fitReaderTitle(): Promise<void> {
 }
 
 function updateBackToTopVisibility(): void {
+  const scrolled = window.scrollY > 8
   showBackToTop.value = window.scrollY > 480
-  readerHeaderScrolled.value = window.scrollY > 8
-  if (!sceneNavManuallyToggled.value && typeof window.matchMedia === 'function'
-    && !window.matchMedia('(max-width: 980px)').matches) {
-    sceneNavOpen.value = window.scrollY <= 8
-  }
+  readerHeaderScrolled.value = scrolled
+  const desktop = typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 980px)').matches
+  if (!sceneNavManuallyToggled.value) sceneNavOpen.value = desktop && !scrolled
+  if (!lineToolsManuallyToggled.value) lineToolsOpen.value = !scrolled
+  if (!toolbarManuallyToggled.value) toolbarOpen.value = !scrolled
+}
+
+function closeOtherFloatingPanels(panel: 'scene' | 'line' | 'toolbar'): void {
+  if (!readerHeaderScrolled.value) return
+  if (panel !== 'scene') sceneNavOpen.value = false
+  if (panel !== 'line') lineToolsOpen.value = false
+  if (panel !== 'toolbar') toolbarOpen.value = false
 }
 
 function toggleSceneNav(): void {
   sceneNavManuallyToggled.value = true
-  sceneNavOpen.value = !sceneNavOpen.value
+  const next = !sceneNavOpen.value
+  if (next) closeOtherFloatingPanels('scene')
+  sceneNavOpen.value = next
 }
 
 function toggleLineTools(): void {
-  lineToolsOpen.value = !lineToolsOpen.value
+  lineToolsManuallyToggled.value = true
+  const next = !lineToolsOpen.value
+  if (next) closeOtherFloatingPanels('line')
+  lineToolsOpen.value = next
 }
 
 function toggleToolbar(): void {
-  toolbarOpen.value = !toolbarOpen.value
+  toolbarManuallyToggled.value = true
+  const next = !toolbarOpen.value
+  if (next) closeOtherFloatingPanels('toolbar')
+  toolbarOpen.value = next
 }
 
 function scrollToTop(): void {
@@ -1140,6 +1158,7 @@ function selectCurrent(index: number) {
       <ReaderToolbar
         v-show="toolbarOpen"
         id="reader-toolbar-panel"
+        :class="{ 'reader-floating-panel': readerHeaderScrolled }"
         :mode="mode"
         :settings="settings"
         :wake-lock-available="wakeLockSupported()"
@@ -1172,14 +1191,14 @@ function selectCurrent(index: number) {
         <button class="primary-button" :disabled="!hasMyRole" @click="moveOwnRolePart(1)">بخش بعدی نقش من</button>
       </div>
 
-      <nav v-show="sceneNavOpen" id="reader-scene-nav-panel" class="scene-nav card" aria-label="صحنه‌ها">
+      <nav v-show="sceneNavOpen" id="reader-scene-nav-panel" class="scene-nav card" :class="{ 'reader-floating-panel': readerHeaderScrolled }" aria-label="صحنه‌ها">
         <template v-for="act in play.acts" :key="act.id">
           <strong>{{ act.title }}</strong>
           <button v-for="scene in act.scenes" :key="scene.id" class="text-button" @click="jumpToScene(scene.blocks[0]?.id)">{{ scene.title }}</button>
         </template>
       </nav>
 
-      <section v-show="lineToolsOpen" id="reader-line-tools-panel" class="line-tools card" aria-label="ابزار سطر جاری">
+      <section v-show="lineToolsOpen" id="reader-line-tools-panel" class="line-tools card" :class="{ 'reader-floating-panel': readerHeaderScrolled }" aria-label="ابزار سطر جاری">
         <div>
           <strong>سطر جاری: {{ currentIndex + 1 }} / {{ blocks.length }}</strong>
           <span v-if="statusMessage" class="status-message">{{ statusMessage }}</span>

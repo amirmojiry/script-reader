@@ -828,14 +828,21 @@ describe('reader roles layout', () => {
     window.dispatchEvent(new Event('scroll'))
     await wrapper.vm.$nextTick()
     expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-line-tools-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-toolbar-button').attributes('aria-pressed')).toBe('false')
     expect(wrapper.get('.scene-nav').attributes('style')).toContain('display: none')
 
     await wrapper.get('.reader-scene-nav-button').trigger('click')
     expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.scene-nav').classes()).toContain('reader-floating-panel')
     await wrapper.get('.reader-line-tools-button').trigger('click')
-    expect(wrapper.get('.line-tools').attributes('style')).toContain('display: none')
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-line-tools-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.line-tools').classes()).toContain('reader-floating-panel')
     await wrapper.get('.reader-toolbar-button').trigger('click')
-    expect(wrapper.findComponent({ name: 'ReaderToolbar' }).attributes('style')).toContain('display: none')
+    expect(wrapper.get('.reader-line-tools-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-toolbar-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findComponent({ name: 'ReaderToolbar' }).classes()).toContain('reader-floating-panel')
   })
 
   it('closes scene navigation after jumping to a scene', async () => {
