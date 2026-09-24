@@ -17,7 +17,8 @@ const mocks = vi.hoisted(() => ({
   deleteProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
   replaceProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
   clearProofreadingCorrections: vi.fn(async () => undefined),
-  clipboardWrite: vi.fn(async () => undefined)
+  clipboardWrite: vi.fn(async () => undefined),
+  secondSceneEnabled: false
 }))
 
 vi.mock('vue-router', () => ({
@@ -44,7 +45,7 @@ vi.mock('../src/stores/plays', () => ({
           { id: 'block-2', type: 'stage-direction', text: 'نور کم می‌شود.' },
           { id: 'block-3', type: 'section', title: 'بخش بخش' }
         ]
-      }, {
+      }, ...(mocks.secondSceneEnabled ? [{
         id: 'scene-2',
         title: 'صحنه دوم',
         blocks: [
@@ -52,7 +53,7 @@ vi.mock('../src/stores/plays', () => ({
           { id: 'block-5', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'ادامه' }] },
           { id: 'block-6', type: 'stage-direction', text: 'در باز می‌شود.' }
         ]
-      }] }]
+      }] : [])] }]
     } : undefined
   })
 }))
@@ -120,6 +121,7 @@ afterEach(() => {
   mocks.replaceProofreadingCorrectionsForBlock.mockResolvedValue(undefined)
   mocks.clearProofreadingCorrections.mockClear()
   mocks.clipboardWrite.mockClear()
+  mocks.secondSceneEnabled = false
   vi.unstubAllGlobals()
   Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
 })
@@ -821,11 +823,12 @@ describe('reader roles layout', () => {
     const heading = wrapper.get('.reader-scene-heading')
     expect(heading.text()).toContain('صحنه')
     expect(heading.text()).not.toContain('پرده')
-    expect(wrapper.findAllComponents({ name: 'DialogueBlockView' })).toHaveLength(2)
+    expect(wrapper.findAllComponents({ name: 'DialogueBlockView' })).toHaveLength(1)
   })
 
   it('keeps scene headings attached to the first visible cue-only entry in each represented scene', async () => {
     mockCompactViewport(false)
+    mocks.secondSceneEnabled = true
     const wrapper = shallowMount(ReaderView)
     await flushPromises()
 
