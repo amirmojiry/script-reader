@@ -46,7 +46,7 @@ describe('Unexpected Guest bundled play', () => {
   })
 
   it('is exposed as a bundled play with a reserved unique id', () => {
-    expect(bundledPlays).toHaveLength(8)
+    expect(bundledPlays).toHaveLength(9)
     expect(unexpectedGuestPlay.id).toBe('builtin:schmitt:unexpected-guest')
     expect(bundledPlays.at(-1)?.id).toBe(unexpectedGuestPlay.id)
     expect(new Set(bundledPlays.map((play) => play.id)).size).toBe(bundledPlays.length)
