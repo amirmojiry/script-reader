@@ -806,6 +806,49 @@ describe('reader roles layout', () => {
     expect(wrapper.find('.rehearsal-controls').exists()).toBe(true)
   })
 
+  it('shows scene headings as structural reader labels without adding spoken blocks', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    const heading = wrapper.get('.reader-scene-heading')
+    expect(heading.text()).toContain('صحنه')
+    expect(heading.text()).not.toContain('پرده')
+    expect(wrapper.findAllComponents({ name: 'DialogueBlockView' })).toHaveLength(1)
+  })
+
+  it('toggles reader panels from the sticky header and auto-collapses scene navigation after scrolling', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.scene-nav').attributes('style') ?? '').not.toContain('display: none')
+
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 32, writable: true })
+    window.dispatchEvent(new Event('scroll'))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.scene-nav').attributes('style')).toContain('display: none')
+
+    await wrapper.get('.reader-scene-nav-button').trigger('click')
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('.reader-line-tools-button').trigger('click')
+    expect(wrapper.get('.line-tools').attributes('style')).toContain('display: none')
+    await wrapper.get('.reader-toolbar-button').trigger('click')
+    expect(wrapper.findComponent({ name: 'ReaderToolbar' }).attributes('style')).toContain('display: none')
+  })
+
+  it('closes scene navigation after jumping to a scene', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.scene-nav button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.scene-nav').attributes('style')).toContain('display: none')
+  })
+
   it('keeps roles open by default on desktop and expands fully when closed', async () => {
     mockCompactViewport(false)
     const wrapper = shallowMount(ReaderView)

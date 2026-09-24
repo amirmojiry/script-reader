@@ -77,9 +77,10 @@ describe('Harold Pinter Betrayal bundled play', () => {
       id: BETRAYAL_BUNDLED_ID,
       title: 'خیانت',
       author: 'هارولد پینتر',
-      translator: 'نگار جواهریان / تینوش نظم‌جو',
+      translators: ['نگار جواهریان', 'تینوش نظم‌جو'],
       genres: ['درام', 'روان‌شناختی']
     })
+    expect(betrayalPlay.translator).toBeUndefined()
     expect(betrayalPlay.characters.map((character) => [character.name, character.gender])).toEqual([
       ['اما', 'female'],
       ['جری', 'male'],

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PlayFinderWizard from '../components/PlayFinderWizard.vue'
 import { usePlaysStore } from '../stores/plays'
+import { dedupeContributorNames, normalizeContributorName, playAuthors, playTranslators } from '../utils/play'
 import {
   isWithinRange,
   matchesWizardCriteria,
@@ -38,16 +39,8 @@ const effectiveCharacterMin = computed(() => characterMin.value ?? characterBoun
 const effectiveCharacterMax = computed(() => characterMax.value ?? characterBounds.value.max)
 const effectiveDurationMin = computed(() => durationMin.value ?? durationBounds.value.min)
 const effectiveDurationMax = computed(() => durationMax.value ?? durationBounds.value.max)
-const authors = computed(() => [...new Set(
-  store.plays
-    .map((play) => play.author)
-    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-)].sort((a, b) => a.localeCompare(b, 'fa')))
-const translators = computed(() => [...new Set(
-  store.plays
-    .map((play) => play.translator)
-    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-)].sort((a, b) => a.localeCompare(b, 'fa')))
+const authors = computed(() => dedupeContributorNames(store.plays.flatMap(playAuthors)).sort((a, b) => a.localeCompare(b, 'fa')))
+const translators = computed(() => dedupeContributorNames(store.plays.flatMap(playTranslators)).sort((a, b) => a.localeCompare(b, 'fa')))
 const genres = computed(() => [...new Set(store.plays.flatMap(playGenres))].sort((a, b) => a.localeCompare(b, 'fa')))
 const wizardGenres = computed(() => wizardCriteria.value?.genres ?? [])
 const genreSelectValue = computed(() => {
@@ -69,9 +62,12 @@ const filteredCards = computed(() => sortPlayCards(
   playCards.value.filter(({ play, metrics }) => {
     if (!isWithinRange(metrics.characterCount, effectiveCharacterMin.value, effectiveCharacterMax.value)) return false
     if (!isWithinRange(metrics.estimatedMinutes, effectiveDurationMin.value, effectiveDurationMax.value)) return false
-    if (authorFilter.value && play.author !== authorFilter.value) return false
-    if (translatorFilter.value === '__none__' && play.translator) return false
-    if (translatorFilter.value && translatorFilter.value !== '__none__' && play.translator !== translatorFilter.value) return false
+    const authorNames = playAuthors(play)
+    const translatorNames = playTranslators(play)
+    if (authorFilter.value && !authorNames.some((name) => normalizeContributorName(name) === normalizeContributorName(authorFilter.value))) return false
+    if (translatorFilter.value === '__none__' && translatorNames.length > 0) return false
+    if (translatorFilter.value && translatorFilter.value !== '__none__'
+      && !translatorNames.some((name) => normalizeContributorName(name) === normalizeContributorName(translatorFilter.value))) return false
     if (genreFilter.value && !playGenres(play).includes(genreFilter.value)) return false
     if (wizardCriteria.value && !matchesWizardCriteria(play, metrics, {
       ...wizardCriteria.value,
@@ -333,7 +329,7 @@ async function importFile(event: Event) {
     <section class="play-grid" aria-label="نمایشنامه‌های من">
       <article v-for="item in filteredCards" :key="item.play.id" class="play-card card">
         <div class="play-card-copy">
-          <p class="eyebrow">{{ item.play.author || 'نویسنده نامشخص' }}</p>
+          <p class="eyebrow">{{ playAuthors(item.play).join(' / ') || 'نویسنده نامشخص' }}</p>
           <h2>
             <RouterLink
               class="play-title-link"
@@ -342,7 +338,7 @@ async function importFile(event: Event) {
               {{ item.play.title }}
             </RouterLink>
           </h2>
-          <p v-if="item.play.translator" class="muted">مترجم: {{ item.play.translator }}</p>
+          <p v-if="playTranslators(item.play).length" class="muted">مترجم: {{ playTranslators(item.play).join(' / ') }}</p>
           <div class="play-card-tags" aria-label="ژانرهای نمایش">
             <button
               v-for="genre in playGenres(item.play)"

@@ -24,6 +24,46 @@ export function flattenBlocks(play: Play): PlayBlock[] {
   return play.acts.flatMap((act) => act.scenes.flatMap((scene) => scene.blocks))
 }
 
+function contributorDisplayName(value: string): string {
+  return value.normalize('NFKC').replace(/\s+/gu, ' ').trim()
+}
+
+export function normalizeContributorName(value: string): string {
+  return contributorDisplayName(value)
+    .replace(/[يى]/gu, 'ی')
+    .replace(/ك/gu, 'ک')
+    .replace(/[\u200c\s]+/gu, ' ')
+    .trim()
+    .toLocaleLowerCase('fa')
+}
+
+export function dedupeContributorNames(values: string[]): string[] {
+  const names = new Map<string, string>()
+  for (const rawValue of values) {
+    const displayName = contributorDisplayName(rawValue)
+    if (!displayName) continue
+    const key = normalizeContributorName(displayName)
+    const current = names.get(key)
+    if (!current || (!current.includes('\u200c') && displayName.includes('\u200c'))) names.set(key, displayName)
+  }
+  return [...names.values()]
+}
+
+function legacyContributorNames(value: string | undefined): string[] {
+  if (!value) return []
+  return value.split(/\s*\/\s*/u).map((name) => name.trim()).filter(Boolean)
+}
+
+export function playAuthors(play: Pick<Play, 'author' | 'authors'>): string[] {
+  const values = Array.isArray(play.authors) && play.authors.length > 0 ? play.authors : legacyContributorNames(play.author)
+  return dedupeContributorNames(values)
+}
+
+export function playTranslators(play: Pick<Play, 'translator' | 'translators'>): string[] {
+  const values = Array.isArray(play.translators) && play.translators.length > 0 ? play.translators : legacyContributorNames(play.translator)
+  return dedupeContributorNames(values)
+}
+
 export function characterGender(gender: unknown): CharacterGender {
   return gender === 'male' || gender === 'female' || gender === 'unknown' ? gender : 'unknown'
 }
@@ -219,8 +259,14 @@ export function validatePlay(value: unknown): PlayValidationResult {
   if (value.author !== undefined && !nonEmptyString(value.author)) {
     errors.push('اگر author مشخص شده باشد باید یک رشتهٔ غیرخالی باشد.')
   }
+  if (value.authors !== undefined && (!Array.isArray(value.authors) || value.authors.length === 0 || value.authors.some((author) => !nonEmptyString(author)))) {
+    errors.push('اگر authors مشخص شده باشد باید آرایه‌ای غیرخالی از نام نویسندگان باشد.')
+  }
   if (value.translator !== undefined && !nonEmptyString(value.translator)) {
     errors.push('اگر translator مشخص شده باشد باید یک رشتهٔ غیرخالی باشد.')
+  }
+  if (value.translators !== undefined && (!Array.isArray(value.translators) || value.translators.length === 0 || value.translators.some((translator) => !nonEmptyString(translator)))) {
+    errors.push('اگر translators مشخص شده باشد باید آرایه‌ای غیرخالی از نام مترجمان باشد.')
   }
   if (value.genres !== undefined) {
     if (!Array.isArray(value.genres) || value.genres.length === 0 || value.genres.some((genre) => !nonEmptyString(genre))) {

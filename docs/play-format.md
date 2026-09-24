@@ -8,8 +8,8 @@ Minimal example:
 {
   "id": "my-play",
   "title": "My Play",
-  "author": "نام نویسنده",
-  "translator": "نام مترجم",
+  "authors": ["نام نویسنده"],
+  "translators": ["مترجم اول", "مترجم دوم"],
   "genres": ["درام", "کمدی"],
   "characters": [
     {
@@ -66,6 +66,9 @@ Minimal example:
 - Display-only headings use `type: "section"` and a `title`.
 - Character colors, when present, are literal six-digit hexadecimal colors.
 - Character `gender`, when present, is one of `male`, `female`, or `unknown`.
+- `authors` and `translators`, when present, are non-empty arrays of non-empty contributor names.
+- Legacy `author` and `translator` string fields remain valid. For discovery, slash-separated legacy values are treated as individual contributors, but new curated data with multiple contributors should use the plural arrays.
+- Contributor discovery normalizes Persian Arabic/Persian letter variants and treats ordinary whitespace and ZWNJ (half-space) as equivalent for matching/deduplication; the preferred stored spelling is still used for display.
 - `genres`, when present, is a non-empty array of non-empty genre names.
 
 ## Gender metadata

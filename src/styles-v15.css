@@ -569,6 +569,24 @@
 .reader-action-button.active svg {
   fill: currentColor;
 }
+.reader-panel-toggle.active {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+}
+.reader-panel-toggle.active svg {
+  fill: none;
+}
+.reader-scene-heading {
+  margin: 26px 0 12px;
+  padding: 14px 16px;
+  border-inline-start: 4px solid #818cf8;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.reader-scene-heading:first-child { margin-top: 0; }
+.reader-scene-heading h2 { margin: 2px 0 0; font-size: 1.15em; }
+.reader-act-title { margin: 0; color: #64748b; font-size: .8em; font-weight: 800; }
 .reader-settings-link {
   display: inline-grid;
   place-items: center;
@@ -592,6 +610,9 @@
 .dark-theme .reader-play-metadata {
   color: #94a3b8;
 }
+.dark-theme .reader-panel-toggle.active { border-color: #6366f1; background: #312e81; color: #e0e7ff; }
+.dark-theme .reader-scene-heading { border-color: #6366f1; background: #111c2e; }
+.dark-theme .reader-act-title { color: #94a3b8; }
 .dark-theme .back-to-top-button {
   background: #172033;
   color: #f8fafc;

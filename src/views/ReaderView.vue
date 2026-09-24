@@ -33,7 +33,9 @@ import {
   blockText,
   dialogueCharacterIds,
   dialogueRenderSegments,
-  flattenBlocks
+  flattenBlocks,
+  playAuthors,
+  playTranslators
 } from '../utils/play'
 import {
   automaticReadingSegments,
@@ -82,6 +84,10 @@ const narratorColor = ref(DEFAULT_NARRATOR_COLOR)
 const mode = ref<ReaderMode>('read')
 const currentIndex = ref(0)
 const sidebarOpen = ref(defaultSidebarOpen())
+const sceneNavOpen = ref(defaultSidebarOpen())
+const sceneNavManuallyToggled = ref(false)
+const lineToolsOpen = ref(true)
+const toolbarOpen = ref(true)
 const readerRootRef = ref<HTMLElement | null>(null)
 const readerHeaderRef = ref<HTMLElement | null>(null)
 const readerTitleBlockRef = ref<HTMLElement | null>(null)
@@ -120,7 +126,25 @@ const proofreadingDraft = ref<{
 
 const play = computed(() => store.byId(String(route.params.id)))
 const playMetrics = computed(() => play.value ? playLibraryMetrics(play.value) : null)
+const authorLabel = computed(() => play.value ? playAuthors(play.value).join(' / ') : '')
+const translatorLabel = computed(() => play.value ? playTranslators(play.value).join(' / ') : '')
 const blocks = computed(() => play.value ? flattenBlocks(play.value) : [])
+const sceneHeadings = computed(() => {
+  const headings = new Map<string, { actTitle?: string; sceneTitle: string }>()
+  if (!play.value) return headings
+  const multipleActs = play.value.acts.length > 1
+  for (const act of play.value.acts) {
+    act.scenes.forEach((scene, sceneIndex) => {
+      const firstBlockId = scene.blocks[0]?.id
+      if (!firstBlockId) return
+      headings.set(firstBlockId, {
+        ...(multipleActs && sceneIndex === 0 ? { actTitle: act.title } : {}),
+        sceneTitle: scene.title
+      })
+    })
+  }
+  return headings
+})
 const stats = computed(() => play.value ? analyzePlay(play.value) : {})
 const narratorStats = computed(() => play.value ? analyzeNarrator(play.value) : {
   dialogueCount: 0,
@@ -375,6 +399,23 @@ async function fitReaderTitle(): Promise<void> {
 function updateBackToTopVisibility(): void {
   showBackToTop.value = window.scrollY > 480
   readerHeaderScrolled.value = window.scrollY > 8
+  if (!sceneNavManuallyToggled.value && typeof window.matchMedia === 'function'
+    && !window.matchMedia('(max-width: 980px)').matches) {
+    sceneNavOpen.value = window.scrollY <= 8
+  }
+}
+
+function toggleSceneNav(): void {
+  sceneNavManuallyToggled.value = true
+  sceneNavOpen.value = !sceneNavOpen.value
+}
+
+function toggleLineTools(): void {
+  lineToolsOpen.value = !lineToolsOpen.value
+}
+
+function toggleToolbar(): void {
+  toolbarOpen.value = !toolbarOpen.value
 }
 
 function scrollToTop(): void {
@@ -771,6 +812,16 @@ async function jump(index: number) {
   document.getElementById(`block-${blocks.value[currentIndex.value]?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
+async function jumpToScene(blockId?: string): Promise<void> {
+  if (!blockId) return
+  const index = blocks.value.findIndex((block) => block.id === blockId)
+  if (index < 0) return
+  sceneNavOpen.value = false
+  sceneNavManuallyToggled.value = true
+  await nextTick()
+  await jump(index)
+}
+
 function ownRoleIndexes(): number[] {
   if (narratorIsMine.value) return narratorOwnedIndexes.value
   if (!myCharacterId.value) return []
@@ -992,8 +1043,8 @@ function selectCurrent(index: number) {
             :style="{ fontSize: `${readerTitleFontSize}px` }"
           >{{ play.title }}</h1>
           <div v-show="!readerHeaderScrolled" class="reader-play-metadata" aria-label="مشخصات نمایشنامه">
-            <span>نویسنده: {{ play.author || 'نامشخص' }}</span>
-            <span v-if="play.translator">مترجم: {{ play.translator }}</span>
+            <span>نویسنده: {{ authorLabel || 'نامشخص' }}</span>
+            <span v-if="translatorLabel">مترجم: {{ translatorLabel }}</span>
             <span>{{ playMetrics?.characterCount ?? play.characters.length }} شخصیت</span>
             <span>حدود {{ playMetrics?.estimatedMinutes ?? 0 }} دقیقه</span>
           </div>
@@ -1008,6 +1059,42 @@ function selectCurrent(index: number) {
             @click="sidebarOpen ? closeRolesPanel() : openRolesPanel()"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
+          <button
+            class="icon-button reader-action-button reader-panel-toggle reader-scene-nav-button"
+            type="button"
+            :class="{ active: sceneNavOpen }"
+            :aria-pressed="sceneNavOpen"
+            aria-controls="reader-scene-nav-panel"
+            :aria-label="sceneNavOpen ? 'بستن فهرست صحنه‌ها' : 'باز کردن فهرست صحنه‌ها'"
+            :title="sceneNavOpen ? 'بستن فهرست صحنه‌ها' : 'فهرست صحنه‌ها'"
+            @click="toggleSceneNav"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14"/></svg>
+          </button>
+          <button
+            class="icon-button reader-action-button reader-panel-toggle reader-line-tools-button"
+            type="button"
+            :class="{ active: lineToolsOpen }"
+            :aria-pressed="lineToolsOpen"
+            aria-controls="reader-line-tools-panel"
+            :aria-label="lineToolsOpen ? 'بستن ابزار سطر جاری' : 'باز کردن ابزار سطر جاری'"
+            :title="lineToolsOpen ? 'بستن ابزار سطر جاری' : 'ابزار سطر جاری'"
+            @click="toggleLineTools"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h10M4 19h7M17 10l3 3-6 6H11v-3z"/></svg>
+          </button>
+          <button
+            class="icon-button reader-action-button reader-panel-toggle reader-toolbar-button"
+            type="button"
+            :class="{ active: toolbarOpen }"
+            :aria-pressed="toolbarOpen"
+            aria-controls="reader-toolbar-panel"
+            :aria-label="toolbarOpen ? 'بستن نوار ابزار خوانش' : 'باز کردن نوار ابزار خوانش'"
+            :title="toolbarOpen ? 'بستن نوار ابزار خوانش' : 'نوار ابزار خوانش'"
+            @click="toggleToolbar"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M7 14v6"/></svg>
           </button>
           <button
             class="icon-button reader-action-button"
@@ -1051,6 +1138,8 @@ function selectCurrent(index: number) {
       </header>
 
       <ReaderToolbar
+        v-show="toolbarOpen"
+        id="reader-toolbar-panel"
         :mode="mode"
         :settings="settings"
         :wake-lock-available="wakeLockSupported()"
@@ -1083,14 +1172,14 @@ function selectCurrent(index: number) {
         <button class="primary-button" :disabled="!hasMyRole" @click="moveOwnRolePart(1)">بخش بعدی نقش من</button>
       </div>
 
-      <nav class="scene-nav card" aria-label="صحنه‌ها">
+      <nav v-show="sceneNavOpen" id="reader-scene-nav-panel" class="scene-nav card" aria-label="صحنه‌ها">
         <template v-for="act in play.acts" :key="act.id">
           <strong>{{ act.title }}</strong>
-          <button v-for="scene in act.scenes" :key="scene.id" class="text-button" @click="jump(blocks.findIndex(block => block.id === scene.blocks[0]?.id))">{{ scene.title }}</button>
+          <button v-for="scene in act.scenes" :key="scene.id" class="text-button" @click="jumpToScene(scene.blocks[0]?.id)">{{ scene.title }}</button>
         </template>
       </nav>
 
-      <section class="line-tools card" aria-label="ابزار سطر جاری">
+      <section v-show="lineToolsOpen" id="reader-line-tools-panel" class="line-tools card" aria-label="ابزار سطر جاری">
         <div>
           <strong>سطر جاری: {{ currentIndex + 1 }} / {{ blocks.length }}</strong>
           <span v-if="statusMessage" class="status-message">{{ statusMessage }}</span>
@@ -1149,6 +1238,10 @@ function selectCurrent(index: number) {
 
       <section v-else class="reader-document">
         <template v-for="entry in readerEntries" :key="entry.block.id">
+          <div v-if="sceneHeadings.get(entry.block.id)" class="reader-scene-heading" aria-label="عنوان بخش نمایش">
+            <p v-if="sceneHeadings.get(entry.block.id)?.actTitle" class="reader-act-title">{{ sceneHeadings.get(entry.block.id)?.actTitle }}</p>
+            <h2>{{ sceneHeadings.get(entry.block.id)?.sceneTitle }}</h2>
+          </div>
           <DialogueBlockView
             v-if="entry.block.type === 'dialogue' && visible(entry.block)"
             :block="entry.block"
