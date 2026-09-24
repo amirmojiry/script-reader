@@ -54,6 +54,24 @@ describe('Harold Pinter Betrayal bundled play', () => {
     expect(sceneFiveRecords).toContainEqual(['d', 'رابرت', 'من همیشه جری رو خیلی دوست داشتم. راستش، خیلی بیشتر از تو. شاید بهتر بود من یه رابطه باهاش داشتم.'])
   })
 
+  it('keeps the latest reviewed scene-three speakers and scene-seven waiter order', () => {
+    const sceneThreeRecords = betrayalSource.scenes[2].records
+    const sceneSevenRecords = betrayalSource.scenes[6].records
+
+    expect(sceneThreeRecords).toContainEqual([
+      'd',
+      'اما',
+      'قبلاً... ما کلی خلاقیت به خرج می‌دادیم... انرژی می‌گذاشتیم... سخت بود... همدیگه رو دیدن غیرممکن به نظر می‌اومد... غیرممکن... ولی باز همدیگه رو می‌دیدیم. می‌اومدیم این‌جا و همدیگه رو می‌دیدیم. ما این سوئیت رو اجاره کردیم، و این‌جا همدیگه رو می‌دیدیم، چون دلمون واقعاً می‌خواست.'
+    ])
+    expect(sceneThreeRecords).toContainEqual(['d', 'اما', 'بله، می‌رفتیم.'])
+
+    const waiterReplyIndex = sceneSevenRecords.findIndex(
+      (record) => record[0] === 'd' && record[1] === 'پیشخدمت' && record[2] === 'همین الان، سینیوره!'
+    )
+    expect(waiterReplyIndex).toBeGreaterThanOrEqual(0)
+    expect(sceneSevenRecords[waiterReplyIndex + 1]).toEqual(['s', 'پیشخدمت خارج می‌شود.'])
+  })
+
   it('keeps source metadata, discovery metadata, and truncation sentinels', () => {
     expect(betrayalPlay).toMatchObject({
       id: BETRAYAL_BUNDLED_ID,
