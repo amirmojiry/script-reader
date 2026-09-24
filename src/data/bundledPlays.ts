@@ -1,4 +1,5 @@
 import type { Play, PlayBlock } from '../types'
+import { playAuthors, playTranslators } from '../utils/play'
 import { bundledPlay } from './bundledPlay'
 import { hesabPardakhtNemishePlay } from './darioFo'
 import { unexpectedGuestPlay } from './unexpectedGuest'
@@ -21,8 +22,8 @@ export function isReservedBundledId(id: string): boolean {
 function bundledContentKey(play: Play): string {
   return JSON.stringify({
     title: play.title,
-    author: play.author,
-    translator: play.translator,
+    authors: playAuthors(play),
+    translators: playTranslators(play),
     characters: play.characters.map(({ id, name }) => ({ id, name })),
     acts: play.acts
   })

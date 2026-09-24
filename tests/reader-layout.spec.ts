@@ -44,6 +44,14 @@ vi.mock('../src/stores/plays', () => ({
           { id: 'block-2', type: 'stage-direction', text: 'نور کم می‌شود.' },
           { id: 'block-3', type: 'section', title: 'بخش بخش' }
         ]
+      }, {
+        id: 'scene-2',
+        title: 'صحنه دوم',
+        blocks: [
+          { id: 'block-4', type: 'stage-direction', text: 'صحنه دوم تاریک است.' },
+          { id: 'block-5', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'ادامه' }] },
+          { id: 'block-6', type: 'stage-direction', text: 'در باز می‌شود.' }
+        ]
       }] }]
     } : undefined
   })
@@ -813,7 +821,33 @@ describe('reader roles layout', () => {
     const heading = wrapper.get('.reader-scene-heading')
     expect(heading.text()).toContain('صحنه')
     expect(heading.text()).not.toContain('پرده')
-    expect(wrapper.findAllComponents({ name: 'DialogueBlockView' })).toHaveLength(1)
+    expect(wrapper.findAllComponents({ name: 'DialogueBlockView' })).toHaveLength(2)
+  })
+
+  it('keeps scene headings attached to the first visible cue-only entry in each represented scene', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    await wrapper.get('#block-block-6').trigger('click')
+    const roles = wrapper.findComponent({ name: 'CharacterPanel' })
+    roles.vm.$emit('chooseNarratorMine')
+    await flushPromises()
+
+    const toolbar = wrapper.findComponent({ name: 'ReaderToolbar' })
+    toolbar.vm.$emit('setMode', 'rehearsal')
+    await wrapper.vm.$nextTick()
+    toolbar.vm.$emit('updateSettings', {
+      ...(toolbar.props('settings') as Record<string, unknown>),
+      rehearsalCueOnly: true
+    })
+    await flushPromises()
+
+    const headings = wrapper.findAll('.reader-scene-heading')
+    expect(headings).toHaveLength(1)
+    expect(headings[0].text()).toContain('صحنه دوم')
+    expect(wrapper.find('#block-block-4').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('block')).toMatchObject({ id: 'block-5' })
   })
 
   it('toggles reader panels from the sticky header and auto-collapses scene navigation after scrolling', async () => {

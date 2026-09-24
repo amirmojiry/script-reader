@@ -131,21 +131,22 @@ const playMetrics = computed(() => play.value ? playLibraryMetrics(play.value) :
 const authorLabel = computed(() => play.value ? playAuthors(play.value).join(' / ') : '')
 const translatorLabel = computed(() => play.value ? playTranslators(play.value).join(' / ') : '')
 const blocks = computed(() => play.value ? flattenBlocks(play.value) : [])
-const sceneHeadings = computed(() => {
-  const headings = new Map<string, { actTitle?: string; sceneTitle: string }>()
-  if (!play.value) return headings
-  const multipleActs = play.value.acts.length > 1
+const blockStructure = computed(() => {
+  const structure = new Map<string, { actId: string; actTitle: string; sceneId: string; sceneTitle: string }>()
+  if (!play.value) return structure
   for (const act of play.value.acts) {
-    act.scenes.forEach((scene, sceneIndex) => {
-      const firstBlockId = scene.blocks[0]?.id
-      if (!firstBlockId) return
-      headings.set(firstBlockId, {
-        ...(multipleActs && sceneIndex === 0 ? { actTitle: act.title } : {}),
-        sceneTitle: scene.title
-      })
-    })
+    for (const scene of act.scenes) {
+      for (const block of scene.blocks) {
+        structure.set(block.id, {
+          actId: act.id,
+          actTitle: act.title,
+          sceneId: scene.id,
+          sceneTitle: scene.title
+        })
+      }
+    }
   }
-  return headings
+  return structure
 })
 const stats = computed(() => play.value ? analyzePlay(play.value) : {})
 const narratorStats = computed(() => play.value ? analyzeNarrator(play.value) : {
@@ -198,6 +199,28 @@ const readerEntries = computed(() => {
   if (!myCharacterId.value) return all
   const indexes = new Set(rehearsalCueIndexes(blocks.value, myCharacterId.value, currentIndex.value, searchIndexes.value))
   return all.filter(({ index }) => indexes.has(index))
+})
+const readerEntryHeadings = computed(() => {
+  const headings = new Map<string, { actTitle?: string; sceneTitle: string }>()
+  const seenScenes = new Set<string>()
+  const seenActs = new Set<string>()
+  const multipleActs = (play.value?.acts.length ?? 0) > 1
+
+  for (const entry of readerEntries.value) {
+    if (!visible(entry.block)) continue
+    const location = blockStructure.value.get(entry.block.id)
+    if (!location || seenScenes.has(location.sceneId)) continue
+
+    seenScenes.add(location.sceneId)
+    const firstVisibleSceneInAct = !seenActs.has(location.actId)
+    seenActs.add(location.actId)
+    headings.set(entry.block.id, {
+      ...(multipleActs && firstVisibleSceneInAct ? { actTitle: location.actTitle } : {}),
+      sceneTitle: location.sceneTitle
+    })
+  }
+
+  return headings
 })
 const tableReadIndexes = computed(() => visibleBlockIndexes(blocks.value, settings.value.hideStageDirections))
 const tableReadPosition = computed(() => tableReadIndexes.value.indexOf(currentIndex.value))
@@ -1257,9 +1280,9 @@ function selectCurrent(index: number) {
 
       <section v-else class="reader-document">
         <template v-for="entry in readerEntries" :key="entry.block.id">
-          <div v-if="sceneHeadings.get(entry.block.id)" class="reader-scene-heading" aria-label="عنوان بخش نمایش">
-            <p v-if="sceneHeadings.get(entry.block.id)?.actTitle" class="reader-act-title">{{ sceneHeadings.get(entry.block.id)?.actTitle }}</p>
-            <h2>{{ sceneHeadings.get(entry.block.id)?.sceneTitle }}</h2>
+          <div v-if="readerEntryHeadings.get(entry.block.id)" class="reader-scene-heading" aria-label="عنوان بخش نمایش">
+            <p v-if="readerEntryHeadings.get(entry.block.id)?.actTitle" class="reader-act-title">{{ readerEntryHeadings.get(entry.block.id)?.actTitle }}</p>
+            <h2>{{ readerEntryHeadings.get(entry.block.id)?.sceneTitle }}</h2>
           </div>
           <DialogueBlockView
             v-if="entry.block.type === 'dialogue' && visible(entry.block)"

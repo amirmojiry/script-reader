@@ -74,6 +74,22 @@ describe('PlayFinderWizard', () => {
     })
   })
 
+  it('renders plural-only authors in live recommendations', async () => {
+    const pluralAuthors = makePlay('plural-authors', 'نمایش چندنویسنده', ['درام'])
+    delete pluralAuthors.author
+    pluralAuthors.authors = ['نویسنده اول', 'نویسنده دوم']
+
+    const wrapper = mount(PlayFinderWizard, {
+      props: { plays: [pluralAuthors] },
+      global: { stubs: { teleport: true } }
+    })
+
+    await wrapper.get('.wizard-continue').trigger('click')
+    const result = wrapper.get('.wizard-result')
+    expect(result.text()).toContain('نمایش چندنویسنده')
+    expect(result.get('small').text()).toBe('نویسنده اول / نویسنده دوم')
+  })
+
   it('uses constrained sliders so male plus female never exceeds total cast', async () => {
     const wrapper = mount(PlayFinderWizard, {
       props: { plays: [makePlay('large', 'بزرگ', ['درام'], 3, 2)] },
