@@ -37,6 +37,14 @@ describe('Harold Pinter Betrayal bundled play', () => {
     })
   })
 
+  it('keeps the reviewed scene-two disclosure exchange on the correct speakers', () => {
+    const records = betrayalSource.scenes[1].records
+
+    expect(records).toContainEqual(['d', 'رابرت', 'خیلی مهم نیست، هست؟ سال‌هاست که تموم شده، نیست؟'])
+    expect(records).toContainEqual(['d', 'جری', 'من می‌دونم دیشب بین شما چه اتفاقی افتاد. همه‌چی رو برام گفت. شما تمام شب بیدار موندین، مگه نه؟'])
+    expect(records).toContainEqual(['d', 'رابرت', 'بنابراین لازم نبود دیشب دوباره بهم بگه. چون من می‌دونستم، و اون می‌دونست من می‌دونم چون خودش چهار سال پیش بهم گفته بود.'])
+  })
+
   it('keeps source metadata, discovery metadata, and truncation sentinels', () => {
     expect(betrayalPlay).toMatchObject({
       id: BETRAYAL_BUNDLED_ID,
