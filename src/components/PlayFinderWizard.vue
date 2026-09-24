@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { Play } from '../types'
 import { matchesWizardCriteria, playGenres, playLibraryMetrics, sortPlayCards, type PlayWizardCriteria } from '../utils/library'
+import { playAuthors } from '../utils/play'
 
 const props = defineProps<{ plays: Play[] }>()
 const emit = defineEmits<{ close: []; apply: [criteria: PlayWizardCriteria] }>()
@@ -173,7 +174,7 @@ function applyCriteria(): void {
               </div>
               <div v-if="matches.length" class="wizard-results">
                 <article v-for="item in matches.slice(0, 5)" :key="item.play.id" class="wizard-result">
-                  <div><strong>{{ item.play.title }}</strong><small>{{ item.play.author || 'نویسنده نامشخص' }}</small></div>
+                  <div><strong>{{ item.play.title }}</strong><small>{{ playAuthors(item.play).join(' / ') || 'نویسنده نامشخص' }}</small></div>
                   <span>{{ item.metrics.characterCount }} نقش</span>
                   <span>{{ item.metrics.estimatedMinutes }} دقیقه</span>
                 </article>

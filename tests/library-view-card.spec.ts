@@ -15,6 +15,7 @@ const storeMocks = vi.hoisted(() => ({
       title: 'ب نمایش',
       author: 'نویسنده دوم',
       translator: 'مترجم',
+      translators: ['مترجم', 'تینوش نظم‌جو', 'نگار جواهریان'],
       genres: ['کمدی'],
       characters: [
         { id: 'role-1', name: 'نقش اول', gender: 'male' },
@@ -34,6 +35,7 @@ const storeMocks = vi.hoisted(() => ({
       id: 'test-play-a',
       title: 'آ نمایش',
       author: 'نویسنده اول',
+      translator: 'تینوش نظم جو',
       genres: ['درام'],
       characters: [
         { id: 'role-1', name: 'نقش اول', gender: 'female' },
@@ -167,6 +169,22 @@ describe('LibraryView play cards and discovery controls', () => {
     await genreSelect.setValue('')
     expect(wrapper.findAll('.play-card')).toHaveLength(2)
     expect((genreSelect.element as HTMLSelectElement).value).toBe('')
+  })
+
+  it('lists translators individually, deduplicates half-space variants, and matches either spelling', async () => {
+    const wrapper = mount(LibraryView, {
+      global: { stubs: { RouterLink: { template: '<a><slot /></a>' }, PlayFinderWizard: true } }
+    })
+    await flushPromises()
+
+    const translatorSelect = wrapper.findAll('.metadata-filter-grid select')[1]
+    const options = translatorSelect.findAll('option').map((option) => option.text())
+    expect(options.filter((option) => option === 'تینوش نظم‌جو')).toHaveLength(1)
+    expect(options).not.toContain('تینوش نظم جو')
+    expect(options).toContain('نگار جواهریان')
+    expect(options).not.toContain('نگار جواهریان / تینوش نظم‌جو')
+    await translatorSelect.setValue('تینوش نظم‌جو')
+    expect(wrapper.findAll('.play-card')).toHaveLength(2)
   })
 
   it('filters by clickable genre chips, author and select controls, and sorts alphabetically', async () => {

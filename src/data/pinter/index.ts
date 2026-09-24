@@ -14,7 +14,7 @@ interface PinterSource {
   id: string
   title: string
   author: string
-  translator: string
+  translators: string[]
   genres: string[]
   characters: Play['characters']
   scenes: PinterSceneSource[]
@@ -26,7 +26,7 @@ export const betrayalSource: PinterSource = {
   id: 'betrayal-harold-pinter-fa',
   title: 'خیانت',
   author: 'هارولد پینتر',
-  translator: 'نگار جواهریان / تینوش نظم‌جو',
+  translators: ['نگار جواهریان', 'تینوش نظم‌جو'],
   genres: ['درام', 'روان‌شناختی'],
   characters: [
     { id: 'emma', name: 'اما', color: '#ef9a9a', gender: 'female' },
@@ -65,7 +65,7 @@ export function buildBetrayalPlay(source: PinterSource = betrayalSource): Play {
     id: BETRAYAL_BUNDLED_ID,
     title: source.title,
     author: source.author,
-    translator: source.translator,
+    translators: source.translators,
     genres: source.genres,
     characters: source.characters,
     acts: [{

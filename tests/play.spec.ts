@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { demoPlay } from '../src/data/demo'
+import type { Play } from '../src/types'
 import {
   analyzeNarrator,
   analyzePlay,
   characterDialogueText,
+  dedupeContributorNames,
   dialogueCharacterIds,
   dialogueRenderSegments,
   dialogueText,
   flattenBlocks,
   narrationTextFromDialogue,
+  normalizeContributorName,
+  playAuthors,
+  playTranslators,
   splitParentheticalNarration,
   validatePlay,
   wordCount
@@ -128,6 +133,37 @@ describe('play utilities', () => {
   it('validates the complete nested play contract', () => {
     expect(validatePlay(demoPlay)).toEqual({ valid: true, errors: [] })
     expect(validatePlay({ title: 'x' }).valid).toBe(false)
+  })
+
+  it('supports separate contributor arrays and normalizes Persian spacing variants for discovery', () => {
+    const play: Play = structuredClone(demoPlay)
+    play.authors = ['نویسنده یک', 'نویسنده دو']
+    delete play.author
+    play.translators = ['تینوش نظم جو', 'تینوش نظم‌جو', 'نگار جواهریان']
+    delete play.translator
+
+    expect(playAuthors(play)).toEqual(['نویسنده یک', 'نویسنده دو'])
+    expect(playTranslators(play)).toEqual(['تینوش نظم‌جو', 'نگار جواهریان'])
+    expect(normalizeContributorName('تینوش نظم جو')).toBe(normalizeContributorName('تینوش نظم‌جو'))
+    expect(dedupeContributorNames(['تینوش نظم جو', 'تینوش نظم‌جو'])).toEqual(['تینوش نظم‌جو'])
+    expect(validatePlay(play)).toEqual({ valid: true, errors: [] })
+  })
+
+  it('keeps slash-separated legacy contributors discoverable as individuals', () => {
+    const play: Play = structuredClone(demoPlay)
+    play.translator = 'نگار جواهریان / تینوش نظم‌جو'
+    delete play.translators
+    expect(playTranslators(play)).toEqual(['نگار جواهریان', 'تینوش نظم‌جو'])
+  })
+
+  it('rejects malformed plural contributor metadata', () => {
+    const malformed = structuredClone(demoPlay) as unknown as Record<string, unknown>
+    malformed.authors = ['نویسنده', '']
+    malformed.translators = 'مترجم'
+    const result = validatePlay(malformed)
+    expect(result.valid).toBe(false)
+    expect(result.errors.join(' ')).toContain('authors')
+    expect(result.errors.join(' ')).toContain('translators')
   })
 
   it('rejects non-string author and translator metadata', () => {

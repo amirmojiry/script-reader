@@ -17,7 +17,8 @@ const mocks = vi.hoisted(() => ({
   deleteProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
   replaceProofreadingCorrectionsForBlock: vi.fn(async () => undefined),
   clearProofreadingCorrections: vi.fn(async () => undefined),
-  clipboardWrite: vi.fn(async () => undefined)
+  clipboardWrite: vi.fn(async () => undefined),
+  secondSceneEnabled: false
 }))
 
 vi.mock('vue-router', () => ({
@@ -44,7 +45,15 @@ vi.mock('../src/stores/plays', () => ({
           { id: 'block-2', type: 'stage-direction', text: 'نور کم می‌شود.' },
           { id: 'block-3', type: 'section', title: 'بخش بخش' }
         ]
-      }] }]
+      }, ...(mocks.secondSceneEnabled ? [{
+        id: 'scene-2',
+        title: 'صحنه دوم',
+        blocks: [
+          { id: 'block-4', type: 'stage-direction', text: 'صحنه دوم تاریک است.' },
+          { id: 'block-5', type: 'dialogue', characterId: 'role-1', parts: [{ type: 'speech', text: 'ادامه' }] },
+          { id: 'block-6', type: 'stage-direction', text: 'در باز می‌شود.' }
+        ]
+      }] : [])] }]
     } : undefined
   })
 }))
@@ -112,6 +121,7 @@ afterEach(() => {
   mocks.replaceProofreadingCorrectionsForBlock.mockResolvedValue(undefined)
   mocks.clearProofreadingCorrections.mockClear()
   mocks.clipboardWrite.mockClear()
+  mocks.secondSceneEnabled = false
   vi.unstubAllGlobals()
   Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
 })
@@ -804,6 +814,83 @@ describe('reader roles layout', () => {
     expect(wrapper.get('.reader-proofreading-button').attributes('aria-pressed')).toBe('false')
     expect(wrapper.find('.proofreading-status').exists()).toBe(false)
     expect(wrapper.find('.rehearsal-controls').exists()).toBe(true)
+  })
+
+  it('shows scene headings as structural reader labels without adding spoken blocks', async () => {
+    mockCompactViewport(false)
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    const heading = wrapper.get('.reader-scene-heading')
+    expect(heading.text()).toContain('صحنه')
+    expect(heading.text()).not.toContain('پرده')
+    expect(wrapper.findAllComponents({ name: 'DialogueBlockView' })).toHaveLength(1)
+  })
+
+  it('keeps scene headings attached to the first visible cue-only entry in each represented scene', async () => {
+    mockCompactViewport(false)
+    mocks.secondSceneEnabled = true
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+
+    await wrapper.get('#block-block-6').trigger('click')
+    const roles = wrapper.findComponent({ name: 'CharacterPanel' })
+    roles.vm.$emit('chooseNarratorMine')
+    await flushPromises()
+
+    const toolbar = wrapper.findComponent({ name: 'ReaderToolbar' })
+    toolbar.vm.$emit('setMode', 'rehearsal')
+    await wrapper.vm.$nextTick()
+    toolbar.vm.$emit('updateSettings', {
+      ...(toolbar.props('settings') as Record<string, unknown>),
+      rehearsalCueOnly: true
+    })
+    await flushPromises()
+
+    const headings = wrapper.findAll('.reader-scene-heading')
+    expect(headings).toHaveLength(1)
+    expect(headings[0].text()).toContain('صحنه دوم')
+    expect(wrapper.find('#block-block-4').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'DialogueBlockView' }).props('block')).toMatchObject({ id: 'block-5' })
+  })
+
+  it('toggles reader panels from the sticky header and auto-collapses scene navigation after scrolling', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.scene-nav').attributes('style') ?? '').not.toContain('display: none')
+
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 32, writable: true })
+    window.dispatchEvent(new Event('scroll'))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-line-tools-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-toolbar-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.scene-nav').attributes('style')).toContain('display: none')
+
+    await wrapper.get('.reader-scene-nav-button').trigger('click')
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.scene-nav').classes()).toContain('reader-floating-panel')
+    await wrapper.get('.reader-line-tools-button').trigger('click')
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-line-tools-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.line-tools').classes()).toContain('reader-floating-panel')
+    await wrapper.get('.reader-toolbar-button').trigger('click')
+    expect(wrapper.get('.reader-line-tools-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.reader-toolbar-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findComponent({ name: 'ReaderToolbar' }).classes()).toContain('reader-floating-panel')
+  })
+
+  it('closes scene navigation after jumping to a scene', async () => {
+    mockCompactViewport(false)
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
+    const wrapper = shallowMount(ReaderView)
+    await flushPromises()
+    await wrapper.get('.scene-nav button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('.reader-scene-nav-button').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.scene-nav').attributes('style')).toContain('display: none')
   })
 
   it('keeps roles open by default on desktop and expands fully when closed', async () => {

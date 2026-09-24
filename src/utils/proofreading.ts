@@ -7,7 +7,9 @@ export interface ProofreadingExport {
     id: string
     title: string
     author?: string
+    authors?: string[]
     translator?: string
+    translators?: string[]
   }
   corrections: Array<{
     blockId: string
@@ -46,7 +48,9 @@ export function buildProofreadingExport(play: Play, corrections: ProofreadingCor
       id: play.id,
       title: play.title,
       ...(play.author ? { author: play.author } : {}),
-      ...(play.translator ? { translator: play.translator } : {})
+      ...(play.authors?.length ? { authors: [...play.authors] } : {}),
+      ...(play.translator ? { translator: play.translator } : {}),
+      ...(play.translators?.length ? { translators: [...play.translators] } : {})
     },
     corrections: ordered.map((correction) => ({
       blockId: correction.blockId,

@@ -251,6 +251,25 @@ describe('proofreading export', () => {
     )
   })
 
+  it('preserves plural-only contributor metadata in proofreading exports', () => {
+    const pluralOnly: Play = {
+      ...play,
+      author: undefined,
+      translator: undefined,
+      authors: ['نویسنده اول', 'نویسنده دوم'],
+      translators: ['مترجم اول', 'مترجم دوم']
+    }
+
+    const exported = buildProofreadingExport(pluralOnly, [correction({})])
+    expect(exported.play).toEqual({
+      id: 'play-1',
+      title: 'نمایش تست',
+      authors: ['نویسنده اول', 'نویسنده دوم'],
+      translators: ['مترجم اول', 'مترجم دوم']
+    })
+    expect(JSON.parse(serializeProofreadingExport(pluralOnly, [correction({})])).play).toEqual(exported.play)
+  })
+
   it('exports deterministic ordered JSON with play metadata and correction identifiers', () => {
     const later = correction({ id: 'c-2', blockId: 'block-2', blockIndex: 3, dialogueNumber: 2, createdAt: '2026-09-20T11:00:00.000Z' })
     const earlier = correction({ id: 'c-1', blockIndex: 1 })

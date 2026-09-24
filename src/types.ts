@@ -49,7 +49,9 @@ export interface Play {
   id: string
   title: string
   author?: string
+  authors?: string[]
   translator?: string
+  translators?: string[]
   genres?: string[]
   characters: Character[]
   acts: Act[]

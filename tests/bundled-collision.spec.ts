@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { BUNDLED_ID_PREFIX } from '../src/data/bundledPlays'
+import { BUNDLED_ID_PREFIX, isBundledPlayCopy } from '../src/data/bundledPlays'
+import { betrayalPlay } from '../src/data/pinter'
 import { unexpectedGuestPlay } from '../src/data/unexpectedGuest'
 import { yasrebiBundledPlays } from '../src/data/yasrebi'
 import { usePlaysStore } from '../src/stores/plays'
@@ -117,6 +118,20 @@ describe('bundled play ID collisions', () => {
       id: userImport.id,
       title: unexpectedGuestPlay.title
     }))
+  })
+
+  it('normalizes legacy and plural contributor shapes while preserving contributor differences', () => {
+    const legacyShape = structuredClone(betrayalPlay)
+    legacyShape.authors = [legacyShape.author ?? '']
+    delete legacyShape.author
+    legacyShape.translator = legacyShape.translators?.join(' / ')
+    delete legacyShape.translators
+
+    expect(isBundledPlayCopy(legacyShape, betrayalPlay)).toBe(true)
+
+    const changedContributors = structuredClone(betrayalPlay)
+    changedContributors.translators = ['نگار جواهریان', 'مترجم متفاوت']
+    expect(isBundledPlayCopy(changedContributors, betrayalPlay)).toBe(false)
   })
 
   it('reserves canonical bundled IDs against future user imports', async () => {
