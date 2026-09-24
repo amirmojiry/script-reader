@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-09-24
+
+### Added
+- Reader header controls can toggle scene navigation, current-line tools, and the main reader toolbar while keeping those tools available throughout a long play.
+- Scene headings are shown inline in the reading document as structural, non-spoken labels.
+
+### Changed
+- Play contributor metadata can store multiple authors/translators separately while retaining compatibility with existing single-value JSON.
+- Library contributor filters now match individual contributors and normalize Persian spacing/ZWNJ variants so duplicate spellings collapse into one option.
+
 ## [1.14.0] - 2026-09-24
 
 ### Added
@@ -151,7 +161,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/amirmojiry/script-reader/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/amirmojiry/script-reader/compare/v1.13.2...v1.14.0
 [1.13.2]: https://github.com/amirmojiry/script-reader/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/amirmojiry/script-reader/compare/v1.13.0...v1.13.1
