@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.14.0] - 2026-09-24
+
+### افزوده‌شده
+- متن کامل فارسی تأمین‌شده توسط کاربر از «خیانت» اثر هارولد پینتر با ترجمهٔ نگار جواهریان و تینوش نظم‌جو، به‌صورت نمایش نه‌صحنه‌ای همراه برنامه با فرادادهٔ انتخاب/گروه و پوشش رگرسیون اضافه شد.
+
 ## [1.13.2] - 2026-09-23
 
 ### تغییرکرده
@@ -146,7 +151,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.13.2...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/amirmojiry/script-reader/compare/v1.13.2...v1.14.0
 [1.13.2]: https://github.com/amirmojiry/script-reader/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/amirmojiry/script-reader/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/amirmojiry/script-reader/compare/v1.12.0...v1.13.0
