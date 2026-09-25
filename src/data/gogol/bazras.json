@@ -1114,7 +1114,22 @@
               "parts": [
                 {
                   "type": "speech",
-                  "text": "... منهم همینطور - ( بوبچینسکی و دوبچینسکی هر دو باهم ) آهان!"
+                  "text": "... منهم همینطور -"
+                }
+              ]
+            },
+            {
+              "id": "line-0079a",
+              "type": "dialogue",
+              "characterId": "bobchinsky",
+              "characterIds": [
+                "bobchinsky",
+                "dobchinsky"
+              ],
+              "parts": [
+                {
+                  "type": "speech",
+                  "text": "(بوبچینسکی و دوبچینسکی هر دو باهم) آهان!"
                 }
               ]
             },

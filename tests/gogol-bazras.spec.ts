@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { bundledPlays } from '../src/data/bundledPlays'
 import { BAZRAS_BUNDLED_ID, bazrasPlay, bazrasSource } from '../src/data/gogol'
 import type { DialogueBlock } from '../src/types'
-import { dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
+import { dialogueCharacterIds, dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
-const expectedSceneCounts = [143, 147, 175, 500]
+const expectedSceneCounts = [144, 147, 175, 500]
 
 function hasBalancedParentheses(text: string): boolean {
   let depth = 0
@@ -30,7 +30,21 @@ describe('Gogol Bazras bundled play', () => {
     const scenes = bazrasPlay.acts.flatMap((act) => act.scenes)
     expect(scenes).toHaveLength(4)
     expect(scenes.map((scene) => scene.blocks.length)).toEqual(expectedSceneCounts)
-    expect(flattenBlocks(bazrasPlay)).toHaveLength(965)
+    expect(flattenBlocks(bazrasPlay)).toHaveLength(966)
+  })
+
+  it('keeps all multi-owner dialogue records structurally valid', () => {
+    const characterIds = new Set(bazrasPlay.characters.map((character) => character.id))
+    const sharedDialogues = flattenBlocks(bazrasPlay)
+      .filter((block): block is DialogueBlock => block.type === 'dialogue' && Boolean(block.characterIds))
+
+    for (const dialogue of sharedDialogues) {
+      const owners = dialogueCharacterIds(dialogue)
+      expect(owners.length, dialogue.id).toBeGreaterThan(1)
+      expect(new Set(owners).size, dialogue.id).toBe(owners.length)
+      expect(owners, dialogue.id).toContain(dialogue.characterId)
+      expect(owners.every((owner) => characterIds.has(owner)), dialogue.id).toBe(true)
+    }
   })
 
   it('keeps supplied metadata and explicit gender metadata for all roles', () => {
@@ -51,6 +65,20 @@ describe('Gogol Bazras bundled play', () => {
     for (const dialogue of dialogues) {
       expect(hasBalancedParentheses(dialogueText(dialogue)), dialogue.id).toBe(true)
     }
+  })
+
+  it('keeps explicit named joint speech as shared ownership', () => {
+    const dialogues = flattenBlocks(bazrasPlay).filter((block): block is DialogueBlock => block.type === 'dialogue')
+    const namedJointCue = /\((?=[^)]*بوبچینسکی)(?=[^)]*دوبچینسکی)[^)]*هر\s*دو\s*با\s*هم[^)]*\)\s*\S/u
+    const jointBlocks = dialogues.filter((dialogue) => namedJointCue.test(dialogueText(dialogue)))
+
+    expect(jointBlocks.map((dialogue) => dialogue.id)).toEqual(['line-0079a'])
+    expect(dialogueText(jointBlocks[0])).toBe('(بوبچینسکی و دوبچینسکی هر دو باهم) آهان!')
+    expect(dialogueCharacterIds(jointBlocks[0])).toEqual(['bobchinsky', 'dobchinsky'])
+
+    const dobchinskySolo = dialogues.find((dialogue) => dialogue.id === 'line-0079')
+    expect(dobchinskySolo?.characterId).toBe('dobchinsky')
+    expect(dialogueText(dobchinskySolo as DialogueBlock)).toBe('... منهم همینطور -')
   })
 
   it('assigns all explicit collective responses to the ensemble role', () => {
