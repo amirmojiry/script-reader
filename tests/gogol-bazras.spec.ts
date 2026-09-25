@@ -4,7 +4,7 @@ import { BAZRAS_BUNDLED_ID, bazrasPlay, bazrasSource } from '../src/data/gogol'
 import type { DialogueBlock } from '../src/types'
 import { dialogueCharacterIds, dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
-const expectedSceneCounts = [144, 147, 175, 500]
+const expectedSceneCounts = [144, 147, 175, 501]
 
 function hasBalancedParentheses(text: string): boolean {
   let depth = 0
@@ -30,7 +30,7 @@ describe('Gogol Bazras bundled play', () => {
     const scenes = bazrasPlay.acts.flatMap((act) => act.scenes)
     expect(scenes).toHaveLength(4)
     expect(scenes.map((scene) => scene.blocks.length)).toEqual(expectedSceneCounts)
-    expect(flattenBlocks(bazrasPlay)).toHaveLength(966)
+    expect(flattenBlocks(bazrasPlay)).toHaveLength(967)
   })
 
   it('keeps all multi-owner dialogue records structurally valid', () => {
@@ -92,6 +92,19 @@ describe('Gogol Bazras bundled play', () => {
       'line-0748a'
     ])
     expect(collectiveResponses.every((dialogue) => dialogue.characterId === 'ensemble')).toBe(true)
+  })
+
+  it("keeps the postmaster's reading separate from the governor's rebuke", () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const governor = blocksById.get('line-0835') as DialogueBlock
+    const postmaster = blocksById.get('line-0835a') as DialogueBlock
+
+    expect(governor.characterId).toBe('governor')
+    expect(dialogueText(governor)).toBe('بی‌شرم! چرا هی این‌را تکرارمیکنی! این‌قسمت را همه شنیدیم...')
+    expect(dialogueText(governor)).not.toContain('دیگر نمیخواند')
+    expect(postmaster.characterId).toBe('postmaster')
+    expect(dialogueText(postmaster)).toContain('(دیگر نمیخواند)')
+    expect(dialogueText(postmaster)).toContain('بقیه نامه را میخوانم.')
   })
 
   it('assigns every explicit Korobkin reading cue to Korobkin', () => {
@@ -176,6 +189,7 @@ describe('Gogol Bazras bundled play', () => {
       ['line-0791d', 'police-chief'],
       ['line-0810a', 'culture-chief-wife'],
       ['line-0827a', 'ensemble'],
+      ['line-0835a', 'postmaster'],
       ['line-0849a', 'korobkin'],
       ['line-0850a', 'korobkin'],
       ['line-0852a', 'korobkin'],
@@ -294,6 +308,21 @@ describe('Gogol Bazras bundled play', () => {
     expect(dialogueText(blocksById.get('line-0568a') as DialogueBlock)).toMatch(/^آهای داداش/)
     expect(dialogueText(blocksById.get('line-0634') as DialogueBlock)).toContain('مزاحم هستم؟')
     expect(dialogueText(blocksById.get('line-0634a') as DialogueBlock)).toContain('چه کاری برای من ازنگاه کردن‌بچشمان زیبای‌شما مهمتراست؟')
+  })
+
+  it('restores source-backed sentence endings across audited pages', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const text = (id: string) => dialogueText(blocksById.get(id) as DialogueBlock)
+
+    expect(text('line-0227')).toContain('ملاقات با اشخاصی نظیر شما است.')
+    expect(text('line-0244')).toContain('تا این مهمانخانه کثیف.')
+    expect(text('line-0347')).toContain('این چیزها تلف میکنند!')
+    expect(text('line-0352')).toContain('از زیارت شما مفتخرم.')
+    expect(text('line-0353')).toContain('چون شما هستیم.')
+    expect(text('line-0355')).toBe('اوه، آقا، شما خیلی مؤدب هستید. لطف نمی‌فرمائید بنشینید؟')
+    expect(text('line-0589')).toContain('این یک کیسه شکر و یک سبد شراب ...')
+    expect(text('line-0608')).toContain('خوب موضوع چیست؟')
+    expect(text('line-0828')).toContain('گرچه خیلی‌هم زرنگ نیست...')
   })
 
   it('restores source endings in the final gathering', () => {
