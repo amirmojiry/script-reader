@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The project follows Kee
 ## [1.16.0] - 2026-09-25
 
 ### Added
-- Complete user-supplied Persian «بازرس» (The Government Inspector) by Nikolai Gogol, translated by محمد قاضی, as a bundled two-act/four-scene library play with 40 roles and regression coverage.
+- Complete user-supplied Persian «بازرس» (The Government Inspector) by Nikolai Gogol, translated by محمد قاضی, as a bundled two-act/four-scene library play with 39 roles and regression coverage.
 - Source-cue-based separation of OCR-joined speaker, reader, and narrator boundaries, including collective responses, waiter turns, the Anna/Khlestakov exchange, entrances, and standalone stage actions.
 
 ## [1.15.0] - 2026-09-24

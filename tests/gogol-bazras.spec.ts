@@ -4,7 +4,7 @@ import { BAZRAS_BUNDLED_ID, bazrasPlay, bazrasSource } from '../src/data/gogol'
 import type { DialogueBlock } from '../src/types'
 import { dialogueCharacterIds, dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
-const expectedSceneCounts = [144, 147, 175, 501]
+const expectedSceneCounts = [144, 148, 175, 501]
 
 function hasBalancedParentheses(text: string): boolean {
   let depth = 0
@@ -30,7 +30,7 @@ describe('Gogol Bazras bundled play', () => {
     const scenes = bazrasPlay.acts.flatMap((act) => act.scenes)
     expect(scenes).toHaveLength(4)
     expect(scenes.map((scene) => scene.blocks.length)).toEqual(expectedSceneCounts)
-    expect(flattenBlocks(bazrasPlay)).toHaveLength(967)
+    expect(flattenBlocks(bazrasPlay)).toHaveLength(968)
   })
 
   it('keeps all multi-owner dialogue records structurally valid', () => {
@@ -55,8 +55,12 @@ describe('Gogol Bazras bundled play', () => {
       translator: 'محمد قاضی',
       genres: ['کمدی']
     })
-    expect(bazrasPlay.characters).toHaveLength(40)
+    expect(bazrasPlay.characters).toHaveLength(39)
     expect(bazrasPlay.characters.every((character) => ['male', 'female', 'unknown'].includes(character.gender ?? ''))).toBe(true)
+  })
+
+  it('keeps source-backed gender metadata for Avdotya', () => {
+    expect(bazrasPlay.characters.find((character) => character.id === 'avdotya')?.gender).toBe('female')
   })
 
   it('keeps every dialogue parenthetical structurally balanced for narrator splitting', () => {
@@ -122,6 +126,15 @@ describe('Gogol Bazras bundled play', () => {
     expect(readingBlocks.every((dialogue) => dialogue.characterId === 'korobkin')).toBe(true)
   })
 
+
+  it('restores the clipped opening-meeting turns from the source scan', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const text = (id: string) => dialogueText(blocksById.get(id) as DialogueBlock)
+
+    expect(text('line-0031')).toContain('دیگر بیشتر از این نمیشود گفت.')
+    expect(text('line-0032')).toContain('که آدم از شیطان خجالت میکشد.')
+    expect(text('line-0033')).toContain('واقعاً کار در فرهنگ زندگی نیست ... مثل زندگی سگ است.')
+  })
 
   it('contains no residual OCR speaker-label artifacts inside dialogue text', () => {
     const residualSpeakerCuePatterns = [
@@ -289,6 +302,25 @@ describe('Gogol Bazras bundled play', () => {
     expect(dialogueText(cultureChief)).toBe('قربان ...')
     expect(healthChief.characterId).toBe('health-chief')
     expect(dialogueText(healthChief)).toBe('ما همیشه سرپا هستیم. اهمیت ندارد شماآسوده باشید قربان. ما مقام خود را میشناسیم ...')
+  })
+
+  it("keeps the innkeeper refusal as Osip's reported speech", () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const refusal = blocksById.get('line-0154') as DialogueBlock
+
+    expect(refusal.characterId).toBe('osip')
+    expect(dialogueText(refusal)).toBe('مهمانخانه‌چی گفت: تا صورتحساب سابقی را نپردازید ما چیزی برای خوردن نمیدهیم.')
+    expect(bazrasPlay.characters.some((character) => character.id === 'innkeeper')).toBe(false)
+  })
+
+  it('restores the missing waiter response before Khlestakov asks what it means', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const waiter = blocksById.get('line-0188a') as DialogueBlock
+    const khlestakov = blocksById.get('line-0189') as DialogueBlock
+
+    expect(waiter.characterId).toBe('waiter')
+    expect(dialogueText(waiter)).toBe('هست آقا، ولی بعد هم ... نیست.')
+    expect(dialogueText(khlestakov)).toContain('منظورت از هست و نینست چیست؟')
   })
 
   it('keeps reviewed mid-scene handoffs on their actual speakers', () => {
