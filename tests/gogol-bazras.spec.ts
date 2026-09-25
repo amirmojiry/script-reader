@@ -342,6 +342,17 @@ describe('Gogol Bazras bundled play', () => {
     expect(dialogueText(blocksById.get('line-0634a') as DialogueBlock)).toContain('چه کاری برای من ازنگاه کردن‌بچشمان زیبای‌شما مهمتراست؟')
   })
 
+  it('restores additional clipped page-boundary endings from the source scan', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const text = (id: string) => dialogueText(blocksById.get(id) as DialogueBlock)
+
+    expect(text('line-0052')).toContain('خیلی از روزنامه بهتر است.')
+    expect(text('line-0057')).toContain('مسکو را به آتش کشید.')
+    expect(text('line-0073')).toContain('همین که وارد مهمانخانه شدیم فورآچشمم به جوانی افتاد ...')
+    expect(text('line-0268')).toContain('آنرا کاملاً خوب میکند.')
+    expect(text('line-0333')).toContain('خدایا کمکم کن، میشکا!')
+  })
+
   it('restores source-backed sentence endings across audited pages', () => {
     const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
     const text = (id: string) => dialogueText(blocksById.get(id) as DialogueBlock)
