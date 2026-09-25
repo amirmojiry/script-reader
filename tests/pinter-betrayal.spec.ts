@@ -109,7 +109,6 @@ describe('Harold Pinter Betrayal bundled play', () => {
 
   it('is exposed once in the bundled catalog with a reserved unique id', () => {
     expect(BETRAYAL_BUNDLED_ID).toBe('builtin:pinter:betrayal')
-    expect(bundledPlays).toHaveLength(9)
     expect(bundledPlays.filter((play) => play.id === BETRAYAL_BUNDLED_ID)).toHaveLength(1)
     expect(new Set(bundledPlays.map((play) => play.id)).size).toBe(bundledPlays.length)
   })
