@@ -4,7 +4,7 @@ import { BAZRAS_BUNDLED_ID, bazrasPlay, bazrasSource } from '../src/data/gogol'
 import type { DialogueBlock } from '../src/types'
 import { dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
-const expectedSceneCounts = [143, 146, 170, 496]
+const expectedSceneCounts = [143, 147, 174, 500]
 
 function hasBalancedParentheses(text: string): boolean {
   let depth = 0
@@ -30,7 +30,7 @@ describe('Gogol Bazras bundled play', () => {
     const scenes = bazrasPlay.acts.flatMap((act) => act.scenes)
     expect(scenes).toHaveLength(4)
     expect(scenes.map((scene) => scene.blocks.length)).toEqual(expectedSceneCounts)
-    expect(flattenBlocks(bazrasPlay)).toHaveLength(955)
+    expect(flattenBlocks(bazrasPlay)).toHaveLength(964)
   })
 
   it('keeps supplied metadata and explicit gender metadata for all roles', () => {
@@ -93,7 +93,10 @@ describe('Gogol Bazras bundled play', () => {
       /خلیستاکوف\s+الب/,
       /آن:\s*مزخرف/,
       /بکی‌از تجاه/,
-      /هسرققگاز/
+      /هسرققگاز/,
+      /خلیستا\s*گوف\s*؛/,
+      /خلیستا\s*وف\s*۰/,
+      /دئیس\s*بهدادی/
     ]
     const dialogues = flattenBlocks(bazrasPlay).filter((block): block is DialogueBlock => block.type === 'dialogue')
 
@@ -116,17 +119,23 @@ describe('Gogol Bazras bundled play', () => {
       ['line-0184a', 'waiter'],
       ['line-0185a', 'waiter'],
       ['line-0200a', 'waiter'],
+      ['line-0246a', 'khlestakov'],
       ['line-0257a', 'khlestakov'],
       ['line-0295a', 'anna'],
+      ['line-0305a', 'anna'],
       ['line-0312a', 'anna'],
       ['line-0356a', 'anna'],
       ['line-0357a', 'anna'],
+      ['line-0389a', 'health-chief'],
       ['line-0410a', 'anna'],
       ['line-0331a', 'mishka'],
       ['line-0499a', 'culture-chief'],
+      ['line-0511a', 'health-chief'],
+      ['line-0568a', 'osip'],
       ['line-0576a', 'khlestakov'],
       ['line-0583a', 'merchants'],
       ['line-0603a', 'locksmith-wife'],
+      ['line-0634a', 'khlestakov'],
       ['line-0666a', 'anna'],
       ['line-0666b', 'khlestakov'],
       ['line-0668a', 'anna'],
@@ -188,6 +197,21 @@ describe('Gogol Bazras bundled play', () => {
       type: 'stage-direction',
       text: 'پرده میافتد.'
     })
+    expect(blocksById.get('stage-0389a')).toEqual({
+      id: 'stage-0389a',
+      type: 'stage-direction',
+      text: 'هردو از اطاق بیرون میروند'
+    })
+    expect(blocksById.get('stage-0389b')).toEqual({
+      id: 'stage-0389b',
+      type: 'stage-direction',
+      text: 'آنها از اطاق بیرون میروند'
+    })
+    expect(blocksById.get('stage-0568a')).toEqual({
+      id: 'stage-0568a',
+      type: 'stage-direction',
+      text: 'اسیپ بیرون میرود و از دور صدایش بگوش میرسد'
+    })
     expect(blocksById.get('stage-0603a')).toEqual({
       id: 'stage-0603a',
       type: 'stage-direction',
@@ -208,6 +232,25 @@ describe('Gogol Bazras bundled play', () => {
       type: 'stage-direction',
       text: 'دور آنها حلقه میزنند.'
     })
+  })
+
+  it('keeps reviewed mid-scene handoffs on their actual speakers', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+
+    expect(dialogueText(blocksById.get('line-0246') as DialogueBlock)).toBe('آقا دنبال من فرستاده بودید.')
+    expect(dialogueText(blocksById.get('line-0246a') as DialogueBlock)).toContain('صورتحساب را میخو اهم.')
+
+    expect(dialogueText(blocksById.get('line-0305') as DialogueBlock)).toContain('تمام راه را دویده‌ام')
+    expect(dialogueText(blocksById.get('line-0305a') as DialogueBlock)).toMatch(/^خجالت آور است!/)
+
+    expect(dialogueText(blocksById.get('line-0389a') as DialogueBlock)).toContain('ما حتی لباسهای رسمی هم نپوشیده‌ایم')
+    expect(dialogueText(blocksById.get('line-0511') as DialogueBlock)).toBe('واقعاً اینطور است؟')
+    expect(dialogueText(blocksById.get('line-0511a') as DialogueBlock)).toContain('دراینجا ملاکی بنام دوبچینسکی است')
+
+    expect(dialogueText(blocksById.get('line-0568') as DialogueBlock)).toBe('خیلی خوب. اما برای من یک شمع بیاور.')
+    expect(dialogueText(blocksById.get('line-0568a') as DialogueBlock)).toMatch(/^آهای داداش/)
+    expect(dialogueText(blocksById.get('line-0634') as DialogueBlock)).toContain('مزاحم هستم؟')
+    expect(dialogueText(blocksById.get('line-0634a') as DialogueBlock)).toContain('چه کاری برای من ازنگاه کردن‌بچشمان زیبای‌شما مهمتراست؟')
   })
 
   it('keeps stable source block ids and beginning/end sentinels', () => {
