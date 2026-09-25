@@ -4,7 +4,7 @@ import { BAZRAS_BUNDLED_ID, bazrasPlay, bazrasSource } from '../src/data/gogol'
 import type { DialogueBlock } from '../src/types'
 import { dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
-const expectedSceneCounts = [143, 147, 174, 500]
+const expectedSceneCounts = [143, 147, 175, 500]
 
 function hasBalancedParentheses(text: string): boolean {
   let depth = 0
@@ -30,7 +30,7 @@ describe('Gogol Bazras bundled play', () => {
     const scenes = bazrasPlay.acts.flatMap((act) => act.scenes)
     expect(scenes).toHaveLength(4)
     expect(scenes.map((scene) => scene.blocks.length)).toEqual(expectedSceneCounts)
-    expect(flattenBlocks(bazrasPlay)).toHaveLength(964)
+    expect(flattenBlocks(bazrasPlay)).toHaveLength(965)
   })
 
   it('keeps supplied metadata and explicit gender metadata for all roles', () => {
@@ -96,7 +96,9 @@ describe('Gogol Bazras bundled play', () => {
       /هسرققگاز/,
       /خلیستا\s*گوف\s*؛/,
       /خلیستا\s*وف\s*۰/,
-      /دئیس\s*بهدادی/
+      /دئیس\s*بهدادی/,
+      /دئیس\s*بهداای/,
+      /رئیس\s*بهداای/
     ]
     const dialogues = flattenBlocks(bazrasPlay).filter((block): block is DialogueBlock => block.type === 'dialogue')
 
@@ -126,6 +128,7 @@ describe('Gogol Bazras bundled play', () => {
       ['line-0312a', 'anna'],
       ['line-0356a', 'anna'],
       ['line-0357a', 'anna'],
+      ['line-0363a', 'health-chief'],
       ['line-0389a', 'health-chief'],
       ['line-0410a', 'anna'],
       ['line-0331a', 'mishka'],
@@ -232,6 +235,18 @@ describe('Gogol Bazras bundled play', () => {
       type: 'stage-direction',
       text: 'دور آنها حلقه میزنند.'
     })
+  })
+
+  it('keeps the culture/health-chief handoff from PDF p. 95 on separate roles', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+
+    const cultureChief = blocksById.get('line-0363') as DialogueBlock
+    const healthChief = blocksById.get('line-0363a') as DialogueBlock
+
+    expect(cultureChief.characterId).toBe('culture-chief')
+    expect(dialogueText(cultureChief)).toBe('قربان ...')
+    expect(healthChief.characterId).toBe('health-chief')
+    expect(dialogueText(healthChief)).toBe('ما همیشه سرپا هستیم. اهمیت ندارد شماآسوده باشید قربان. ما مقام خود را میشناسیم ...')
   })
 
   it('keeps reviewed mid-scene handoffs on their actual speakers', () => {
