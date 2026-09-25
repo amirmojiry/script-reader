@@ -253,6 +253,19 @@ describe('Gogol Bazras bundled play', () => {
     expect(dialogueText(blocksById.get('line-0634a') as DialogueBlock)).toContain('چه کاری برای من ازنگاه کردن‌بچشمان زیبای‌شما مهمتراست؟')
   })
 
+  it('restores source endings in the final gathering', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const text = (id: string) => dialogueText(blocksById.get(id) as DialogueBlock)
+
+    expect(text('line-0771')).toContain('بنشینید. خواهش میکنم.')
+    expect(text('line-0772')).toContain('درست از اول تعریف کنید.')
+    expect(text('line-0779')).toContain('من که نگفتم اینطور نبود.')
+    expect(text('line-0790')).toContain('برای این ازدواج بگیرند.')
+    expect(text('line-0796')).toContain('آرزوی سعادت میکنم.')
+    expect(text('line-0806')).toContain('کوتاهی نمیکنم شما مرا خوب میشناسید.')
+    expect(text('line-0808')).toContain('برای کمک کردن به‌دوست وقت هست.')
+  })
+
   it('keeps stable source block ids and beginning/end sentinels', () => {
     const scenes = bazrasPlay.acts.flatMap((act) => act.scenes)
 
