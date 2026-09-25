@@ -6,7 +6,7 @@ Script Reader is a static, offline-first Vue 3 web application for reading plays
 
 - Local play library backed by IndexedDB.
 - Structured acts, scenes, dialogue, spoken text, inline directions, and stage directions.
-- Eight bundled user-supplied plays: “Horses at the Window”, «مهمان ناخوانده» by اریک امانوئل اشمیت translated by تینوش نظم‌جو, «حساب پرداخت نمی‌شه!» by داریو فو translated by حامد جهانشاهی, «مرگ در می‌زند» and «در نقش سقراط» by Woody Allen, plus «بانو و مرد مرده», «جنایت و مکافات», and «عکس دسته جمعی با خانم بزرگ» by Chista Yasrebi.
+- Ten bundled user-supplied plays: “Horses at the Window”, «مهمان ناخوانده» by اریک امانوئل اشمیت translated by تینوش نظم‌جو, «حساب پرداخت نمی‌شه!» by داریو فو translated by حامد جهانشاهی, «مرگ در می‌زند» and «در نقش سقراط» by Woody Allen, «بانو و مرد مرده», «جنایت و مکافات», and «عکس دسته جمعی با خانم بزرگ» by Chista Yasrebi, Harold Pinter's «خیانت» translated by نگار جواهریان and تینوش نظم‌جو, plus Gogol's «بازرس» translated by محمد قاضی.
 - Library filters for character count, estimated duration, author, translator, and genre, plus sorting by title, duration, and role count.
 - A guided play-selection wizard recommends plays from available cast size, male/female availability, available time, and preferred genre.
 - Each library card links its play title directly to the reader, exposes clickable genre filters, and presents its three metrics in a compact control grid.

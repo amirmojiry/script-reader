@@ -2,13 +2,14 @@ import type { Play, PlayBlock } from '../types'
 import { playAuthors, playTranslators } from '../utils/play'
 import { bundledPlay } from './bundledPlay'
 import { hesabPardakhtNemishePlay } from './darioFo'
+import { bazrasPlay } from './gogol'
 import { unexpectedGuestPlay } from './unexpectedGuest'
 import { betrayalPlay } from './pinter'
 import { woodyAllenBundledPlays } from './woodyAllen'
 import { yasrebiBundledPlays } from './yasrebi'
 
 export const BUNDLED_ID_PREFIX = 'builtin:'
-export const bundledPlays: Play[] = [bundledPlay, ...yasrebiBundledPlays, hesabPardakhtNemishePlay, ...woodyAllenBundledPlays, betrayalPlay, unexpectedGuestPlay]
+export const bundledPlays: Play[] = [bundledPlay, ...yasrebiBundledPlays, hesabPardakhtNemishePlay, ...woodyAllenBundledPlays, betrayalPlay, bazrasPlay, unexpectedGuestPlay]
 
 export interface ResolvedBundledPlay {
   play: Play

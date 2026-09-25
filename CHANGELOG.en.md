@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-09-25
+
+### Added
+- Complete user-supplied Persian «بازرس» (The Government Inspector) by Nikolai Gogol, translated by محمد قاضی, as a bundled two-act/four-scene library play with 39 roles and regression coverage.
+- Source-cue-based separation of OCR-joined speaker, reader, and narrator boundaries, including collective responses, waiter turns, the Anna/Khlestakov exchange, entrances, and standalone stage actions.
+
 ## [1.15.0] - 2026-09-24
 
 ### Added
@@ -161,7 +167,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/amirmojiry/script-reader/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/amirmojiry/script-reader/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/amirmojiry/script-reader/compare/v1.13.2...v1.14.0
 [1.13.2]: https://github.com/amirmojiry/script-reader/compare/v1.13.1...v1.13.2
