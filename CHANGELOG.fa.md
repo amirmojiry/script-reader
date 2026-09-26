@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.16.1] - 2026-09-26
+
+### اصلاح‌شده
+- مجموعهٔ ۲۴ اصلاح تأمین‌شده برای ابتدای «بازرس» اعمال شد و خطاهای OCR، فاصله‌گذاری و نشانه‌گذاری بدون تغییر شناسهٔ بلوک‌ها، مالکیت گوینده‌ها یا ساختار نمایش اصلاح شدند.
+
 ## [1.16.0] - 2026-09-25
 
 ### افزوده‌شده
@@ -167,7 +172,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...HEAD
+[1.16.1]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/amirmojiry/script-reader/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/amirmojiry/script-reader/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/amirmojiry/script-reader/compare/v1.13.2...v1.14.0
