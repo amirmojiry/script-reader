@@ -33,6 +33,22 @@ describe('Gogol Bazras bundled play', () => {
     expect(flattenBlocks(bazrasPlay)).toHaveLength(968)
   })
 
+  it('keeps the supplied opening proofreading corrections in the canonical source', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const text = (id: string) => {
+      const block = blocksById.get(id)
+      if (!block) throw new Error(`Missing block: ${id}`)
+      return block.type === 'dialogue' ? dialogueText(block) : block.type === 'stage-direction' ? block.text : block.title
+    }
+
+    expect(text('stage-0001')).toBe('اطاق پذیرایی در منزل فرماندار؛ فرماندار، رئیس بهداری، رئیس فرهنگ، رئیس عدلیه. پزشک ناحیه درصحنه دور هم جمع شده‌اند ')
+    expect(text('line-0002')).toBe('حوب، امروز همه شما را اینجا احضار کرده‌ام تا اخبار بسیار بدی را خدمتتان‌ عرض کنم. اینطور که پیداست یک نفر بازرس دولتی به‌اینجا می‌آید.')
+    expect(text('line-0007a')).toContain('این بازرس با نام محرمانه به اینجا خواهد آمد')
+    expect(text('line-0017')).toContain('اطاقهای دادگاه درست شبیه طویله شده.')
+    expect(text('line-0023')).toContain('اگر از آن توله‌سگ‌های شکاری باشد چرا')
+    expect(text('line-0026')).toContain('اصلا به کلیسا نمی‌روید. من لااقل ایمانم محکم است.')
+  })
+
   it('keeps all multi-owner dialogue records structurally valid', () => {
     const characterIds = new Set(bazrasPlay.characters.map((character) => character.id))
     const sharedDialogues = flattenBlocks(bazrasPlay)
