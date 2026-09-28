@@ -33,7 +33,7 @@ describe('Gogol Bazras bundled play', () => {
     expect(flattenBlocks(bazrasPlay)).toHaveLength(968)
   })
 
-  it('keeps the supplied opening proofreading corrections in the canonical source', () => {
+  it('keeps the supplied proofreading corrections in the canonical source', () => {
     const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
     const text = (id: string) => {
       const block = blocksById.get(id)
@@ -47,6 +47,13 @@ describe('Gogol Bazras bundled play', () => {
     expect(text('line-0017')).toContain('اطاقهای دادگاه درست شبیه طویله شده.')
     expect(text('line-0023')).toContain('اگر از آن توله‌سگ‌های شکاری باشد چرا')
     expect(text('line-0026')).toContain('اصلا به کلیسا نمی‌روید. من لااقل ایمانم محکم است.')
+    expect(text('line-0027')).toBe('من خودم فکر کرده‌ام و به این عقیده رسیده‌ام و هیچکس به من نیاموخته است!')
+    expect(text('line-0028')).toContain('آخر شما رئیس فرهنگ هستید')
+    expect(text('line-0030')).toContain('به نظر می‌رسد که می‌خواهد مدرسه را به آتش بکشد.')
+    expect(text('line-0034')).toContain('این است که مرا فکر و خیال برداشته.')
+    expect(text('line-0045')).toContain('ما بیشتر از ترکها صدمه می‌بینیم')
+    expect(text('line-0048')).toBe('خوب، جریان از چه قرار است؟')
+    expect(text('line-0051')).toContain('تو باید تمام نامه‌هائی را که توسط اداره پست ارسال میکنند باز کنی و بخوانی.')
   })
 
   it('keeps all multi-owner dialogue records structurally valid', () => {

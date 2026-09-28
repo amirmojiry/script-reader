@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.16.2] - 2026-09-28
+
+### اصلاح‌شده
+- ۱۷ مورد باقی‌مانده از خروجی بازبینی «بازرس» اعمال شد؛ از جمله ویرایش پی‌درپی `line-0027`، بدون تغییر ساختار نمایش و با حفظ ۲۴ اصلاحی که پیش‌تر منتشر شده بودند.
+
 ## [1.16.1] - 2026-09-26
 
 ### اصلاح‌شده
@@ -172,7 +177,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...HEAD
+[1.16.2]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/amirmojiry/script-reader/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/amirmojiry/script-reader/compare/v1.14.0...v1.15.0
