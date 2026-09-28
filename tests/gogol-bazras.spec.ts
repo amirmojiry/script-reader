@@ -154,7 +154,7 @@ describe('Gogol Bazras bundled play', () => {
     const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
     const text = (id: string) => dialogueText(blocksById.get(id) as DialogueBlock)
 
-    expect(text('line-0031')).toContain('دیگر بیشتر از این نمیشود گفت.')
+    expect(text('line-0031')).toContain('دیگر بیشتر از این نمی‌شود گفت.')
     expect(text('line-0032')).toContain('که آدم از شیطان خجالت میکشد.')
     expect(text('line-0033')).toContain('واقعاً کار در فرهنگ زندگی نیست ... مثل زندگی سگ است.')
   })
