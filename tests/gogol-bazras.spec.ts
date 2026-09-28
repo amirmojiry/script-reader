@@ -50,9 +50,11 @@ describe('Gogol Bazras bundled play', () => {
     expect(text('line-0027')).toBe('من خودم فکر کرده‌ام و به این عقیده رسیده‌ام و هیچکس به من نیاموخته است!')
     expect(text('line-0028')).toContain('آخر شما رئیس فرهنگ هستید')
     expect(text('line-0030')).toContain('به نظر می‌رسد که می‌خواهد مدرسه را به آتش بکشد.')
+    expect(text('line-0034')).toContain('( به در اشاره میکند )')
     expect(text('line-0034')).toContain('این است که مرا فکر و خیال برداشته.')
     expect(text('line-0045')).toContain('ما بیشتر از ترکها صدمه می‌بینیم')
     expect(text('line-0048')).toBe('خوب، جریان از چه قرار است؟')
+    expect(text('line-0051')).toMatch(/^من\؟ اوه؛/)
     expect(text('line-0051')).toContain('تو باید تمام نامه‌هائی را که توسط اداره پست ارسال میکنند باز کنی و بخوانی.')
   })
 
