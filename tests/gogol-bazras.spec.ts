@@ -50,7 +50,7 @@ describe('Gogol Bazras bundled play', () => {
     expect(text('line-0027')).toBe('من خودم فکر کرده‌ام و به این عقیده رسیده‌ام و هیچکس به من نیاموخته است!')
     expect(text('line-0028')).toContain('آخر شما رئیس فرهنگ هستید')
     expect(text('line-0030')).toContain('به نظر می‌رسد که می‌خواهد مدرسه را به آتش بکشد.')
-    expect(text('line-0034')).toContain('( به در اشاره میکند )')
+    expect(text('line-0034')).toContain('(به در اشاره میکند)')
     expect(text('line-0034')).toContain('این است که مرا فکر و خیال برداشته.')
     expect(text('line-0045')).toContain('ما بیشتر از ترکها صدمه می‌بینیم')
     expect(text('line-0048')).toBe('خوب، جریان از چه قرار است؟')
@@ -408,7 +408,7 @@ describe('Gogol Bazras bundled play', () => {
 
     expect(text('line-0052')).toContain('خیلی از روزنامه بهتر است.')
     expect(text('line-0057')).toContain('مسکو را به آتش کشید.')
-    expect(text('line-0073')).toContain('همین که وارد مهمانخانه شدیم فورآچشمم به جوانی افتاد ...')
+    expect(text('line-0073')).toContain('همین که وارد مهمانخانه شدیم فورا چشمم به جوانکی افتاد...')
     expect(text('line-0268')).toContain('آنرا کاملاً خوب میکند.')
     expect(text('line-0333')).toContain('خدایا کمکم کن، میشکا!')
   })
