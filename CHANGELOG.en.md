@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.16.3] - 2026-09-30
+
+### Fixed
+- Applied the next 20 supplied proofreading corrections to «بازرس», restored Dobchinsky’s missing “و من گفتم...” turn, removed all three reviewed no-dialogue cast entries, and replaced the synthetic “همه با هم” role with shared ownership by the characters participating in each collective response.
+- Added a catalog-wide bundled-play regression guard and curation documentation requiring every listed character to own at least one dialogue.
+- Sanitized persisted reader role selections against each play’s current cast so removed bundled roles cannot remain selected after data updates.
+
 ## [1.16.2] - 2026-09-28
 
 ### Fixed
@@ -177,7 +184,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...HEAD
+[1.16.3]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/amirmojiry/script-reader/compare/v1.15.0...v1.16.0

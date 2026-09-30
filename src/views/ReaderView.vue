@@ -256,7 +256,7 @@ onMounted(async () => {
   const storedSettings = await getSettings()
   if (storedSettings) settings.value = { ...defaultSettings, ...storedSettings }
 
-  const state = await getReadingState(play.value.id)
+  const state = await getReadingState(play.value.id, play.value.characters.map((character) => character.id))
   if (state) {
     selected.value = state.selectedCharacterIds
     myCharacterId.value = state.myCharacterId
