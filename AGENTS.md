@@ -22,6 +22,7 @@ Before editing, read:
 - Never render imported play text with unsanitized `innerHTML`. Prefer Vue text interpolation and explicit structured parts.
 - Do not rewrite parenthetical speech into canonical stage-direction blocks. The reader may classify balanced parenthetical segments as virtual narrator content for presentation/rehearsal, while preserving the original source text. Structural import inference still belongs in a reviewable migration layer.
 - Every newly curated/bundled play must include one or more useful genres and explicit `male`/`female`/`unknown` gender metadata for every character. Use `unknown` when the supplied source does not establish gender; do not guess from an ambiguous name/title.
+- Curated/bundled `characters` lists must contain speaking roles only: every declared character must own at least one dialogue via `characterId` or `characterIds`. Do not add or retain a role solely because its name appears in stage directions, cast metadata, or narration; remove non-speaking roles from the list and keep the catalog-wide regression test green.
 
 ## Required GitHub workflow
 

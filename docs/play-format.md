@@ -60,6 +60,7 @@ Minimal example:
 - Act and scene titles are required.
 - Block ids must be unique across the whole play.
 - Every `dialogue.characterId` must reference a declared character.
+- Every character listed in `Play.characters` must own at least one dialogue through `dialogue.characterId` or `dialogue.characterIds`. Do not keep non-speaking names in the cast list merely because they appear in stage directions or source metadata; omit them from `characters` until they have an actual spoken turn.
 - Joint dialogue may set `dialogue.characterIds` to a unique non-empty array of declared character ids. It must include the primary `characterId`; when omitted, ownership is the single `characterId`.
 - Dialogue parts are only `speech` or `direction` and contain non-empty text.
 - Standalone directions use `type: "stage-direction"`.
@@ -112,6 +113,8 @@ If a legacy local import already uses an id that collides with a bundled play, i
 Bundled plays generated from user-supplied structured source use ordered `dialogue` and `scene_direction` records. Migration creates stable block identifiers and canonical character references while preserving every supplied record in sequence. Source dialogue text is not rewritten when narrator segments are detected.
 
 During ingestion of a new bundled play, also add explicit character gender metadata and one or more useful genres. Unknown gender is preferred over unsupported inference.
+
+Before committing a bundled play, audit the character list against dialogue ownership and remove every character that never owns a dialogue. The bundled-play test suite enforces this across the full catalog.
 
 ## Legacy migration note
 

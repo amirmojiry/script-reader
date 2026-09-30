@@ -84,7 +84,7 @@ describe('Gogol Bazras bundled play', () => {
       translator: 'محمد قاضی',
       genres: ['کمدی']
     })
-    expect(bazrasPlay.characters).toHaveLength(36)
+    expect(bazrasPlay.characters).toHaveLength(35)
     expect(bazrasPlay.characters.every((character) => ['male', 'female', 'unknown'].includes(character.gender ?? ''))).toBe(true)
   })
 
@@ -93,12 +93,12 @@ describe('Gogol Bazras bundled play', () => {
   })
 
 
-  it('omits the two explicitly removed no-dialogue roles without deleting unrelated cast entries', () => {
+  it('omits every reviewed no-dialogue role from the cast list', () => {
     const characterIds = new Set(bazrasPlay.characters.map((character) => character.id))
 
     expect(characterIds.has('inn-traveler')).toBe(false)
     expect(characterIds.has('petersburg-guard')).toBe(false)
-    expect(characterIds.has('pugovitsin')).toBe(true)
+    expect(characterIds.has('pugovitsin')).toBe(false)
   })
 
   it('restores Dobchinsky’s missing turn before Bobchinsky continues the inn story', () => {
