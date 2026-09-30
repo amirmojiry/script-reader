@@ -9,6 +9,7 @@ All notable changes to this project are documented here. The project follows Kee
 ### Fixed
 - Applied the next 20 supplied proofreading corrections to «بازرس», restored Dobchinsky’s missing “و من گفتم...” turn, removed all three reviewed no-dialogue cast entries, and replaced the synthetic “همه با هم” role with shared ownership by the characters participating in each collective response.
 - Added a catalog-wide bundled-play regression guard and curation documentation requiring every listed character to own at least one dialogue.
+- Sanitized persisted reader role selections against each play’s current cast so removed bundled roles cannot remain selected after data updates.
 
 ## [1.16.2] - 2026-09-28
 

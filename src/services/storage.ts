@@ -57,17 +57,38 @@ export async function saveReadingState(state: ReadingState): Promise<void> {
   await db.put('readingStates', state)
 }
 
-export async function getReadingState(playId: string): Promise<ReadingState | undefined> {
+export async function getReadingState(
+  playId: string,
+  validCharacterIds?: Iterable<string>
+): Promise<ReadingState | undefined> {
   const db = await dbPromise
   const state = await db.get('readingStates', playId) as ReadingState | undefined
-  if (!state || playId !== BUNDLED_PLAY_ID) return state
+  if (!state) return state
 
-  const migrateCharacterId = (id: string): string => id === 'wife' ? 'woman' : id
-  return {
+  const migrateCharacterId = (id: string): string =>
+    playId === BUNDLED_PLAY_ID && id === 'wife' ? 'woman' : id
+  const allowedCharacterIds = validCharacterIds ? new Set(validCharacterIds) : undefined
+  const selectedCharacterIds = [...new Set(
+    state.selectedCharacterIds
+      .map(migrateCharacterId)
+      .filter((id) => !allowedCharacterIds || allowedCharacterIds.has(id))
+  )]
+  const migratedMyCharacterId = state.myCharacterId ? migrateCharacterId(state.myCharacterId) : undefined
+  const myCharacterId = migratedMyCharacterId && (!allowedCharacterIds || allowedCharacterIds.has(migratedMyCharacterId))
+    ? migratedMyCharacterId
+    : undefined
+
+  const normalizedState: ReadingState = {
     ...state,
-    selectedCharacterIds: state.selectedCharacterIds.map(migrateCharacterId),
-    myCharacterId: state.myCharacterId ? migrateCharacterId(state.myCharacterId) : undefined
+    selectedCharacterIds,
+    myCharacterId
   }
+  const changed = selectedCharacterIds.length !== state.selectedCharacterIds.length
+    || selectedCharacterIds.some((id, index) => id !== state.selectedCharacterIds[index])
+    || myCharacterId !== state.myCharacterId
+
+  if (changed) await db.put('readingStates', normalizedState)
+  return normalizedState
 }
 
 export async function saveSettings(settings: ReaderSettings): Promise<void> {
