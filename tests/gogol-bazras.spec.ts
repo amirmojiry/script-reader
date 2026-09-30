@@ -4,7 +4,7 @@ import { BAZRAS_BUNDLED_ID, bazrasPlay, bazrasSource } from '../src/data/gogol'
 import type { DialogueBlock } from '../src/types'
 import { dialogueCharacterIds, dialogueText, flattenBlocks, validatePlay } from '../src/utils/play'
 
-const expectedSceneCounts = [144, 148, 175, 501]
+const expectedSceneCounts = [145, 148, 175, 501]
 
 function hasBalancedParentheses(text: string): boolean {
   let depth = 0
@@ -30,7 +30,7 @@ describe('Gogol Bazras bundled play', () => {
     const scenes = bazrasPlay.acts.flatMap((act) => act.scenes)
     expect(scenes).toHaveLength(4)
     expect(scenes.map((scene) => scene.blocks.length)).toEqual(expectedSceneCounts)
-    expect(flattenBlocks(bazrasPlay)).toHaveLength(968)
+    expect(flattenBlocks(bazrasPlay)).toHaveLength(969)
   })
 
   it('keeps the supplied proofreading corrections in the canonical source', () => {
@@ -56,6 +56,10 @@ describe('Gogol Bazras bundled play', () => {
     expect(text('line-0048')).toBe('خوب، جریان از چه قرار است؟')
     expect(text('line-0051')).toMatch(/^من\؟ اوه؛/)
     expect(text('line-0051')).toContain('تو باید تمام نامه‌هائی را که توسط اداره پست ارسال میکنند باز کنی و بخوانی.')
+    expect(text('line-0054')).toContain('مثلا چندی قبل نامه یک نفر ستوان‌یکم به یکی ازدوستانش خیلی جالب بود.')
+    expect(text('line-0060')).toContain('بوبچیسکی و دوبچینسکی نفس زنان وارد میشوند')
+    expect(text('line-0068')).toContain('اخبار را درباره بازرس دولتی به او دادم')
+    expect(text('line-0073')).toContain('شکمم قار و قور میکند')
   })
 
   it('keeps all multi-owner dialogue records structurally valid', () => {
@@ -80,12 +84,32 @@ describe('Gogol Bazras bundled play', () => {
       translator: 'محمد قاضی',
       genres: ['کمدی']
     })
-    expect(bazrasPlay.characters).toHaveLength(39)
+    expect(bazrasPlay.characters).toHaveLength(36)
     expect(bazrasPlay.characters.every((character) => ['male', 'female', 'unknown'].includes(character.gender ?? ''))).toBe(true)
   })
 
   it('keeps source-backed gender metadata for Avdotya', () => {
     expect(bazrasPlay.characters.find((character) => character.id === 'avdotya')?.gender).toBe('female')
+  })
+
+
+  it('omits the two explicitly removed no-dialogue roles without deleting unrelated cast entries', () => {
+    const characterIds = new Set(bazrasPlay.characters.map((character) => character.id))
+
+    expect(characterIds.has('inn-traveler')).toBe(false)
+    expect(characterIds.has('petersburg-guard')).toBe(false)
+    expect(characterIds.has('pugovitsin')).toBe(true)
+  })
+
+  it('restores Dobchinsky’s missing turn before Bobchinsky continues the inn story', () => {
+    const blocks = flattenBlocks(bazrasPlay)
+    const missingTurnIndex = blocks.findIndex((block) => block.id === 'line-0072a')
+    const missingTurn = blocks[missingTurnIndex] as DialogueBlock
+
+    expect(blocks[missingTurnIndex - 1]?.id).toBe('line-0072')
+    expect(blocks[missingTurnIndex + 1]?.id).toBe('line-0073')
+    expect(missingTurn.characterId).toBe('dobchinsky')
+    expect(dialogueText(missingTurn)).toBe('و من گفتم...')
   })
 
   it('keeps every dialogue parenthetical structurally balanced for narrator splitting', () => {
@@ -110,17 +134,30 @@ describe('Gogol Bazras bundled play', () => {
     expect(dialogueText(dobchinskySolo as DialogueBlock)).toBe('... منهم همینطور -')
   })
 
-  it('assigns all explicit collective responses to the ensemble role', () => {
-    const collectiveCue = /\(\s*همه\s*با\s*هم\s*\)\s*\S/
-    const dialogues = flattenBlocks(bazrasPlay).filter((block): block is DialogueBlock => block.type === 'dialogue')
-    const collectiveResponses = dialogues.filter((dialogue) => collectiveCue.test(dialogueText(dialogue)))
-
-    expect(collectiveResponses.map((dialogue) => dialogue.id)).toEqual([
-      'line-0062a',
-      'line-0362a',
-      'line-0748a'
+  it('assigns collective responses to the characters sharing each turn', () => {
+    const blocksById = new Map(flattenBlocks(bazrasPlay).map((block) => [block.id, block]))
+    const expectedOwners = new Map<string, string[]>([
+      ['line-0062a', ['governor', 'health-chief', 'culture-chief', 'justice-chief', 'doctor', 'postmaster']],
+      ['line-0362a', ['governor', 'health-chief', 'justice-chief', 'culture-chief', 'postmaster', 'police-chief', 'dobchinsky', 'bobchinsky']],
+      ['line-0446', ['health-chief', 'doctor', 'postmaster', 'culture-chief', 'bobchinsky', 'dobchinsky']],
+      ['line-0448', ['justice-chief', 'health-chief', 'doctor', 'postmaster', 'culture-chief', 'bobchinsky', 'dobchinsky']],
+      ['line-0591', ['merchants', 'merchant-1', 'merchant-2', 'merchant-3', 'abdulin']],
+      ['line-0748a', ['merchants', 'merchant-1', 'merchant-2', 'merchant-3', 'abdulin']],
+      ['line-0781', ['justice-chief', 'health-chief', 'rastakovsky', 'korobkin', 'korobkin-wife', 'lyapiulov', 'bobchinsky', 'dobchinsky', 'culture-chief', 'culture-chief-wife', 'police-chief', 'dobchinsky-wife', 'anna', 'maria']],
+      ['line-0791a', ['justice-chief', 'health-chief', 'rastakovsky', 'korobkin', 'korobkin-wife', 'lyapiulov', 'bobchinsky', 'dobchinsky', 'culture-chief', 'culture-chief-wife', 'police-chief', 'dobchinsky-wife', 'anna', 'maria']],
+      ['line-0791c', ['justice-chief', 'health-chief', 'rastakovsky', 'korobkin', 'korobkin-wife', 'lyapiulov', 'bobchinsky', 'dobchinsky', 'culture-chief', 'culture-chief-wife', 'police-chief', 'dobchinsky-wife', 'anna', 'maria']],
+      ['line-0812', ['governor', 'justice-chief', 'health-chief', 'rastakovsky', 'korobkin', 'korobkin-wife', 'lyapiulov', 'bobchinsky', 'dobchinsky', 'culture-chief', 'culture-chief-wife', 'police-chief', 'dobchinsky-wife', 'anna', 'maria']],
+      ['line-0827a', ['governor', 'justice-chief', 'health-chief', 'rastakovsky', 'korobkin', 'korobkin-wife', 'lyapiulov', 'bobchinsky', 'dobchinsky', 'culture-chief', 'culture-chief-wife', 'police-chief', 'dobchinsky-wife', 'anna', 'maria']],
+      ['line-0847', ['governor', 'postmaster', 'justice-chief', 'rastakovsky', 'korobkin-wife', 'lyapiulov', 'bobchinsky', 'dobchinsky', 'culture-chief', 'culture-chief-wife', 'police-chief', 'dobchinsky-wife', 'anna', 'maria']]
     ])
-    expect(collectiveResponses.every((dialogue) => dialogue.characterId === 'ensemble')).toBe(true)
+
+    expect(bazrasPlay.characters.some((character) => character.id === 'ensemble')).toBe(false)
+
+    for (const [blockId, owners] of expectedOwners) {
+      const block = blocksById.get(blockId)
+      expect(block?.type, blockId).toBe('dialogue')
+      expect(dialogueCharacterIds(block as DialogueBlock), blockId).toEqual(owners)
+    }
   })
 
   it("keeps the postmaster's reading separate from the governor's rebuke", () => {
@@ -195,7 +232,6 @@ describe('Gogol Bazras bundled play', () => {
       ['line-0007', 'culture-chief'],
       ['line-0007a', 'governor'],
       ['line-0016a', 'doctor'],
-      ['line-0062a', 'ensemble'],
       ['line-0182a', 'waiter'],
       ['line-0184a', 'waiter'],
       ['line-0185a', 'waiter'],
@@ -226,7 +262,6 @@ describe('Gogol Bazras bundled play', () => {
       ['line-0668d', 'khlestakov'],
       ['line-0791d', 'police-chief'],
       ['line-0810a', 'culture-chief-wife'],
-      ['line-0827a', 'ensemble'],
       ['line-0835a', 'postmaster'],
       ['line-0849a', 'korobkin'],
       ['line-0850a', 'korobkin'],

@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.16.3] - 2026-09-30
+
+### اصلاح‌شده
+- ۲۰ اصلاح جدید تأمین‌شده برای «بازرس» اعمال شد، دیالوگ جاافتادهٔ دوبچینسکی «و من گفتم...» بازگردانده شد، دو نقش مشخصِ بدون دیالوگ حذف شدند و نقش مصنوعی «همه با هم» با مالکیت مشترک شخصیت‌های شرکت‌کننده در هر دیالوگ جمعی جایگزین شد.
+
 ## [1.16.2] - 2026-09-28
 
 ### اصلاح‌شده
@@ -177,7 +182,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...HEAD
+[1.16.3]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/amirmojiry/script-reader/compare/v1.15.0...v1.16.0
