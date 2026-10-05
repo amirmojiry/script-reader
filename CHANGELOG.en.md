@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.16.4] - 2026-10-05
+
+### Changed
+- Added the public GitHub Pages site link to the repository landing README.
+
 ## [1.16.3] - 2026-09-30
 
 ### Fixed
@@ -184,7 +189,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.16.4...HEAD
+[1.16.4]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...v1.16.4
 [1.16.3]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...v1.16.1

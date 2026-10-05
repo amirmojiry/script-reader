@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.16.4] - 2026-10-05
+
+### تغییرکرده
+- لینک نسخهٔ عمومی GitHub Pages به README اصلی مخزن اضافه شد.
+
 ## [1.16.3] - 2026-09-30
 
 ### اصلاح‌شده
@@ -184,7 +189,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.4...HEAD
+[1.16.4]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...v1.16.4
 [1.16.3]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/amirmojiry/script-reader/compare/v1.16.0...v1.16.1
