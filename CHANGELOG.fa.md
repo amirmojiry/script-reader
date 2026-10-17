@@ -4,6 +4,11 @@
 
 ## [منتشرنشده]
 
+## [1.16.5] - 2026-10-18
+
+### افزوده‌شده
+- سند فارسی پیشنهاد نمایشنامه‌های کوتاه گروهی با اولویت کمدی و درام، شرایط تعداد نقش/مدت، بررسی حقوق نشر و روند آماده‌سازی افزوده شد.
+
 ## [1.16.4] - 2026-10-05
 
 ### تغییرکرده
@@ -189,7 +194,8 @@
 - تست‌های Vitest و CI/استقرار بهینه‌شده GitHub Pages.
 - مستندات عامل‌ها، مشارکت، معماری، انتشار، استقرار، فرمت نمایشنامه و roadmap دو زبانه.
 
-[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.4...HEAD
+[منتشرنشده]: https://github.com/amirmojiry/script-reader/compare/v1.16.5...HEAD
+[1.16.5]: https://github.com/amirmojiry/script-reader/compare/v1.16.4...v1.16.5
 [1.16.4]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...v1.16.4
 [1.16.3]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...v1.16.2
