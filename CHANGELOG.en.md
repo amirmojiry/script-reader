@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The project follows Kee
 
 ## [Unreleased]
 
+## [1.16.5] - 2026-10-18
+
+### Added
+- Documented a Persian shortlist of short ensemble play candidates with comedy/drama priorities, cast and runtime qualification, rights safeguards, and an intake checklist.
+
 ## [1.16.4] - 2026-10-05
 
 ### Changed
@@ -189,7 +194,8 @@ All notable changes to this project are documented here. The project follows Kee
 - Vitest utility/component tests plus optimized GitHub Pages CI/deployment.
 - Agent, contribution, architecture, release, deployment, play-format, and bilingual roadmap documentation.
 
-[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.16.4...HEAD
+[Unreleased]: https://github.com/amirmojiry/script-reader/compare/v1.16.5...HEAD
+[1.16.5]: https://github.com/amirmojiry/script-reader/compare/v1.16.4...v1.16.5
 [1.16.4]: https://github.com/amirmojiry/script-reader/compare/v1.16.3...v1.16.4
 [1.16.3]: https://github.com/amirmojiry/script-reader/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/amirmojiry/script-reader/compare/v1.16.1...v1.16.2
